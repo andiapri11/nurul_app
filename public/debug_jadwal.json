@@ -1,0 +1,30 @@
+[
+    {
+        "id": 3,
+        "class_id": 31,
+        "class_name": "KELAS 1 SD",
+        "day": "Senin",
+        "subject": 6
+    },
+    {
+        "id": 6,
+        "class_id": 31,
+        "class_name": "KELAS 1 SD",
+        "day": "Selasa",
+        "subject": 6
+    },
+    {
+        "id": 8,
+        "class_id": 31,
+        "class_name": "KELAS 1 SD",
+        "day": "Senin",
+        "subject": null
+    },
+    {
+        "id": 10,
+        "class_id": 31,
+        "class_name": "KELAS 1 SD",
+        "day": "Rabu",
+        "subject": 6
+    }
+]

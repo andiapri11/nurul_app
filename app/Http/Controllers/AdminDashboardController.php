@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use App\Models\Student;
+use App\Models\SchoolClass;
+use App\Models\Subject;
+use App\Models\Unit;
+use App\Models\AcademicYear;
+use Illuminate\Http\Request;
+
+class AdminDashboardController extends Controller
+{
+    use \App\Traits\MonitoringTrait;
+
+    public function index(Request $request = null)
+    {
+        $request = $request ?: request();
+        $units = Unit::all();
+        $selectedUnitId = $request->get('unit_id', 'all');
+        
+        $activeYear = AcademicYear::where('status', 'active')->first();
+        
+        // Use selected unit for monitoring data
+        $monitoringData = $this->getMonitoringData($selectedUnitId);
+
+        // Determine scope for stats
+        $scopeUnitId = ($selectedUnitId === 'all') ? null : $selectedUnitId;
+
+        // 1. STATISTIK UTAMA (Big Numbers) - Filtered by Unit if selected
+        $totalStudents = Student::when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->where('unit_id', $scopeUnitId);
+            })->count();
+            
+        $totalTeachers = User::whereIn('role', ['guru', 'karyawan', 'staff'])
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->whereHas('jabatanUnits', function($sq) use ($scopeUnitId) {
+                    $sq->where('unit_id', $scopeUnitId);
+                });
+            })->count();
+        
+        // Filter Total Kelas by Active Year & Unit
+        $totalClasses = SchoolClass::when($activeYear, function($q) use ($activeYear) {
+                $q->where('academic_year_id', $activeYear->id);
+            })
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->where('unit_id', $scopeUnitId);
+            })->count();
+        
+        // 2. SISWA BARU TERDAFTAR (5 Terakhir, untuk Quick Check)
+        $recentStudents = Student::with(['schoolClass', 'unit'])
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->where('unit_id', $scopeUnitId);
+            })
+            ->latest()
+            ->take(5)
+            ->get();
+ 
+        // 3. STATISTIK PER UNIT
+        $studentsPerUnit = Unit::withCount('students')
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->where('id', $scopeUnitId);
+            })->get(); 
+        
+        // 4. STATISTIK KEPEGAWAIAN
+        $activeTeachers = User::whereIn('role', ['guru', 'karyawan', 'staff'])
+            ->where('status', 'aktif')
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
+                $q->whereHas('jabatanUnits', function($sq) use ($scopeUnitId) {
+                    $sq->where('unit_id', $scopeUnitId);
+                });
+            })->count();
+            
+        // 5. QUICK LINKS / SHORTCUTS (Data for view)
+        // Kita hardcode di view saja untuk ini.
+
+        return view('admin.dashboard', compact(
+            'totalStudents', 
+            'totalTeachers', 
+            'totalClasses', 
+            'activeYear', 
+            'recentStudents', 
+            'studentsPerUnit',
+            'activeTeachers',
+            'monitoringData',
+            'units',
+            'selectedUnitId'
+        ));
+    }
+}
