@@ -158,11 +158,18 @@
         border-radius: 12px;
         transition: all 0.3s;
         font-weight: 500;
+        color: #000 !important;
+    }
+
+    .form-control-premium::placeholder {
+        color: #94a3b8;
+        opacity: 1;
     }
 
     .form-control-premium:focus {
         border-color: var(--primary-color);
         background: white;
+        color: #000 !important;
         outline: none;
         box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
     }
