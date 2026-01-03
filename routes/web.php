@@ -819,6 +819,7 @@ Route::get('/seed-dummy-data', function() {
     }
 })->middleware('auth', 'role:administrator');
 
+/*
 Route::get('/setup-mading', function() {
     try {
         // Ensure role exists in User model (handled in code, but we can't change code from here easily if it wasn't done)
