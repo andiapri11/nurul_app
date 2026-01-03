@@ -789,7 +789,13 @@ class SarprasController extends Controller
             $items = $request->items;
             foreach ($items as $key => $item) {
                 if (isset($item['price'])) {
-                    $items[$key]['price'] = str_replace('.', '', $item['price']);
+                    $cleanedPrice = str_replace('.', '', $item['price']);
+                    $items[$key]['price'] = ($cleanedPrice === '') ? null : $cleanedPrice;
+                }
+                
+                // Also clean purchase_date if empty
+                if (isset($item['purchase_date']) && empty($item['purchase_date'])) {
+                    $items[$key]['purchase_date'] = null;
                 }
             }
             $request->merge(['items' => $items]);
