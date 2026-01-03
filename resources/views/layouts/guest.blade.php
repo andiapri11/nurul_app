@@ -3,7 +3,7 @@
   <!--begin::Head-->
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>{{ $appSettings['app_name'] ?? 'Nurul Ilmi' }} | Login</title>
+    <title>{{ $appSettings['app_name'] ?? 'Nurul Ilmi Management' }} | Login</title>
     @if(isset($appSettings['app_favicon']))
         <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $appSettings['app_favicon']) }}">
     @endif
@@ -14,11 +14,11 @@
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <!--end::Accessibility Meta Tags-->
     <!--begin::Primary Meta Tags-->
-    <meta name="title" content="{{ $appSettings['app_name'] ?? 'Nurul Ilmi' }} | Login" />
+    <meta name="title" content="{{ $appSettings['app_name'] ?? 'Nurul Ilmi Management' }} | Login" />
     <meta name="author" content="ColorlibHQ" />
     <meta
       name="description"
-      content="AdminLTE is a Free Bootstrap 5 Admin Dashboard, 30 example pages using Vanilla JS. Fully accessible with WCAG 2.1 AA compliance."
+      content="Sistem Informasi Manajemen Sekolah Terpadu - {{ $appSettings['app_name'] ?? 'Nurul Ilmi Management' }}"
     />
     <meta
       name="keywords"
