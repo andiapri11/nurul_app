@@ -1,5 +1,5 @@
 # Stage 1: PHP Dependencies
-FROM composer:2.7 as vendor
+FROM composer:2.7 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install \
@@ -10,7 +10,7 @@ RUN composer install \
     --prefer-dist
 
 # Stage 2: Frontend Assets
-FROM node:20-alpine as frontend
+FROM node:20-alpine AS frontend
 WORKDIR /app
 COPY package.json ./
 # Handle missing package-lock.json or yarn.lock
@@ -50,7 +50,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 RUN a2enmod rewrite
 
 # Update Apache configuration to point to /public
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
@@ -67,9 +67,10 @@ COPY --from=frontend /app/public/build /var/www/html/public/build
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Set permissions for storage & cache
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions for storage, cache and uploads
+RUN mkdir -p /var/www/html/public/photos /var/www/html/public/uploads \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/photos /var/www/html/public/uploads \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/photos /var/www/html/public/uploads
 
 # Environment variables
 ENV APP_ENV=production
