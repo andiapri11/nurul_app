@@ -26,8 +26,12 @@
         <div class="login-form-section">
             <div class="form-wrapper">
                 <div class="text-center mb-4 d-md-none">
-                    <img src="{{ asset('template/dist/assets/img/AdminLTELogo.png') }}" alt="Logo" class="logo-img-mobile mb-3">
-                    <h2 class="fs-4 fw-bold text-primary">AdminLTE</h2>
+                    @if(isset($appSettings['app_logo']))
+                        <img src="{{ asset('storage/' . $appSettings['app_logo']) }}" alt="Logo" class="logo-img-mobile mb-3">
+                    @else
+                        <img src="{{ asset('template/dist/assets/img/AdminLTELogo.png') }}" alt="Logo" class="logo-img-mobile mb-3">
+                    @endif
+                    <h2 class="fs-4 fw-bold text-primary">{{ $appSettings['app_name'] ?? 'LPT Nurul Ilmi' }}</h2>
                 </div>
 
                 <div class="form-header mb-4">
