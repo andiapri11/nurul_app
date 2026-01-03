@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'sarpras' => \App\Http\Middleware\EnsureUserIsSarpras::class,
             'kesiswaan' => \App\Http\Middleware\EnsureUserIsKesiswaan::class,
             'finance' => \App\Http\Middleware\EnsureUserIsFinance::class,
+            'principal' => \App\Http\Middleware\EnsureIsPrincipal::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

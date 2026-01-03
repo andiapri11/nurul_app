@@ -4,9 +4,7 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
-});
+Route::get('/', [\App\Http\Controllers\AuthController::class, 'home']);
 
 
 
@@ -160,12 +158,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Principal (Kepala Sekolah) Routes
-    Route::group(['prefix' => 'principal', 'as' => 'principal.', 'middleware' => function ($request, $next) {
-        if (!Auth::user()->isKepalaSekolah()) {
-            abort(403, 'Akses Ditolak: Anda tidak memiliki wewenang Kepala Sekolah.');
-        }
-        return $next($request);
-    }], function() {
+    Route::group(['prefix' => 'principal', 'as' => 'principal.', 'middleware' => ['principal']], function() {
         Route::get('/dashboard', [\App\Http\Controllers\PrincipalController::class, 'index'])->name('index');
         Route::get('/teacher-attendance', [\App\Http\Controllers\PrincipalController::class, 'teacherAttendance'])->name('teacher-attendance');
         Route::get('/class-stats', [\App\Http\Controllers\PrincipalController::class, 'classStats'])->name('class-stats');
@@ -972,94 +965,8 @@ Route::get('/fix-db', function() {
 });
 */
 
-Route::delete('/finance/transactions/{transaction}/force-delete', function(Illuminate\Http\Request $request, \App\Models\Transaction $transaction) {
-    if (auth()->user()->role !== 'administrator') {
-        return redirect()->back()->with('error', 'Hanya administrator yang bisa menghapus permanen.');
-    }
-
-    // Verify PIN
-    $user = auth()->user();
-    if (!$user->security_pin) {
-        return redirect()->back()->with('error', 'Anda belum mengatur PIN Keamanan. Silakan atur di Manajemen Administrator.');
-    }
-
-    if (!\Illuminate\Support\Facades\Hash::check($request->security_pin, $user->security_pin)) {
-        return redirect()->back()
-            ->with('error', 'PIN Keamanan tidak valid. Silakan coba lagi.')
-            ->with('open_pin_modal', $transaction->id);
-    }
-    
-    DB::beginTransaction();
-    try {
-        // 1. Revert Bills & Bank Balance
-        if (!$transaction->is_void) {
-            foreach ($transaction->items as $item) {
-                $bill = null;
-                // Prefer direct ID reference
-                if ($item->student_bill_id) {
-                    $bill = \App\Models\StudentBill::find($item->student_bill_id);
-                }
-                
-                // Fallback to fuzzy search if ID missing (older records)
-                if (!$bill) {
-                    $bill = \App\Models\StudentBill::where([
-                        'student_id' => $transaction->student_id,
-                        'payment_type_id' => $item->payment_type_id,
-                        'month' => $item->month_paid,
-                    ])->whereHas('academicYear', function($q) use ($item) {
-                        $q->where('start_year', $item->year_paid);
-                    })->first();
-                }
-
-                if ($bill) {
-                    $bill->paid_amount -= $item->amount;
-                    if ($bill->paid_amount <= 0) {
-                        $bill->paid_amount = 0;
-                        $bill->status = 'unpaid';
-                    } elseif ($bill->paid_amount < $bill->amount) {
-                        $bill->status = 'partial';
-                    } else {
-                        $bill->status = 'paid';
-                    }
-                    $bill->save();
-                }
-            }
-
-            // Revert Bank Balance
-            if ($transaction->payment_method == 'transfer' && $transaction->bank_account_id) {
-                $bank = \App\Models\BankAccount::find($transaction->bank_account_id);
-                if ($bank) {
-                    $bank->balance -= $transaction->items->sum('amount');
-                    $bank->save();
-                }
-            }
-        }
-
-        // 2. Delete linked PaymentRequest if exists
-        if (str_contains($transaction->notes, 'Verifikasi Pembayaran Online #')) {
-            $parts = explode('#', $transaction->notes);
-            $requestId = isset($parts[1]) ? trim($parts[1]) : null;
-            
-            if ($requestId) {
-                $paymentRequest = \App\Models\PaymentRequest::find($requestId);
-                if ($paymentRequest) {
-                    $paymentRequest->items()->delete();
-                    $paymentRequest->delete();
-                }
-            }
-        }
-        
-        $invoice = $transaction->invoice_number;
-        $transaction->delete(); // This will cascade to items
-
-        DB::commit();
-        return redirect()->back()->with('success', 'Transaksi #'.$invoice.' & data pengajuan online terkait telah dihapus permanen.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return redirect()->back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
-    }
-})->name('finance.payments.transactions.force-delete')->middleware('auth');
+Route::delete('/finance/transactions/{transaction}/force-delete', [\App\Http\Controllers\FinancePaymentController::class, 'forceDeleteTransaction'])
+    ->name('finance.payments.transactions.force-delete')->middleware('auth');
 
 Route::post('/finance/transactions/{transaction}/unvoid', [App\Http\Controllers\FinancePaymentController::class, 'unvoidTransaction'])
     ->name('finance.payments.transactions.unvoid')->middleware('auth');

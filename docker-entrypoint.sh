@@ -25,9 +25,9 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/p
 if [ "$APP_ENV" = "production" ]; then
     echo "Optimizing for production..."
     php artisan config:cache
-    # php artisan route:cache
+    php artisan route:cache
     php artisan view:cache
-    # php artisan event:cache
+    php artisan event:cache
     
     echo "Recreating storage link..."
     rm -rf public/storage

@@ -1068,4 +1068,94 @@ class FinancePaymentController extends Controller
 
         return view('finance.bills.pdf', compact('students', 'tp', 'unit', 'class'));
     }
+
+    public function forceDeleteTransaction(Request $request, \App\Models\Transaction $transaction)
+    {
+        if (auth()->user()->role !== 'administrator') {
+            return redirect()->back()->with('error', 'Hanya administrator yang bisa menghapus permanen.');
+        }
+
+        // Verify PIN
+        $user = auth()->user();
+        if (!$user->security_pin) {
+            return redirect()->back()->with('error', 'Anda belum mengatur PIN Keamanan. Silakan atur di Manajemen Administrator.');
+        }
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->security_pin, $user->security_pin)) {
+            return redirect()->back()
+                ->with('error', 'PIN Keamanan tidak valid. Silakan coba lagi.')
+                ->with('open_pin_modal', $transaction->id);
+        }
+        
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // 1. Revert Bills & Bank Balance
+            if (!$transaction->is_void) {
+                foreach ($transaction->items as $item) {
+                    $bill = null;
+                    // Prefer direct ID reference
+                    if ($item->student_bill_id) {
+                        $bill = \App\Models\StudentBill::find($item->student_bill_id);
+                    }
+                    
+                    // Fallback to fuzzy search if ID missing (older records)
+                    if (!$bill) {
+                        $bill = \App\Models\StudentBill::where([
+                            'student_id' => $transaction->student_id,
+                            'payment_type_id' => $item->payment_type_id,
+                            'month' => $item->month_paid,
+                        ])->whereHas('academicYear', function($q) use ($item) {
+                            $q->where('start_year', $item->year_paid);
+                        })->first();
+                    }
+
+                    if ($bill) {
+                        $bill->paid_amount -= $item->amount;
+                        if ($bill->paid_amount <= 0) {
+                            $bill->paid_amount = 0;
+                            $bill->status = 'unpaid';
+                        } elseif ($bill->paid_amount < $bill->amount) {
+                            $bill->status = 'partial';
+                        } else {
+                            $bill->status = 'paid';
+                        }
+                        $bill->save();
+                    }
+                }
+
+                // Revert Bank Balance
+                if ($transaction->payment_method == 'transfer' && $transaction->bank_account_id) {
+                    $bank = \App\Models\BankAccount::find($transaction->bank_account_id);
+                    if ($bank) {
+                        $bank->balance -= $transaction->items->sum('amount');
+                        $bank->save();
+                    }
+                }
+            }
+
+            // 2. Delete linked PaymentRequest if exists
+            if (str_contains($transaction->notes, 'Verifikasi Pembayaran Online #')) {
+                $parts = explode('#', $transaction->notes);
+                $requestId = isset($parts[1]) ? trim($parts[1]) : null;
+                
+                if ($requestId) {
+                    $paymentRequest = \App\Models\PaymentRequest::find($requestId);
+                    if ($paymentRequest) {
+                        $paymentRequest->items()->delete();
+                        $paymentRequest->delete();
+                    }
+                }
+            }
+            
+            $invoice = $transaction->invoice_number;
+            $transaction->delete(); // This will cascade to items
+
+            \Illuminate\Support\Facades\DB::commit();
+            return redirect()->back()->with('success', 'Transaksi #'.$invoice.' & data pengajuan online terkait telah dihapus permanen.');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
+        }
+    }
 }
