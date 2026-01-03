@@ -14,20 +14,21 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
 fi
 
 # Cache configuration and routes for performance (Production only)
+# Permissions fix (ensure storage and public upload folders are writable)
+echo "Setting permissions..."
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/photos /var/www/html/public/uploads
+chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/photos /var/www/html/public/uploads
+
+# Cleanup and recreate storage link to ensure it's not a broken link from Windows
 if [ "$APP_ENV" = "production" ]; then
     echo "Caching configuration and routes..."
-    # Generate key if not set (only for fresh installs, usually should be provided via ENV)
-    if [ -z "$APP_KEY" ]; then
-        php artisan key:generate --show
-    fi
     php artisan config:cache
-    # php artisan route:cache
     php artisan view:cache
+    
+    echo "Recreating storage link..."
+    rm -rf public/storage
     php artisan storage:link
 fi
-
-# Permissions fix (ensure storage is writable)
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Execute the main command
 exec "$@"
