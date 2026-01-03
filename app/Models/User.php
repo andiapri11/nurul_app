@@ -11,6 +11,9 @@ class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+    
+    // Per-request cache for expensive role/jabatan checks
+    protected $checkCache = [];
 
     /**
      * Check if user has specific role
@@ -165,11 +168,13 @@ class User extends Authenticatable
      */
     public function isManajemenSekolah()
     {
+        if (isset($this->checkCache['isManajemenSekolah'])) return $this->checkCache['isManajemenSekolah'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return true;
+            return $this->checkCache['isManajemenSekolah'] = true;
         }
 
-        return $this->jabatanUnits()->whereHas('jabatan', function($q) {
+        return $this->checkCache['isManajemenSekolah'] = $this->jabatanUnits()->whereHas('jabatan', function($q) {
             $q->whereIn('kode_jabatan', [
                 'kepala_sekolah',
                 'wakil_kurikulum', 
@@ -191,11 +196,13 @@ class User extends Authenticatable
      */
     public function isKepalaSekolah()
     {
+        if (isset($this->checkCache['isKepalaSekolah'])) return $this->checkCache['isKepalaSekolah'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return true;
+            return $this->checkCache['isKepalaSekolah'] = true;
         }
 
-        return $this->jabatanUnits()->whereHas('jabatan', function($q) {
+        return $this->checkCache['isKepalaSekolah'] = $this->jabatanUnits()->whereHas('jabatan', function($q) {
             $q->where('kode_jabatan', 'kepala_sekolah')
               ->orWhere(function($sq) {
                   $sq->where('nama_jabatan', 'LIKE', '%Kepala Sekolah%')
@@ -211,9 +218,13 @@ class User extends Authenticatable
 
     public function isSarpras()
     {
-        if ($this->role === 'administrator' || $this->role === 'direktur') return true;
+        if (isset($this->checkCache['isSarpras'])) return $this->checkCache['isSarpras'];
 
-        return $this->jabatanUnits()->whereHas('jabatan', function($q) {
+        if ($this->role === 'administrator' || $this->role === 'direktur') {
+            return $this->checkCache['isSarpras'] = true;
+        }
+
+        return $this->checkCache['isSarpras'] = $this->jabatanUnits()->whereHas('jabatan', function($q) {
             $q->whereIn('kode_jabatan', ['wakil_sarana_prasarana', 'sarpras'])
               ->orWhere('nama_jabatan', 'LIKE', '%Sarana%')
               ->orWhere('nama_jabatan', 'LIKE', '%Sarpras%');
@@ -222,9 +233,13 @@ class User extends Authenticatable
 
     public function isKesiswaan()
     {
-        if ($this->role === 'administrator' || $this->role === 'direktur') return true;
+        if (isset($this->checkCache['isKesiswaan'])) return $this->checkCache['isKesiswaan'];
 
-        return $this->jabatanUnits()->whereHas('jabatan', function($q) {
+        if ($this->role === 'administrator' || $this->role === 'direktur') {
+            return $this->checkCache['isKesiswaan'] = true;
+        }
+
+        return $this->checkCache['isKesiswaan'] = $this->jabatanUnits()->whereHas('jabatan', function($q) {
             $q->whereIn('kode_jabatan', ['wakil_kesiswaan', 'kesiswaan'])
               ->orWhere('nama_jabatan', 'LIKE', '%Kesiswaan%');
         })->exists();

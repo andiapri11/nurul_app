@@ -606,7 +606,7 @@ class SarprasController extends Controller
             $request->merge(['academic_year_id' => $activeYear->id]);
         }
 
-        $query = Inventory::with(['category', 'room.unit']);
+        $query = Inventory::with(['category', 'room.unit', 'room.academicYear']);
 
         // Filter by User's Allowed Units
         $allowedUnitIds = Auth::user()->getSarprasUnits()->pluck('id');
@@ -662,7 +662,7 @@ class SarprasController extends Controller
     if ($request->filled('academic_year_id')) {
         $roomsQuery->where('academic_year_id', $request->academic_year_id);
     }
-    $rooms = $roomsQuery->get();
+    $rooms = $roomsQuery->with('unit')->get();
 
     // For the modal "Tambah Barang", strictly show ONLY rooms from the ACTIVE year
     // $activeYear is already fetched at the start of the function

@@ -54,14 +54,14 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Increase PHP Upload Limits and Tune OPcache
+# Increase PHP Upload Limits and Tune OPcache for High Performance (16GB RAM VPS)
 RUN echo "upload_max_filesize=20M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size=20M" >> /usr/local/etc/php/conf.d/uploads.ini \
-    && echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit=1024M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
-    && echo "opcache.memory_consumption=256" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
-    && echo "opcache.interned_strings_buffer=16" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
-    && echo "opcache.max_accelerated_files=20000" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
+    && echo "opcache.memory_consumption=512" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
+    && echo "opcache.interned_strings_buffer=64" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
+    && echo "opcache.max_accelerated_files=65536" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
     && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
     && echo "opcache.save_comments=1" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
     && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache-optimized.ini

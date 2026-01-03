@@ -34,8 +34,8 @@ trait MonitoringTrait
         // 2. Fetch Calendars
         $calendarEntries = AcademicCalendar::where('date', $todayStr)->get()->keyBy('unit_id');
 
-        // 3. Fetch Schedules
-        $query = Schedule::with(['unit', 'schoolClass', 'subject', 'teacher'])
+        // 3. Fetch Schedules (With Eager Loading to prevent N+1)
+        $query = Schedule::with(['unit', 'schoolClass', 'subject', 'teacher', 'todayCheckin'])
             ->where('day', $currentDayName)
             ->whereHas('schoolClass', function ($q) {
                 $q->whereHas('academicYear', function ($sq) {
@@ -69,12 +69,7 @@ trait MonitoringTrait
             }
         }
 
-        // 5. Load Checkins
-        foreach ($schedules as $schedule) {
-            $schedule->todayCheckin = ClassCheckin::where('schedule_id', $schedule->id)
-                ->whereDate('checkin_time', $todayStr)
-                ->first();
-        }
+        // 5. Load Checkins (Already Eager Loaded above)
 
         // 6. Group Schedules
         $groupedSchedules = $schedules->groupBy(function ($item) {
