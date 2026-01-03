@@ -5,7 +5,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ $appSettings['app_name'] ?? 'AdminLTE' }} | @yield('title', 'Dashboard')</title>
     @if(isset($appSettings['app_favicon']))
-        <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $appSettings['app_favicon']) }}">
+        <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $appSettings['app_favicon']) }}?v={{ time() }}">
     @endif
     <!--begin::Accessibility Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
