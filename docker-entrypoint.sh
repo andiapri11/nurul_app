@@ -21,9 +21,11 @@ chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/p
 
 # Cleanup and recreate storage link to ensure it's not a broken link from Windows
 if [ "$APP_ENV" = "production" ]; then
-    echo "Caching configuration and routes..."
+    echo "Optimizing for production..."
     php artisan config:cache
+    php artisan route:cache
     php artisan view:cache
+    php artisan event:cache
     
     echo "Recreating storage link..."
     rm -rf public/storage
