@@ -27,7 +27,7 @@
             <div class="form-wrapper">
                 <div class="text-center mb-4 d-md-none">
                     @if(isset($appSettings['app_logo']))
-                        <img src="{{ asset('storage/' . $appSettings['app_logo']) }}" alt="Logo" class="logo-img-mobile mb-3">
+                        <img src="{{ asset('storage/' . $appSettings['app_logo']) }}?v={{ time() }}" alt="Logo" class="logo-img-mobile mb-3">
                     @else
                         <img src="{{ asset('template/dist/assets/img/AdminLTELogo.png') }}" alt="Logo" class="logo-img-mobile mb-3">
                     @endif
