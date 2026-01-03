@@ -46,8 +46,8 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl opcache
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Enable Apache modules for performance
+RUN a2enmod rewrite expires headers deflate
 
 # Update Apache configuration to point to /public
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
@@ -65,6 +65,31 @@ RUN echo "upload_max_filesize=20M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "opcache.validate_timestamps=0" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
     && echo "opcache.save_comments=1" >> /usr/local/etc/php/conf.d/opcache-optimized.ini \
     && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/opcache-optimized.ini
+
+# Add Browser Caching and Gzip Compression Config
+RUN echo '<IfModule mod_expires.c>\n\
+    ExpiresActive On\n\
+    ExpiresDefault "access plus 1 month"\n\
+    ExpiresByType image/x-icon "access plus 1 year"\n\
+    ExpiresByType image/jpeg "access plus 1 year"\n\
+    ExpiresByType image/png "access plus 1 year"\n\
+    ExpiresByType image/gif "access plus 1 year"\n\
+    ExpiresByType image/webp "access plus 1 year"\n\
+    ExpiresByType text/css "access plus 1 month"\n\
+    ExpiresByType text/javascript "access plus 1 month"\n\
+    ExpiresByType application/javascript "access plus 1 month"\n\
+    ExpiresByType application/x-javascript "access plus 1 month"\n\
+    ExpiresByType application/pdf "access plus 1 month"\n\
+    ExpiresByType application/x-shockwave-flash "access plus 1 month"\n\
+    ExpiresByType font/truetype "access plus 1 year"\n\
+    ExpiresByType font/opentype "access plus 1 year"\n\
+    ExpiresByType application/x-font-woff "access plus 1 year"\n\
+    ExpiresByType image/svg+xml "access plus 1 year"\n\
+    </IfModule>\n\
+    <IfModule mod_deflate.c>\n\
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json\n\
+    </IfModule>' > /etc/apache2/conf-available/performance.conf \
+    && a2enconf performance
 
 # Copy application files
 COPY . .
