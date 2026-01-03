@@ -6,7 +6,12 @@
         <div class="login-header text-center">
             <div class="brand-wrapper mb-4">
                 @if(isset($appSettings['app_logo']))
-                    <img src="{{ asset('storage/' . $appSettings['app_logo']) }}?v={{ time() }}" alt="Logo" class="app-logo-main">
+                    <img src="{{ asset('storage/' . $appSettings['app_logo']) }}" 
+                         alt="Logo" 
+                         class="app-logo-main"
+                         width="80" 
+                         height="80"
+                         loading="eager">
                 @else
                     <div class="logo-placeholder">
                         <i class="bi bi-shield-lock-fill"></i>
