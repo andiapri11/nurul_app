@@ -529,7 +529,7 @@ Route::middleware(['auth:student', 'siswa'])->prefix('siswa')->name('siswa.')->g
 });
 
 // Temporary route to run migrations since terminal is inaccessible
-Route::get('/fix-db', function() {
+Route::get('/sys-update-niba-auth-2026', function() {
     $output = "<h1>Database Migration Tool</h1>";
     try {
         \Illuminate\Support\Facades\Artisan::call('config:clear');
