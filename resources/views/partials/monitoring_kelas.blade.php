@@ -1,5 +1,5 @@
-<div class="card border-0 shadow-lg rounded-4 overflow-hidden" id="monitoring-kelas-widget" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1) !important;">
-    <div class="card-header border-0 py-4 d-flex align-items-center justify-content-between px-4" style="background: rgba(255,255,255,0.03);">
+<div class="card border-0 shadow-lg rounded-4 overflow-hidden" id="monitoring-kelas-widget" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1) !important;">
+    <div class="card-header border-0 py-4 d-flex align-items-center justify-content-between px-4" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05) !important;">
         <div class="d-flex align-items-center">
             <div class="bg-primary p-3 rounded-4 me-3 shadow-sm">
                 <i class="bi bi-display text-white fs-3"></i>
@@ -27,31 +27,31 @@
             </button>
         </div>
     </div>
-    <div class="card-body bg-light p-0">
-        <div class="auto-scroll-container" style="max-height: 500px; overflow-y: auto; padding: 1.5rem;">
+    <div class="card-body p-0" style="background: #0f172a;">
+        <div class="auto-scroll-container" style="max-height: 600px; overflow-y: auto; padding: 2rem;">
             @if($monitoringData['dayStatus'] === 'holiday')
                 <div class="text-center py-5">
-                    <i class="bi bi-emoji-smile text-warning" style="font-size: 4rem;"></i>
-                    <h4 class="fw-bold mt-3">HARI LIBUR</h4>
-                    <p class="text-muted">{{ $monitoringData['dayDescription'] }}</p>
+                    <i class="bi bi-emoji-smile text-warning" style="font-size: 5rem;"></i>
+                    <h2 class="fw-extrabold mt-3 text-white">HARI LIBUR</h2>
+                    <p class="text-white-50 fs-5">{{ $monitoringData['dayDescription'] }}</p>
                 </div>
             @elseif($monitoringData['dayStatus'] === 'activity')
                 <div class="text-center py-5">
-                    <i class="bi bi-flag-fill text-primary" style="font-size: 4rem;"></i>
-                    <h4 class="fw-bold mt-3">KEGIATAN SEKOLAH</h4>
-                    <p class="badge bg-primary fs-6">{{ $monitoringData['dayDescription'] }}</p>
+                    <i class="bi bi-flag-fill text-primary" style="font-size: 5rem;"></i>
+                    <h2 class="fw-extrabold mt-3 text-white">KEGIATAN SEKOLAH</h2>
+                    <p class="badge bg-primary px-4 py-2 fs-5 rounded-pill">{{ $monitoringData['dayDescription'] }}</p>
                 </div>
             @else
                 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
                     @forelse($monitoringData['groupedSchedules'] as $className => $classSchedules)
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.05) !important;">
-                                <div class="card-header py-3 px-4 border-0 d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.05);">
+                            <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05) !important;">
+                                <div class="card-header py-3 px-4 border-0 d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03) !important;">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-door-closed-fill text-primary me-2 fs-5"></i>
-                                        <span class="fw-extrabold text-white text-uppercase" style="letter-spacing: 0.5px;">{{ $className }}</span>
+                                        <span class="fw-extrabold text-white text-uppercase small" style="letter-spacing: 0.5px;">{{ $className }}</span>
                                     </div>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small px-2 py-1">REAL-TIME</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small px-2 py-1" style="font-size: 0.6rem;">LIVE</span>
                                 </div>
                                 <div class="list-group list-group-flush bg-transparent">
                                     @php
@@ -80,43 +80,41 @@
                                                 $isActive = ($index === $activeIndex && $nw->between($st, $en));
                                                 $isPast = ($index < $activeIndex || ($index === $activeIndex && $nw->gt($en)));
                                             @endphp
-                                            <div class="list-group-item px-4 py-3 bg-transparent border-white border-opacity-05 {{ $isActive ? 'active-schedule' : ($isPast ? 'opacity-25' : 'opacity-75') }}" style="border-left: 4px solid {{ $isActive ? '#0d6efd' : 'transparent' }};">
+                                            <div class="list-group-item px-4 py-3 bg-transparent border-0 {{ $isActive ? 'active-schedule' : ($isPast ? 'opacity-25' : 'opacity-75') }}" style="border-left: 4px solid {{ $isActive ? '#0d6efd' : 'transparent' }} !important; margin-bottom: 1px; background: {{ $isActive ? 'rgba(13, 110, 253, 0.1)' : 'transparent' }};">
                                                 @if($schedule->is_break)
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 0.75rem;"><i class="bi bi-cup-hot-fill me-1"></i> {{ $schedule->break_name ?? 'ISTIRAHAT' }}</span>
-                                                        <small class="text-white-50 font-monospace fw-bold">{{ $st->format('H:i') }} - {{ $en->format('H:i') }}</small>
+                                                        <small class="text-white font-monospace fw-bold opacity-50">{{ $st->format('H:i') }} - {{ $en->format('H:i') }}</small>
                                                     </div>
                                                 @else
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                                        <span class="fw-extrabold text-white d-block text-truncate pe-2" style="font-size: 1rem;" title="{{ $schedule->subject->name ?? '-' }}">
+                                                        <span class="fw-bold text-white d-block text-truncate pe-2" style="font-size: 1rem;" title="{{ $schedule->subject->name ?? '-' }}">
                                                             {{ $schedule->subject->name ?? '-' }}
                                                         </span>
-                                                        <span class="badge bg-dark bg-opacity-50 text-white-50 font-monospace fw-bold border border-white border-opacity-10">{{ $st->format('H:i') }}</span>
+                                                        <span class="badge bg-white bg-opacity-10 text-white-50 font-monospace border border-white border-opacity-10">{{ $st->format('H:i') }}</span>
                                                     </div>
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div class="d-flex align-items-center overflow-hidden">
-                                                            <div class="avatar-mini me-2 bg-white bg-opacity-10 text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 24px; height: 24px;">
+                                                            <div class="avatar-mini me-2 bg-primary bg-opacity-20 text-primary d-flex align-items-center justify-content-center rounded-circle" style="width: 24px; height: 24px;">
                                                                 <i class="bi bi-person-fill" style="font-size: 0.7rem;"></i>
                                                             </div>
-                                                            <span class="text-white-50 text-truncate fw-bold" style="font-size: 0.8rem;">{{ $schedule->teacher->name ?? '-' }}</span>
+                                                            <span class="text-white-50 text-truncate small fw-bold">{{ $schedule->teacher->name ?? '-' }}</span>
                                                         </div>
                                                         
                                                         @if($schedule->todayCheckin)
                                                             @php
                                                                 $statusMap = [
-                                                                    'ontime' => ['icon' => 'bi-check-circle-fill', 'class' => 'text-success', 'bg' => 'bg-success', 'label' => 'HADIR'],
-                                                                    'late' => ['icon' => 'bi-clock-history', 'class' => 'text-warning', 'bg' => 'bg-warning', 'label' => 'TELAT'],
-                                                                    'substitute' => ['icon' => 'bi-person-plus-fill', 'class' => 'text-info', 'bg' => 'bg-info', 'label' => 'BADAL'],
-                                                                    'absent' => ['icon' => 'bi-x-circle-fill', 'class' => 'text-danger', 'bg' => 'bg-danger', 'label' => 'ABSEN'],
+                                                                    'ontime' => ['bg' => 'bg-success', 'label' => 'HADIR'],
+                                                                    'late' => ['bg' => 'bg-warning', 'label' => 'TELAT'],
+                                                                    'substitute' => ['bg' => 'bg-info', 'label' => 'BADAL'],
+                                                                    'absent' => ['bg' => 'bg-danger', 'label' => 'ABSEN'],
                                                                 ];
-                                                                $s = $statusMap[$schedule->todayCheckin->status] ?? ['icon' => 'bi-info-circle', 'class' => 'text-secondary', 'bg' => 'bg-secondary', 'label' => strtoupper($schedule->todayCheckin->status)];
+                                                                $s = $statusMap[$schedule->todayCheckin->status] ?? ['bg' => 'bg-secondary', 'label' => strtoupper($schedule->todayCheckin->status)];
                                                             @endphp
-                                                            <span class="badge {{ $s['bg'] }} text-dark rounded-pill fw-bold" style="font-size: 0.65rem; box-shadow: 0 0 15px {{ $s['class'] == 'text-success' ? 'rgba(25,135,84,0.3)' : 'rgba(255,255,255,0.1)' }}">
-                                                                <i class="bi {{ $s['icon'] }} me-1"></i>{{ $s['label'] }}
-                                                            </span>
+                                                            <span class="badge {{ $s['bg'] }} text-dark rounded-pill fw-bold" style="font-size: 0.6rem;">{{ $s['label'] }}</span>
                                                         @elseif($isActive)
                                                             <div class="d-flex align-items-center">
-                                                                <span class="badge bg-white bg-opacity-10 text-white-50 rounded-pill me-2 px-2 py-1 fw-bold" style="font-size: 0.6rem; letter-spacing: 0.5px;">MENUNGGU</span>
+                                                                <span class="text-white-50 small me-2" style="font-size: 0.6rem; letter-spacing: 0.5px;">MENUNGGU</span>
                                                                 <span class="pulse-red"></span>
                                                             </div>
                                                         @endif
