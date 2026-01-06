@@ -152,10 +152,10 @@ class SiswaPaymentRequestController extends Controller
     public function updateProof(Request $request, $id)
     {
         $request->validate([
-            'proof_image' => 'required|image|mimes:jpg|max:1024',
+            'proof_image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ], [
-            'proof_image.mimes' => 'Format file bukti harus JPG (Bukan JPEG/PNG/PDF).',
-            'proof_image.max' => 'Ukuran file bukti maksimal adalah 1MB (1024 KB).',
+            'proof_image.mimes' => 'Format file bukti harus berupa gambar (JPG, JPEG, atau PNG).',
+            'proof_image.max' => 'Ukuran file bukti maksimal adalah 2MB.',
             'proof_image.image' => 'File yang diunggah harus berupa gambar.',
         ]);
 

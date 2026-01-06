@@ -56,7 +56,7 @@ class StudentController extends Controller
         $allowedUnits = $this->getAllowedUnits();
         $allowedUnitIds = $allowedUnits->pluck('id')->toArray();
 
-        $query = Student::with(['user', 'unit', 'schoolClass.academicYear'])
+        $query = Student::with(['user', 'unit'])
                         ->whereIn('unit_id', $allowedUnitIds)
                         ->where('status', $status);
         

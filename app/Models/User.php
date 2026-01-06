@@ -136,10 +136,16 @@ class User extends Authenticatable
 
     public function getUnitAttribute()
     {
-        // Try to get unit from the first jabatan assignment
-        // This is a heuristic accessor now
-        $firstAssignment = $this->jabatanUnits()->first();
-        return $firstAssignment ? $firstAssignment->unit : null;
+        if (isset($this->checkCache['unit_accessor'])) return $this->checkCache['unit_accessor'];
+
+        // If relationship is already loaded, use collection to avoid query
+        if ($this->relationLoaded('jabatanUnits')) {
+             $firstAssignment = $this->jabatanUnits->first();
+        } else {
+             $firstAssignment = $this->jabatanUnits()->first();
+        }
+        
+        return $this->checkCache['unit_accessor'] = ($firstAssignment ? $firstAssignment->unit : null);
     }
     
     // Explicit relation if needed for eager loading, though logic is complex now.
@@ -158,7 +164,10 @@ class User extends Authenticatable
      */
     public function hasJabatan($keyword)
     {
-        return $this->jabatanUnits()->whereHas('jabatan', function($q) use ($keyword) {
+        $cacheKey = 'hasJabatan_' . strtolower($keyword);
+        if (isset($this->checkCache[$cacheKey])) return $this->checkCache[$cacheKey];
+
+        return $this->checkCache[$cacheKey] = $this->jabatanUnits()->whereHas('jabatan', function($q) use ($keyword) {
             $q->where('nama_jabatan', 'LIKE', '%' . $keyword . '%');
         })->exists();
     }
@@ -250,11 +259,13 @@ class User extends Authenticatable
      */
     public function getManajemenUnits()
     {
+        if (isset($this->checkCache['manajemenUnits'])) return $this->checkCache['manajemenUnits'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return \App\Models\Unit::all();
+            return $this->checkCache['manajemenUnits'] = \App\Models\Unit::all();
         }
 
-        return \App\Models\Unit::whereIn('id', function($query) {
+        return $this->checkCache['manajemenUnits'] = \App\Models\Unit::whereIn('id', function($query) {
             $query->select('user_jabatan_units.unit_id')
                   ->from('user_jabatan_units')
                   ->where('user_id', $this->id)
@@ -278,8 +289,10 @@ class User extends Authenticatable
      */
     public function getLearningManagementUnits()
     {
+        if (isset($this->checkCache['learningManagementUnits'])) return $this->checkCache['learningManagementUnits'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return \App\Models\Unit::all();
+            return $this->checkCache['learningManagementUnits'] = \App\Models\Unit::all();
         }
 
         $units = \App\Models\Unit::whereIn('id', function($query) {
@@ -302,7 +315,7 @@ class User extends Authenticatable
              }
         }
         
-        return $units;
+        return $this->checkCache['learningManagementUnits'] = $units;
     }
 
     /**
@@ -310,8 +323,10 @@ class User extends Authenticatable
      */
     public function getKesiswaanUnits()
     {
+        if (isset($this->checkCache['kesiswaanUnits'])) return $this->checkCache['kesiswaanUnits'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return \App\Models\Unit::all();
+            return $this->checkCache['kesiswaanUnits'] = \App\Models\Unit::all();
         }
 
         $units = \App\Models\Unit::whereIn('id', function($query) {
@@ -334,7 +349,7 @@ class User extends Authenticatable
              }
         }
         
-        return $units;
+        return $this->checkCache['kesiswaanUnits'] = $units;
     }
 
     /**
@@ -342,8 +357,10 @@ class User extends Authenticatable
      */
     public function getSarprasUnits()
     {
+        if (isset($this->checkCache['sarprasUnits'])) return $this->checkCache['sarprasUnits'];
+
         if (in_array($this->role, ['administrator', 'direktur'])) {
-            return \App\Models\Unit::all();
+            return $this->checkCache['sarprasUnits'] = \App\Models\Unit::all();
         }
 
         $units = \App\Models\Unit::whereIn('id', function($query) {
@@ -367,7 +384,7 @@ class User extends Authenticatable
              }
         }
         
-        return $units;
+        return $this->checkCache['sarprasUnits'] = $units;
     }
 
     /**
@@ -423,7 +440,11 @@ class User extends Authenticatable
 
     public function isKurikulum()
     {
-        if ($this->role === 'administrator' || $this->role === 'direktur') return true;
+        if (isset($this->checkCache['isKurikulum'])) return $this->checkCache['isKurikulum'];
+
+        if ($this->role === 'administrator' || $this->role === 'direktur') {
+            return $this->checkCache['isKurikulum'] = true;
+        }
         
         // Check Pivot
         $pivotCheck = $this->jabatanUnits()->whereHas('jabatan', function($q) {
@@ -431,18 +452,18 @@ class User extends Authenticatable
                      ->orWhere('nama_jabatan', 'LIKE', '%Kurikulum%');
                })->exists();
                
-        if ($pivotCheck) return true;
+        if ($pivotCheck) return $this->checkCache['isKurikulum'] = true;
         
         // Check Legacy
         if ($this->jabatan_id) {
             $jabatan = \App\Models\Jabatan::find($this->jabatan_id);
             if ($jabatan) {
-                return $jabatan->kode_jabatan === 'wakil_kurikulum' || 
-                       str_contains($jabatan->nama_jabatan, 'Kurikulum');
+                return $this->checkCache['isKurikulum'] = ($jabatan->kode_jabatan === 'wakil_kurikulum' || 
+                       str_contains($jabatan->nama_jabatan, 'Kurikulum'));
             }
         }
         
-        return false;
+        return $this->checkCache['isKurikulum'] = false;
     }
 
     public function isKurikulumForUnit($unitId)
@@ -499,37 +520,38 @@ class User extends Authenticatable
     }
     public function isWaliKelas()
     {
+        if (isset($this->checkCache['isWaliKelas'])) return $this->checkCache['isWaliKelas'];
+
         if ($this->role === 'administrator' || $this->role === 'direktur') {
-            return true;
+            return $this->checkCache['isWaliKelas'] = true;
         }
 
         // Check 1: Assigned to a class in 'classes' table
         if ($this->waliKelasOf()->exists()) {
-            return true;
+            return $this->checkCache['isWaliKelas'] = true;
         }
 
         // Check 2: Has Jabatan "Wali Kelas" via Pivot (hasJabatan checks jabatanUnits)
         if ($this->hasJabatan('Wali Kelas')) {
-            return true;
+            return $this->checkCache['isWaliKelas'] = true;
         }
 
         // Check 3: Check Legacy/Direct Jabatan relation or Collection
-        // Sometimes hasJabatan might miss if not using JabatanUnit pivot strictly but just Jabatans
         foreach($this->jabatans as $jabatan) {
             if (stripos($jabatan->nama_jabatan, 'Wali Kelas') !== false) {
-                return true;
+                return $this->checkCache['isWaliKelas'] = true;
             }
         }
 
-        // Check 4: Check Legacy Jabatan ID (Direct assignment without pivot)
+        // Check 4: Check Legacy Jabatan ID
         if ($this->jabatan_id) {
             $legacyJabatan = \App\Models\Jabatan::find($this->jabatan_id);
             if ($legacyJabatan && stripos($legacyJabatan->nama_jabatan, 'Wali Kelas') !== false) {
-                return true;
+                return $this->checkCache['isWaliKelas'] = true;
             }
         }
 
-        return false;
+        return $this->checkCache['isWaliKelas'] = false;
     }
 
     /**
@@ -537,8 +559,10 @@ class User extends Authenticatable
      */
     public function getTeachingUnits()
     {
+        if (isset($this->checkCache['teachingUnits'])) return $this->checkCache['teachingUnits'];
+
         $activeAY = \App\Models\AcademicYear::where('status', 'active')->first();
-        if (!$activeAY) return collect();
+        if (!$activeAY) return $this->checkCache['teachingUnits'] = collect();
 
         $unitIds = \App\Models\TeachingAssignment::where('teaching_assignments.user_id', $this->id)
             ->where('teaching_assignments.academic_year_id', $activeAY->id)
@@ -550,6 +574,6 @@ class User extends Authenticatable
             $unitIds->push($this->unit_id);
         }
 
-        return \App\Models\Unit::whereIn('id', $unitIds->unique())->get();
+        return $this->checkCache['teachingUnits'] = \App\Models\Unit::whereIn('id', $unitIds->unique())->get();
     }
 }

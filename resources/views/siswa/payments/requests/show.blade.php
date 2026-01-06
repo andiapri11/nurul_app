@@ -159,12 +159,12 @@
                                                     <i class="bi bi-arrow-repeat me-1"></i> Upload Ulang
                                                 </button>
                                                 <div id="reuploadForm" class="d-none mt-3">
-                                                    <form action="{{ route('siswa.payments.requests.update-proof', $paymentRequest->id) }}" method="POST" enctype="multipart/form-data" onsubmit="return validateJpg(this)">
+                                                    <form action="{{ route('siswa.payments.requests.update-proof', $paymentRequest->id) }}" method="POST" enctype="multipart/form-data" onsubmit="return validateImage(this)">
                                                         @csrf
                                                         <div class="alert alert-warning py-1 px-2 small mb-2" style="font-size: 10px;">
-                                                            <i class="bi bi-exclamation-triangle-fill"></i> Wajib format <strong>.jpg</strong>
+                                                            <i class="bi bi-exclamation-triangle-fill"></i> Format: <strong>JPG, JPEG, PNG</strong> (Maks 2MB)
                                                         </div>
-                                                        <input type="file" name="proof_image" class="form-control mb-2 border-0 py-1 shadow-sm small" accept=".jpg" title="Upload Bukti Pembayaran (Maks 1MB, Format JPG)" required>
+                                                        <input type="file" name="proof_image" class="form-control mb-2 border-0 py-1 shadow-sm small" accept=".jpg,.jpeg,.png" title="Upload Bukti Pembayaran (Maks 2MB, Format Gambar)" required>
                                                         <button type="submit" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold">UPDATE BUKTI</button>
                                                     </form>
                                                 </div>
@@ -175,16 +175,16 @@
                                             <i class="bi bi-cloud-upload fs-1 text-muted d-block mb-3"></i>
                                             <p class="small text-muted mb-4 px-3">Belum ada bukti yang diunggah. Silakan upload bukti transfer Anda agar diproses Admin.</p>
                                             
-                                            <form action="{{ route('siswa.payments.requests.update-proof', $paymentRequest->id) }}" method="POST" enctype="multipart/form-data" onsubmit="return validateJpg(this)">
-                                                @csrf
-                                                <div class="alert alert-danger py-2 px-3 small mb-3 text-start">
-                                                    <i class="bi bi-exclamation-circle-fill me-1"></i> <strong>PENTING:</strong> Hanya menerima file format <strong>.jpg</strong>.
-                                                </div>
-                                                <input type="file" name="proof_image" class="form-control mb-3 border-0 py-2 shadow-sm" accept=".jpg" title="Upload Bukti Pembayaran (Maks 1MB, Format JPG)" required>
-                                                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">
-                                                    <i class="bi bi-send-fill me-2"></i> UPLOAD SEKARANG
-                                                </button>
-                                            </form>
+                                            <form action="{{ route('siswa.payments.requests.update-proof', $paymentRequest->id) }}" method="POST" enctype="multipart/form-data" onsubmit="return validateImage(this)">
+                                                 @csrf
+                                                 <div class="alert alert-info py-2 px-3 small mb-3 text-start">
+                                                     <i class="bi bi-info-circle-fill me-1"></i> <strong>INFO:</strong> Menerima format <strong>JPG, JPEG, PNG</strong> (Maks 2MB).
+                                                 </div>
+                                                 <input type="file" name="proof_image" class="form-control mb-3 border-0 py-2 shadow-sm" accept=".jpg,.jpeg,.png" title="Upload Bukti Pembayaran (Maks 2MB, Format Gambar)" required>
+                                                 <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold">
+                                                     <i class="bi bi-send-fill me-2"></i> UPLOAD SEKARANG
+                                                 </button>
+                                             </form>
                                         </div>
                                     @else
                                         <div class="py-3 text-muted">
@@ -210,7 +210,7 @@
                             <div class="col-md-4">
                                 <div class="step-card">
                                     <div class="step-num shadow-sm">2</div>
-                                    <p class="small text-muted mb-0">Simpan bukti transfer dalam format <strong>JPG</strong> (Maks 1MB).</p>
+                                    <p class="small text-muted mb-0">Simpan bukti transfer dalam format <strong>Gambar (JPG/PNG)</strong> (Maks 2MB).</p>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -273,21 +273,36 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function validateJpg(form) {
+    function validateImage(form) {
         const fileInput = form.querySelector('input[type="file"]');
         const filePath = fileInput.value;
-        const allowedExtensions = /(\.jpg)$/i;
+        const allowedExtensions = /(\.jpg|\.jpeg|\.png)$/i;
         
         if (!allowedExtensions.exec(filePath)) {
             Swal.fire({
                 icon: 'error',
                 title: 'Format File Salah',
-                text: 'Harap gunakan file dengan format .jpg saja! (Bukan .jpeg, .png, .pdf, dll)',
+                text: 'Harap gunakan file dengan format gambar (JPG, JPEG, atau PNG)!',
                 confirmButtonColor: '#0d6efd'
             });
             fileInput.value = '';
             return false;
         }
+
+        // Check file size (2MB = 2048 * 1024 bytes)
+        const fileSize = fileInput.files[0].size;
+        const maxSize = 2 * 1024 * 1024;
+        if (fileSize > maxSize) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Terlalu Besar',
+                text: 'Ukuran file maksimal adalah 2MB!',
+                confirmButtonColor: '#0d6efd'
+            });
+            fileInput.value = '';
+            return false;
+        }
+
         return true;
     }
 </script>
