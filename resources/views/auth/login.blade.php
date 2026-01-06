@@ -29,6 +29,12 @@
                 </div>
             @endif
 
+            @if($errors->has('login'))
+                <div class="alert alert-danger border-0 shadow-sm mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ $errors->first('login') }}
+                </div>
+            @endif
+
             <form action="{{ route('login') }}" method="POST">
                 @csrf
                 <div class="form-group mb-3">

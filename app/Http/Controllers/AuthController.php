@@ -26,13 +26,30 @@ class AuthController extends Controller
 
         $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        // Attempt Admin Login (Web Guard)
-        if (Auth::guard('web')->attempt([$loginType => $request->login, 'password' => $request->password])) {
+        // 1. Check for lockout on standard User (Model User)
+        $user = \App\Models\User::where($loginType, $request->login)->first();
+        if ($user && $user->locked_at) {
+            $lockoutDuration = 30; // minutes
+            $lockedTime = \Carbon\Carbon::parse($user->locked_at);
+            if ($lockedTime->addMinutes($lockoutDuration)->isFuture()) {
+                 return back()->withErrors([
+                    'login' => 'Akun Anda terkunci karena 5x salah password. Tunggu 30 menit atau hubungi Admin.',
+                ])->onlyInput('login');
+            } else {
+                $user->update(['locked_at' => null, 'login_attempts' => 0]);
+            }
+        }
+
+        // 2. Attempt Admin/Staff Login (Web Guard)
+        if (Auth::guard('web')->attempt([$loginType => $request->login, 'password' => $request->password], $request->filled('remember'))) {
+            if ($user) {
+                $user->update(['login_attempts' => 0, 'locked_at' => null]);
+            }
             $request->session()->regenerate();
             return redirect()->intended('dashboard');
         }
 
-        // Check for locked out student
+        // 3. Check for locked out student
         $studentUser = \App\Models\UserSiswa::where($loginType, $request->login)->first();
         if ($studentUser && $studentUser->locked_at) {
             $lockoutDuration = 30; // minutes
@@ -47,20 +64,16 @@ class AuthController extends Controller
             }
         }
 
-        // Attempt Student Login (Student Guard)
-        if (Auth::guard('student')->attempt([$loginType => $request->login, 'password' => $request->password])) {
-            $user = Auth::guard('student')->user();
+        // 4. Attempt Student Login (Student Guard)
+        if (Auth::guard('student')->attempt([$loginType => $request->login, 'password' => $request->password], $request->filled('remember'))) {
+            $userSiswa = Auth::guard('student')->user();
             
             // RESET ATTEMPTS ON SUCCESS
-            if ($user->login_attempts > 0 || $user->locked_at) {
-                $user->update(['login_attempts' => 0, 'locked_at' => null]);
+            if ($userSiswa->login_attempts > 0 || $userSiswa->locked_at) {
+                $userSiswa->update(['login_attempts' => 0, 'locked_at' => null]);
             }
 
-            // Check student status using the relationship from UserSiswa
-            // Since we moved status to students table, and UserSiswa hasOne Student
-            // We assume UserSiswa->student->status
-            // AND check UserSiswa status itself
-            if (($user->student && $user->student->status === 'non-aktif') || ($user->status && $user->status === 'non-aktif')) {
+            if (($userSiswa->student && $userSiswa->student->status === 'non-aktif') || ($userSiswa->status && $userSiswa->status === 'non-aktif')) {
                 Auth::guard('student')->logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -71,11 +84,20 @@ class AuthController extends Controller
             }
 
             $request->session()->regenerate();
-            // Redirect to student dashboard if different, or same dashboard
             return redirect()->intended(route('siswa.dashboard'));
         }
 
         // FAILED ATTEMPT LOGIC
+        if ($user) {
+            $user->increment('login_attempts');
+            if ($user->login_attempts >= 5) {
+                $user->update(['locked_at' => now()]);
+                return back()->withErrors([
+                    'login' => 'Akun Anda telah dikunci karena 5x salah password. Hubungi Admin.',
+                ])->onlyInput('login');
+            }
+        }
+
         if ($studentUser) {
             $studentUser->increment('login_attempts');
             if ($studentUser->login_attempts >= 5) {

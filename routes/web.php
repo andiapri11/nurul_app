@@ -528,7 +528,6 @@ Route::middleware(['auth:student', 'siswa'])->prefix('siswa')->name('siswa.')->g
     Route::post('/pembayaran/status/{id}/update-proof', [\App\Http\Controllers\Siswa\SiswaPaymentRequestController::class, 'updateProof'])->name('payments.requests.update-proof');
 });
 
-/*
 // Temporary route to run migrations since terminal is inaccessible
 Route::get('/fix-db', function() {
     $output = "<h1>Database Migration Tool</h1>";
@@ -556,8 +555,7 @@ Route::get('/fix-db', function() {
     return $output;
 });
 
-
-
+/*
 Route::get('/fix-orphans', function() {
     $students = \App\Models\Student::whereNull('user_siswa_id')->get();
     $count = 0;
@@ -671,7 +669,6 @@ Route::get('/fix-bill-sync', function() {
     
     return $output;
 });
-*/
 
 /*
 Route::get('/debug-db', function() {
