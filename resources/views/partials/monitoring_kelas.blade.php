@@ -1,11 +1,11 @@
-<div class="card border-0 shadow-lg rounded-4 overflow-hidden" id="monitoring-kelas-widget" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.1) !important;">
-    <div class="card-header border-0 py-4 d-flex align-items-center justify-content-between px-4" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05) !important;">
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden" id="monitoring-kelas-widget" style="background: #f8fafc; border: 1px solid #e2e8f0 !important;">
+    <div class="card-header border-0 py-4 d-flex align-items-center justify-content-between px-4" style="background: white; border-bottom: 1px solid #e2e8f0 !important;">
         <div class="d-flex align-items-center">
             <div class="bg-primary p-3 rounded-4 me-3 shadow-sm">
                 <i class="bi bi-display text-white fs-3"></i>
             </div>
             <div>
-                <h4 class="fw-extrabold mb-0 text-white ls-1 text-uppercase">
+                <h4 class="fw-extrabold mb-0 text-slate-800 ls-1 text-uppercase" style="color: #1e293b;">
                     Laporan Real-time
                     @if(isset($units) && isset($selectedUnitId) && $selectedUnitId !== 'all')
                         @php $selUnit = $units->firstWhere('id', $selectedUnitId); @endphp
@@ -13,45 +13,45 @@
                     @endif
                 </h4>
                 <div class="d-flex align-items-center mt-1">
-                    <span class="badge bg-primary bg-opacity-25 text-primary small me-2">{{ $monitoringData['currentDayName'] }}</span>
-                    <small class="text-white-50 fw-bold">{{ $monitoringData['now']->translatedFormat('d M Y') }}</small>
+                    <span class="badge bg-primary bg-opacity-10 text-primary small me-2">{{ $monitoringData['currentDayName'] }}</span>
+                    <small class="text-muted fw-bold">{{ $monitoringData['now']->translatedFormat('d M Y') }}</small>
                 </div>
             </div>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <div id="realtime-clock" class="badge bg-white bg-opacity-10 text-white px-4 py-2 rounded-pill font-monospace shadow-sm border border-white border-opacity-10" style="font-size: 1.2rem; letter-spacing: 2px;">
+            <div id="realtime-clock" class="badge bg-white text-primary px-4 py-2 rounded-pill font-monospace shadow-sm border border-primary border-opacity-10" style="font-size: 1.2rem; letter-spacing: 2px;">
                 00:00:00
             </div>
-            <button class="btn btn-outline-light btn-sm rounded-circle p-2 border-opacity-25" onclick="location.reload()" title="Refresh">
+            <button class="btn btn-outline-primary btn-sm rounded-circle p-2" onclick="location.reload()" title="Refresh">
                 <i class="bi bi-arrow-clockwise fs-5"></i>
             </button>
         </div>
     </div>
-    <div class="card-body p-0" style="background: #0f172a;">
+    <div class="card-body p-0" style="background: #f1f5f9;">
         <div class="auto-scroll-container" style="max-height: 600px; overflow-y: auto; padding: 2rem;">
             @if($monitoringData['dayStatus'] === 'holiday')
                 <div class="text-center py-5">
                     <i class="bi bi-emoji-smile text-warning" style="font-size: 5rem;"></i>
-                    <h2 class="fw-extrabold mt-3 text-white">HARI LIBUR</h2>
-                    <p class="text-white-50 fs-5">{{ $monitoringData['dayDescription'] }}</p>
+                    <h2 class="fw-extrabold mt-3 text-dark">HARI LIBUR</h2>
+                    <p class="text-muted fs-5">{{ $monitoringData['dayDescription'] }}</p>
                 </div>
             @elseif($monitoringData['dayStatus'] === 'activity')
                 <div class="text-center py-5">
                     <i class="bi bi-flag-fill text-primary" style="font-size: 5rem;"></i>
-                    <h2 class="fw-extrabold mt-3 text-white">KEGIATAN SEKOLAH</h2>
+                    <h2 class="fw-extrabold mt-3 text-dark">KEGIATAN SEKOLAH</h2>
                     <p class="badge bg-primary px-4 py-2 fs-5 rounded-pill">{{ $monitoringData['dayDescription'] }}</p>
                 </div>
             @else
                 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
                     @forelse($monitoringData['groupedSchedules'] as $className => $classSchedules)
                         <div class="col">
-                            <div class="card h-100 border-0 shadow-lg rounded-4 overflow-hidden" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.05) !important;">
-                                <div class="card-header py-3 px-4 border-0 d-flex align-items-center justify-content-between" style="background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03) !important;">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden" style="background: white; border: 1px solid #e2e8f0 !important;">
+                                <div class="card-header py-3 px-4 border-0 d-flex align-items-center justify-content-between" style="background: #f8fafc; border-bottom: 1px solid #f1f5f9 !important;">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-door-closed-fill text-primary me-2 fs-5"></i>
-                                        <span class="fw-extrabold text-white text-uppercase small" style="letter-spacing: 0.5px;">{{ $className }}</span>
+                                        <span class="fw-extrabold text-dark text-uppercase small" style="letter-spacing: 0.5px; color: #1e293b;">{{ $className }}</span>
                                     </div>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 small px-2 py-1" style="font-size: 0.6rem;">LIVE</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-10 small px-2 py-1" style="font-size: 0.6rem;">LIVE</span>
                                 </div>
                                 <div class="list-group list-group-flush bg-transparent">
                                     @php
@@ -80,25 +80,25 @@
                                                 $isActive = ($index === $activeIndex && $nw->between($st, $en));
                                                 $isPast = ($index < $activeIndex || ($index === $activeIndex && $nw->gt($en)));
                                             @endphp
-                                            <div class="list-group-item px-4 py-3 bg-transparent border-0 {{ $isActive ? 'active-schedule' : ($isPast ? 'opacity-25' : 'opacity-75') }}" style="border-left: 4px solid {{ $isActive ? '#0d6efd' : 'transparent' }} !important; margin-bottom: 1px; background: {{ $isActive ? 'rgba(13, 110, 253, 0.1)' : 'transparent' }};">
+                                            <div class="list-group-item px-4 py-3 bg-transparent border-0 {{ $isActive ? 'active-schedule' : ($isPast ? 'opacity-40' : '') }}" style="border-left: 4px solid {{ $isActive ? '#0d6efd' : 'transparent' }} !important; margin-bottom: 1px; background: {{ $isActive ? '#eff6ff' : 'transparent' }};">
                                                 @if($schedule->is_break)
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold" style="font-size: 0.75rem;"><i class="bi bi-cup-hot-fill me-1"></i> {{ $schedule->break_name ?? 'ISTIRAHAT' }}</span>
-                                                        <small class="text-white font-monospace fw-bold opacity-50">{{ $st->format('H:i') }} - {{ $en->format('H:i') }}</small>
+                                                        <small class="text-muted font-monospace fw-bold">{{ $st->format('H:i') }} - {{ $en->format('H:i') }}</small>
                                                     </div>
                                                 @else
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                                        <span class="fw-bold text-white d-block text-truncate pe-2" style="font-size: 1rem;" title="{{ $schedule->subject->name ?? '-' }}">
+                                                        <span class="fw-bold text-dark d-block text-truncate pe-2" style="font-size: 1rem; color: #1e293b;" title="{{ $schedule->subject->name ?? '-' }}">
                                                             {{ $schedule->subject->name ?? '-' }}
                                                         </span>
-                                                        <span class="badge bg-white bg-opacity-10 text-white-50 font-monospace border border-white border-opacity-10">{{ $st->format('H:i') }}</span>
+                                                        <span class="badge bg-light text-muted font-monospace border border-light">{{ $st->format('H:i') }}</span>
                                                     </div>
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div class="d-flex align-items-center overflow-hidden">
-                                                            <div class="avatar-mini me-2 bg-primary bg-opacity-20 text-primary d-flex align-items-center justify-content-center rounded-circle" style="width: 24px; height: 24px;">
+                                                            <div class="avatar-mini me-2 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center rounded-circle" style="width: 24px; height: 24px;">
                                                                 <i class="bi bi-person-fill" style="font-size: 0.7rem;"></i>
                                                             </div>
-                                                            <span class="text-white-50 text-truncate small fw-bold">{{ $schedule->teacher->name ?? '-' }}</span>
+                                                            <span class="text-secondary text-truncate small fw-bold" style="color: #475569;">{{ $schedule->teacher->name ?? '-' }}</span>
                                                         </div>
                                                         
                                                         @if($schedule->todayCheckin)
@@ -111,10 +111,10 @@
                                                                 ];
                                                                 $s = $statusMap[$schedule->todayCheckin->status] ?? ['bg' => 'bg-secondary', 'label' => strtoupper($schedule->todayCheckin->status)];
                                                             @endphp
-                                                            <span class="badge {{ $s['bg'] }} text-dark rounded-pill fw-bold" style="font-size: 0.6rem;">{{ $s['label'] }}</span>
+                                                            <span class="badge {{ $s['bg'] }} text-white rounded-pill fw-bold" style="font-size: 0.6rem;">{{ $s['label'] }}</span>
                                                         @elseif($isActive)
                                                             <div class="d-flex align-items-center">
-                                                                <span class="text-white-50 small me-2" style="font-size: 0.6rem; letter-spacing: 0.5px;">MENUNGGU</span>
+                                                                <span class="text-muted small me-2" style="font-size: 0.6rem; letter-spacing: 0.5px;">MENUNGGU</span>
                                                                 <span class="pulse-red"></span>
                                                             </div>
                                                         @endif
@@ -144,18 +144,18 @@
         width: 6px;
     }
     .auto-scroll-container::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.05);
+        background: #f1f5f9;
     }
     .auto-scroll-container::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.2);
+        background: #cbd5e1;
         border-radius: 10px;
     }
     .auto-scroll-container:hover::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.3);
+        background: #94a3b8;
     }
     .active-schedule {
-        background: rgba(13, 110, 253, 0.15) !important;
-        box-shadow: inset 0 0 20px rgba(13, 110, 253, 0.1);
+        background: #eff6ff !important;
+        box-shadow: inset 0 0 15px rgba(13, 110, 253, 0.05);
     }
     .border-white .opacity-05 {
         border-color: rgba(255,255,255,0.05) !important;
