@@ -60,24 +60,73 @@
         justify-content: center;
     }
     .date-pill {
-        background: rgba(0, 0, 0, 0.2);
+        background: rgba(0, 0, 0, 0.25);
         backdrop-filter: blur(15px);
         border-radius: 50px;
-        padding: 12px 25px;
+        padding: 10px 22px;
         display: flex;
         align-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition: all 0.3s ease;
+    }
+    .action-pill {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 50px;
+        padding: 6px 18px;
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        height: 46px;
+    }
+    .action-pill:hover {
+        background: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
     .icon-box {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         background: #ffc107;
-        border-radius: 12px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
         margin-right: 12px;
         color: #000;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3);
+    }
+    #toggle-monitoring-btn {
+        white-space: nowrap;
+        height: 46px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    #toggle-monitoring-btn.btn-warning {
+        background: #ffc107;
+        color: #000;
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    #toggle-monitoring-btn.btn-warning:hover {
+        background: #ffca2c;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+    }
+    #toggle-monitoring-btn.btn-light {
+        background: rgba(255, 255, 255, 0.95);
+        color: #0d6efd;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    #toggle-monitoring-btn.btn-light:hover {
+        background: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
 
     /* Metric Card Styles */
@@ -138,11 +187,11 @@
                     </div>
                 </div>
                 
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-3">
                     {{-- Unit Selector --}}
-                    <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center bg-white rounded-pill px-3 py-1 shadow-sm">
-                        <i class="bi bi-building text-dark opacity-50 me-2 small"></i>
-                        <select name="unit_id" class="form-select border-0 bg-transparent text-dark shadow-none fw-bold p-1" style="min-width: 140px; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
+                    <form action="{{ route('dashboard') }}" method="GET" class="action-pill m-0">
+                        <i class="bi bi-building text-primary me-2"></i>
+                        <select name="unit_id" class="form-select border-0 bg-transparent text-dark shadow-none fw-bold p-0" style="min-width: 130px; cursor: pointer; font-size: 0.85rem;" onchange="this.form.submit()">
                             <option value="all" {{ $selectedUnitId == 'all' ? 'selected' : '' }} class="text-dark">Semua Unit</option>
                             @foreach($units as $unit)
                                 <option value="{{ $unit->id }}" {{ $selectedUnitId == $unit->id ? 'selected' : '' }} class="text-dark">
@@ -152,9 +201,9 @@
                         </select>
                     </form>
 
-                    <button type="button" id="toggle-monitoring-btn" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift" style="position: relative; z-index: 100;">
-                        <i class="bi bi-display"></i>
-                        <span>Mode Monitoring</span>
+                    <button type="button" id="toggle-monitoring-btn" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2 hover-lift">
+                        <i class="bi bi-display fs-5"></i>
+                        <span class="monitoring-text">Mode Monitoring</span>
                     </button>
                 </div>
             </div>
@@ -440,7 +489,7 @@
                 dashboardMain.classList.add('d-none');
                 monitoringView.classList.remove('d-none');
                 
-                toggleBtn.innerHTML = '<i class="bi bi-grid-fill"></i><span>Kembali ke Dashboard</span>';
+                toggleBtn.innerHTML = '<i class="bi bi-grid-fill fs-5"></i><span class="monitoring-text">Dashboard Utama</span>';
                 toggleBtn.classList.remove('btn-warning');
                 toggleBtn.classList.add('btn-light');
                 
@@ -450,7 +499,7 @@
                 dashboardMain.classList.remove('d-none');
                 monitoringView.classList.add('d-none');
                 
-                toggleBtn.innerHTML = '<i class="bi bi-display"></i><span>Mode Monitoring</span>';
+                toggleBtn.innerHTML = '<i class="bi bi-display fs-5"></i><span class="monitoring-text">Mode Monitoring</span>';
                 toggleBtn.classList.remove('btn-light');
                 toggleBtn.classList.add('btn-warning');
                 
