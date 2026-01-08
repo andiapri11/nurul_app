@@ -218,6 +218,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/inventory/{inventory}/history', [\App\Http\Controllers\SarprasController::class, 'inventoryHistory'])->name('inventory.history');
         Route::get('/inventory/print-barcodes', [\App\Http\Controllers\SarprasController::class, 'printBarcodes'])->name('inventory.print-barcodes');
+        Route::get('/inventory/template', [\App\Http\Controllers\SarprasController::class, 'downloadInventoryTemplate'])->name('inventory.template');
+        Route::post('/inventory/import', [\App\Http\Controllers\SarprasController::class, 'importInventory'])->name('inventory.import');
         Route::post('/inventory', [\App\Http\Controllers\SarprasController::class, 'storeInventory'])->name('inventory.store');
         Route::put('/inventory/{inventory}', [\App\Http\Controllers\SarprasController::class, 'updateInventory'])->name('inventory.update');
         Route::delete('/inventory/{inventory}', [\App\Http\Controllers\SarprasController::class, 'destroyInventory'])->name('inventory.destroy');

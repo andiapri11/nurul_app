@@ -25,6 +25,9 @@
                 <i class="bi bi-qr-code"></i> Cetak Barcode Terpilih
             </button>
             @if(empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id))
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                <i class="bi bi-file-earmark-excel"></i> Import Excel
+            </button>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
                 <i class="bi bi-plus-lg"></i> Tambah Barang
             </button>
@@ -100,6 +103,13 @@
     </div>
 
     <!-- Alerts -->
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
@@ -785,11 +795,56 @@
                     }
                 })
                 .catch(error => {
+                    console.error('Error:', error);
                     Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
                 });
             }
         });
     }
+
+    // Dynamic Filter for Import Modal Guide
+    document.addEventListener('DOMContentLoaded', function() {
+        const unitSelect = document.getElementById('import_unit_id');
+        const importModal = document.getElementById('importExcelModal');
+
+        function filterGuide() {
+            if (!unitSelect) return;
+            const selectedUnitId = unitSelect.value;
+            
+            // Perform selection inside function to ensure we get current elements
+            const categoryItems = document.querySelectorAll('.category-guide-item');
+            const roomItems = document.querySelectorAll('.room-guide-item');
+
+            categoryItems.forEach(item => {
+                const unitId = item.getAttribute('data-unit-id');
+                // Show if unit matches OR if it has no unit (shared categories)
+                if (unitId == selectedUnitId || unitId === "" || unitId === "null" || !unitId) {
+                    item.style.setProperty('display', 'flex', 'important');
+                } else {
+                    item.style.setProperty('display', 'none', 'important');
+                }
+            });
+
+            roomItems.forEach(item => {
+                const unitId = item.getAttribute('data-unit-id');
+                if (unitId == selectedUnitId) {
+                    item.style.setProperty('display', 'flex', 'important');
+                } else {
+                    item.style.setProperty('display', 'none', 'important');
+                }
+            });
+        }
+
+        if (unitSelect) {
+            unitSelect.addEventListener('change', filterGuide);
+        }
+
+        if (importModal) {
+            importModal.addEventListener('shown.bs.modal', filterGuide);
+        }
+        
+        filterGuide();
+    });
 </script>
 
 <!-- History Modal -->
@@ -806,6 +861,116 @@
             <div class="modal-footer py-1">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import Excel Modal -->
+<div class="modal fade" id="importExcelModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Import Data via Excel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('sarpras.inventory.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+                        <i class="bi bi-info-circle-fill me-3 fs-4"></i>
+                        <div class="small">
+                            <strong>Instruksi:</strong> Gunakan template resmi untuk menghindari error. 
+                            Nama <strong>Kategori</strong> dan <strong>Ruangan</strong> harus persis seperti daftar panduan di bawah.
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">1. DOWNLOAD TEMPLATE</label>
+                            <a href="{{ route('sarpras.inventory.template') }}" class="btn btn-outline-success w-100 py-2 fw-bold">
+                                <i class="bi bi-download me-1"></i> Template_Inventaris.xlsx
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">2. PILIH FILE EXCEL (.XLSX)</label>
+                            <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">UNIT TUJUAN IMPORT</label>
+                            <select name="unit_id" id="import_unit_id" class="form-select" required>
+                                @foreach($units as $unit)
+                                    <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">TAHUN PELAJARAN</label>
+                            <select name="academic_year_id" class="form-select bg-light fw-bold" required>
+                                @if($activeYear)
+                                    <option value="{{ $activeYear->id }}" selected>{{ $activeYear->name }} (Aktif Sekarang)</option>
+                                @else
+                                    <option value="" disabled selected>Tidak ada tahun aktif!</option>
+                                @endif
+                            </select>
+                            <div class="form-text mt-1 small" style="font-size: 10px;">Data akan dimasukkan ke tahun aktif saat ini.</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-book me-2"></i>Panduan Nama (Copas tulisannya)</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded border">
+                                <label class="small fw-bold text-primary mb-2 d-block border-bottom pb-1">KATEGORI TERDAFTAR</label>
+                                <div style="max-height: 200px; overflow-y: auto;" class="pe-2">
+                                    <ul class="small mb-0 list-unstyled" id="guide-categories">
+                                        @foreach($categories->sortBy('name') as $cat)
+                                            <li class="mb-1 d-flex justify-content-between category-guide-item" data-unit-id="{{ $cat->unit_id }}">
+                                                <span>{{ $cat->name }}</span>
+                                                <span class="badge bg-secondary-subtle text-dark border-0" style="font-size: 8px;">{{ $cat->unit->name ?? 'ALL' }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="bg-light p-3 rounded border">
+                                <label class="small fw-bold text-primary mb-2 d-block border-bottom pb-1">RUANGAN TERSEDIA</label>
+                                <div style="max-height: 200px; overflow-y: auto;" class="pe-2">
+                                    <ul class="small mb-0 list-unstyled" id="guide-rooms">
+                                        @foreach($activeRooms->sortBy('name') as $room)
+                                            <li class="mb-1 d-flex justify-content-between room-guide-item" data-unit-id="{{ $room->unit_id }}">
+                                                <span>{{ $room->name }}</span>
+                                                <span class="badge bg-info-subtle text-dark border-0" style="font-size: 8px;">{{ $room->unit->name }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-warning-subtle p-3 rounded border border-warning-subtle">
+                        <h6 class="fw-bold small mb-2 text-warning-emphasis"><i class="bi bi-exclamation-triangle-fill me-2"></i>Jika Muncul Error Saat Import:</h6>
+                        <ul class="small mb-0 ps-3 text-dark">
+                            <li><strong>Kode Barang sudah terdaftar</strong>: Pastikan kode di Excel belum pernah dipakai untuk barang lain.</li>
+                            <li><strong>Nama Kategori/Ruangan Salah</strong>: Pastikan tulisannya sama persis (huruf besar/kecil) dengan panduan di atas.</li>
+                            <li><strong>Format Tanggal Beli</strong>: Gunakan format YYYY-MM-DD (contoh: 2024-01-25) atau format sel tanggal di Excel.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Mulai Import Sekarang
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

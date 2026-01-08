@@ -9,6 +9,10 @@ use App\Models\DamageReport;
 use App\Models\Unit;
 use App\Models\InventoryLog;
 use App\Models\ProcurementRequest;
+use App\Models\AcademicYear;
+use App\Imports\InventoryImport;
+use App\Exports\InventoryTemplateExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -938,9 +942,30 @@ class SarprasController extends Controller
 
     public function destroyInventory(Inventory $inventory)
     {
-        $this->logAction($inventory->id, 'Deleted', 'Barang dipindahkan ke arsip/dihapus.');
+        $this->logAction($inventory->id, 'Deleted', 'Barang dihapus secara manual.');
         $inventory->delete();
-        return back()->with('success', 'Data barang berhasil dihapus (Dipindahkan ke Arsip).');
+        return back()->with('success', 'Barang inventaris berhasil dihapus.');
+    }
+
+    public function importInventory(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv',
+            'unit_id' => 'required|exists:units,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+        ]);
+
+        try {
+            Excel::import(new InventoryImport($request->unit_id, $request->academic_year_id), $request->file('file'));
+            return back()->with('success', 'Data inventaris berhasil diimport.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengimport data: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadInventoryTemplate()
+    {
+        return Excel::download(new InventoryTemplateExport, 'template_inventaris.xlsx');
     }
 
     public function disposedInventory(Request $request)
