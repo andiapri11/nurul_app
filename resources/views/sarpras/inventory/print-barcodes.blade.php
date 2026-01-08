@@ -91,6 +91,7 @@
 
     <div class="container">
         @foreach($items as $item)
+        <div class="label">
             <!-- Label Title/Unit -->
             <div class="label-title">{{ $item->room->unit->name ?? 'NURUL ILMI' }}</div>
             
@@ -99,7 +100,7 @@
             <div style="font-size: 9px; margin-bottom: 5px; color: #666;">{{ $item->category->name ?? '-' }}</div>
             
             <!-- QR Code Container -->
-            <div id="qrcode-{{ $item->id }}" style="display: flex; justify-content: center; margin: 5px 0;"></div>
+            <div id="qrcode-{{ $item->id }}" class="qr-container" data-code="{{ $item->code }}" style="display: flex; justify-content: center; margin: 5px 0;"></div>
             
             <!-- Item Code Footer -->
             <div class="label-code" style="border-top: 1px dashed #ddd; padding-top: 3px; margin-top: 5px;">{{ $item->code }}</div>
@@ -111,17 +112,16 @@
     <!-- Includes QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        document.querySelectorAll('[id^="qrcode-"]').forEach(function(el) {
-            const containerId = el.id;
-            const code = document.querySelector('#' + containerId).closest('.label').querySelector('.label-code').innerText.trim();
+        document.querySelectorAll('.qr-container').forEach(function(el) {
+            const code = el.getAttribute('data-code').trim();
             
             new QRCode(el, {
                 text: code,
-                width: 75,
-                height: 75,
+                width: 80, // Slightly larger for better readability
+                height: 80,
                 colorDark : "#000000",
                 colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
+                correctLevel : QRCode.CorrectLevel.M // Medium level is perfect for this size
             });
         });
     </script>
