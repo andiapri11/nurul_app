@@ -91,26 +91,37 @@
 
     <div class="container">
         @foreach($items as $item)
-        <div class="label">
-            <div class="label-title">{{ $item->room->unit->name ?? (\App\Models\Setting::where('key', 'app_name')->value('value') ?? 'NURUL ILMI') }}</div>
-            <div class="label-name">{{ $item->name }} / {{ $item->category->name ?? '-' }}</div>
-            <div style="font-size: 9px; margin-bottom: 3px;">Tgl Beli: {{ $item->purchase_date ? $item->purchase_date->format('d/m/Y') : '-' }}</div>
-            <canvas id="barcode-{{ $item->id }}" data-code="{{ $item->code }}"></canvas>
-            <div class="label-code">{{ $item->code }}</div>
+            <!-- Label Title/Unit -->
+            <div class="label-title">{{ $item->room->unit->name ?? 'NURUL ILMI' }}</div>
+            
+            <!-- Item Name & Category -->
+            <div class="label-name" style="font-weight: bold;">{{ $item->name }}</div>
+            <div style="font-size: 9px; margin-bottom: 5px; color: #666;">{{ $item->category->name ?? '-' }}</div>
+            
+            <!-- QR Code Container -->
+            <div id="qrcode-{{ $item->id }}" style="display: flex; justify-content: center; margin: 5px 0;"></div>
+            
+            <!-- Item Code Footer -->
+            <div class="label-code" style="border-top: 1px dashed #ddd; padding-top: 3px; margin-top: 5px;">{{ $item->code }}</div>
+            <div style="font-size: 8px; color: #888;">Tgl Beli: {{ $item->purchase_date ? $item->purchase_date->format('d/m/Y') : '-' }}</div>
         </div>
         @endforeach
     </div>
 
-    <!-- Includes JsBarcode -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- Includes QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        document.querySelectorAll('canvas').forEach(function(el) {
-            JsBarcode(el, el.getAttribute('data-code'), {
-                format: "CODE128",
-                width: 2,
-                height: 55, // Increased height for easier scanning
-                displayValue: false,
-                margin: 10 // Added margin (quiet zone) for better scanner focus
+        document.querySelectorAll('[id^="qrcode-"]').forEach(function(el) {
+            const containerId = el.id;
+            const code = document.querySelector('#' + containerId).closest('.label').querySelector('.label-code').innerText.trim();
+            
+            new QRCode(el, {
+                text: code,
+                width: 75,
+                height: 75,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
             });
         });
     </script>

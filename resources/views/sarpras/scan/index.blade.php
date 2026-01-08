@@ -382,16 +382,18 @@
             });
         }
 
-        // Optimized configuration for long 1D barcodes (CODE128)
+        // Re-optimized for QR Codes (much faster and more reliable)
         const qrConfig = { 
             fps: 20,
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-                // Wide and short box for better 1D barcode focus
+                const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                const qrboxSize = Math.floor(minEdgeSize * 0.75);
                 return {
-                    width: Math.floor(viewfinderWidth * 0.85), // Almost full width
-                    height: Math.floor(viewfinderHeight * 0.35) // Short height
+                    width: qrboxSize,
+                    height: qrboxSize
                 };
-            }
+            },
+            aspectRatio: 1.0
         };
 
         html5QrCode.start(
