@@ -382,19 +382,16 @@
             });
         }
 
-        // Optimized configuration for both QR and 1D Barcodes
+        // Optimized configuration for long 1D barcodes (CODE128)
         const qrConfig = { 
-            fps: 20, // Increased FPS for faster detection
+            fps: 20,
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-                // Return a wider box for 1D barcodes if the screen is wide
-                const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-                const qrboxSize = Math.floor(minEdgeSize * 0.7);
+                // Wide and short box for better 1D barcode focus
                 return {
-                    width: qrboxSize,
-                    height: Math.floor(qrboxSize * 0.6) // Slightly shorter height for better 1D focus
+                    width: Math.floor(viewfinderWidth * 0.85), // Almost full width
+                    height: Math.floor(viewfinderHeight * 0.35) // Short height
                 };
-            },
-            aspectRatio: 1.0
+            }
         };
 
         html5QrCode.start(
@@ -402,12 +399,11 @@
             qrConfig,
             (decodedText) => {
                 console.log("Scan success:", decodedText);
-                // Haptic feedback if supported
                 if (navigator.vibrate) navigator.vibrate(100);
                 handleScanSuccess(decodedText);
             },
             (errorMessage) => {
-                // Optional: handle low-level scan errors if needed
+                // Background scanning processes...
             }
         ).catch((err) => {
             console.error("Camera access error:", err);
@@ -417,22 +413,18 @@
     }
 
     function stopScanner() {
-        if (html5QrCode && html5QrCode.getState() === 2) {
+        if (html5QrCode) {
             html5QrCode.stop().then(() => {
                 document.getElementById('scanner-container').style.display = 'none';
                 document.getElementById('start-scanner-box').style.display = 'block';
                 document.getElementById('manual-input-box').style.display = 'block';
                 document.getElementById('box-wrapper').classList.remove('scanner-active');
             }).catch(err => {
-                console.warn("Stop scanner error:", err);
+                // Fallback for failed stop
                 document.getElementById('scanner-container').style.display = 'none';
                 document.getElementById('start-scanner-box').style.display = 'block';
                 document.getElementById('manual-input-box').style.display = 'block';
             });
-        } else {
-            document.getElementById('scanner-container').style.display = 'none';
-            document.getElementById('start-scanner-box').style.display = 'block';
-            document.getElementById('manual-input-box').style.display = 'block';
         }
     }
 
