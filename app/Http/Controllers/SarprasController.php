@@ -942,9 +942,20 @@ class SarprasController extends Controller
 
     public function destroyInventory(Inventory $inventory)
     {
-        $this->logAction($inventory->id, 'Deleted', 'Barang dihapus secara manual.');
-        $inventory->delete();
-        return back()->with('success', 'Barang inventaris berhasil dihapus.');
+        // Delete photo if exists
+        if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
+        }
+        
+        // Delete disposal photo if exists
+        if ($inventory->disposal_photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->disposal_photo)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->disposal_photo);
+        }
+
+        // Force delete will also cascade delete logs and reports in database
+        $inventory->forceDelete();
+        
+        return back()->with('success', 'Barang inventaris berhasil dihapus secara permanen dari database.');
     }
 
     public function importInventory(Request $request)
