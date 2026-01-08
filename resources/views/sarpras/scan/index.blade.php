@@ -371,17 +371,47 @@
         document.getElementById('box-wrapper').classList.add('scanner-active');
 
         if (!html5QrCode) {
-            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode = new Html5Qrcode("reader", { 
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13
+                ],
+                verbose: false
+            });
         }
+
+        // Optimized configuration for both QR and 1D Barcodes
+        const qrConfig = { 
+            fps: 20, // Increased FPS for faster detection
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+                // Return a wider box for 1D barcodes if the screen is wide
+                const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+                const qrboxSize = Math.floor(minEdgeSize * 0.7);
+                return {
+                    width: qrboxSize,
+                    height: Math.floor(qrboxSize * 0.6) // Slightly shorter height for better 1D focus
+                };
+            },
+            aspectRatio: 1.0
+        };
 
         html5QrCode.start(
             { facingMode: "environment" }, 
-            config,
-            (decodedText) => handleScanSuccess(decodedText),
-            () => {}
+            qrConfig,
+            (decodedText) => {
+                console.log("Scan success:", decodedText);
+                // Haptic feedback if supported
+                if (navigator.vibrate) navigator.vibrate(100);
+                handleScanSuccess(decodedText);
+            },
+            (errorMessage) => {
+                // Optional: handle low-level scan errors if needed
+            }
         ).catch((err) => {
-            console.error(err);
-            Swal.fire('Gagal', 'Kamera tidak dapat diakses atau izin ditolak.', 'error');
+            console.error("Camera access error:", err);
+            Swal.fire('Gagal', 'Kamera tidak dapat diakses. Pastikan izin kamera telah diberikan.', 'error');
             stopScanner();
         });
     }
@@ -393,6 +423,11 @@
                 document.getElementById('start-scanner-box').style.display = 'block';
                 document.getElementById('manual-input-box').style.display = 'block';
                 document.getElementById('box-wrapper').classList.remove('scanner-active');
+            }).catch(err => {
+                console.warn("Stop scanner error:", err);
+                document.getElementById('scanner-container').style.display = 'none';
+                document.getElementById('start-scanner-box').style.display = 'block';
+                document.getElementById('manual-input-box').style.display = 'block';
             });
         } else {
             document.getElementById('scanner-container').style.display = 'none';
@@ -401,12 +436,46 @@
         }
     }
 
+    function playSuccessSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.15);
+        } catch (e) {
+            console.warn("Audio feedback failed:", e);
+        }
+    }
+
     function handleScanSuccess(code) {
         if (html5QrCode && html5QrCode.getState() === 2) {
+            // Visual Flash Effect
+            const wrapper = document.getElementById('box-wrapper');
+            wrapper.style.transition = 'none';
+            wrapper.style.border = '5px solid #28a745';
+            wrapper.style.boxShadow = '0 0 30px #28a745';
+            
+            playSuccessSound();
+
             html5QrCode.stop().then(() => {
-                document.getElementById('scanner-container').style.display = 'none';
-                document.getElementById('box-wrapper').classList.remove('scanner-active');
-                fetchItemDetails(code);
+                setTimeout(() => {
+                    document.getElementById('scanner-container').style.display = 'none';
+                    document.getElementById('box-wrapper').classList.remove('scanner-active');
+                    wrapper.style.border = 'none'; // reset
+                    wrapper.style.boxShadow = 'none'; // reset
+                    fetchItemDetails(code.trim());
+                }, 300); // Small delay to show the "hit"
             });
         }
     }

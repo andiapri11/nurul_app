@@ -108,9 +108,9 @@
             JsBarcode(el, el.getAttribute('data-code'), {
                 format: "CODE128",
                 width: 2,
-                height: 40,
+                height: 55, // Increased height for easier scanning
                 displayValue: false,
-                margin: 0
+                margin: 10 // Added margin (quiet zone) for better scanner focus
             });
         });
     </script>
