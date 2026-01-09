@@ -1246,7 +1246,7 @@ class StudentAffairsController extends Controller
         if ($academicYearId) {
             $classesQuery->where('academic_year_id', $academicYearId);
         }
-        $classes = $classesQuery->orderBy('name')->get();
+        $classes = $classesQuery->with('teacher')->orderBy('name')->get();
 
         $attendanceQuery = \App\Models\StudentAttendance::with(['student', 'schoolClass', 'academicYear'])
             ->whereHas('schoolClass', function($q) use ($allowedUnitIds) {
@@ -1271,6 +1271,20 @@ class StudentAffairsController extends Controller
 
         $attendances = $attendanceQuery->get();
 
-        return view('student_affairs.attendance.index', compact('attendances', 'units', 'academicYears', 'classes', 'academicYearId', 'date'));
+        // --- Identifikasi kelas yang BELUM absen ---
+        $recordedClassIds = \App\Models\StudentAttendance::where('date', $date)
+            ->whereIn('class_id', $classes->pluck('id'))
+            ->distinct()
+            ->pluck('class_id')
+            ->toArray();
+
+        $notInputtedClasses = $classes->filter(function($cls) use ($recordedClassIds) {
+            return !in_array($cls->id, $recordedClassIds);
+        });
+        // ------------------------------------------
+
+        $selectedUnit = $request->filled('unit_id') ? \App\Models\Unit::find($request->unit_id) : null;
+
+        return view('student_affairs.attendance.index', compact('attendances', 'units', 'academicYears', 'classes', 'academicYearId', 'date', 'notInputtedClasses', 'selectedUnit'));
     }
 }

@@ -9,7 +9,7 @@ class Unit extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'black_book_points'];
+    protected $fillable = ['name', 'black_book_points', 'attendance_start', 'attendance_end'];
 
     public function classes()
     {

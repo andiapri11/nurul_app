@@ -22,6 +22,11 @@
                         </div>
                         <h5 class="mb-0 fw-bold text-dark">{{ $unit->name }}</h5>
                     </div>
+                    @if($unit->attendance_start)
+                        <span class="badge bg-success rounded-pill px-3">Aktif: {{ \Carbon\Carbon::parse($unit->attendance_start)->format('H:i') }} - {{ \Carbon\Carbon::parse($unit->attendance_end)->format('H:i') }}</span>
+                    @else
+                        <span class="badge bg-secondary rounded-pill px-3">Tanpa Batas Waktu</span>
+                    @endif
                 </div>
                 <div class="card-body p-4">
                     <form action="{{ route('student-affairs.attendance-settings.update') }}" method="POST">

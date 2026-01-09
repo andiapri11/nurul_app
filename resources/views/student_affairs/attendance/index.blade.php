@@ -7,7 +7,14 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0 text-gray-800 fw-bold">Monitoring Absensi Siswa</h1>
-            <p class="text-muted small mb-0">Pantau rekapitulasi kehadiran siswa berdasarkan unit dan kelas.</p>
+            <p class="text-muted small mb-0">
+                Pantau rekapitulasi kehadiran siswa berdasarkan unit dan kelas.
+                @if($selectedUnit && $selectedUnit->attendance_start)
+                    <span class="badge bg-soft-info text-info ms-2 border">
+                        <i class="bi bi-clock-history me-1"></i> Batas Waktu Unit: {{ \Carbon\Carbon::parse($selectedUnit->attendance_start)->format('H:i') }} - {{ \Carbon\Carbon::parse($selectedUnit->attendance_end)->format('H:i') }}
+                    </span>
+                @endif
+            </p>
         </div>
     </div>
 
@@ -57,6 +64,47 @@
             </form>
         </div>
     </div>
+
+    @if($notInputtedClasses->count() > 0 && !request('class_id'))
+    <div class="alert alert-warning border-0 shadow-sm mb-4" style="border-radius: 15px; background-color: #fff9e6;">
+        <div class="d-flex">
+            <div class="me-3">
+                <div class="avatar-circle-sm bg-warning text-white">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+            </div>
+            <div>
+                <h6 class="fw-bold text-dark mb-1">Kelas Belum Absensi ({{ $notInputtedClasses->count() }})</h6>
+                <p class="small text-muted mb-2">Daftar kelas yang belum menginputkan data kehadiran pada tanggal <strong>{{ \Carbon\Carbon::parse($date)->translatedFormat('d F Y') }}</strong>:</p>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach($notInputtedClasses as $cls)
+                        @php
+                            $waPhone = $cls->teacher && $cls->teacher->phone ? preg_replace('/[^0-9]/', '', $cls->teacher->phone) : null;
+                            if($waPhone && str_starts_with($waPhone, '0')) $waPhone = '62' . substr($waPhone, 1);
+                            
+                            $waMsg = "Assalamu'alaikum Wr. Wb. Bapak/Ibu Wali Kelas " . $cls->name . ", mengingatkan untuk segera mengisi absensi siswa untuk tanggal " . \Carbon\Carbon::parse($date)->translatedFormat('d F Y') . ". Terima kasih.";
+                            $waLink = $waPhone ? "https://wa.me/" . $waPhone . "?text=" . urlencode($waMsg) : "#";
+                        @endphp
+                        <div class="btn-group shadow-sm">
+                            <span class="badge bg-white text-dark border px-3 py-2" style="border-top-right-radius: 0; border-bottom-right-radius: 0;">
+                                <i class="bi bi-door-open-fill text-warning me-1"></i> {{ $cls->name }}
+                            </span>
+                            @if($waPhone)
+                                <a href="{{ $waLink }}" target="_blank" class="btn btn-sm btn-success py-1 px-2" title="Kirim WA Reminder ke {{ $cls->teacher->name }}">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            @else
+                                <button class="btn btn-sm btn-light border py-1 px-2" disabled title="No HP Walas tidak ada">
+                                    <i class="bi bi-whatsapp text-muted"></i>
+                                </button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Attendance Table -->
     <div class="card shadow-sm border-0 bg-white" style="border-radius: 15px;">
