@@ -1188,4 +1188,89 @@ class StudentAffairsController extends Controller
 
         return back()->with('success', 'Laporan kegiatan berhasil dihapus.');
     }
+    // ================== ATTENDANCE SETTINGS ==================
+
+    public function attendanceSettings(Request $request)
+    {
+        $units = Auth::user()->getKesiswaanUnits();
+        return view('student_affairs.attendance.settings', compact('units'));
+    }
+
+    public function updateAttendanceSettings(Request $request)
+    {
+        $request->validate([
+            'unit_id' => 'required|exists:units,id',
+            'attendance_start' => 'nullable|date_format:H:i',
+            'attendance_end' => 'nullable|date_format:H:i',
+        ]);
+
+        $allowedUnitIds = Auth::user()->getKesiswaanUnits()->pluck('id')->toArray();
+        if (!in_array($request->unit_id, $allowedUnitIds)) {
+            abort(403);
+        }
+
+        $unit = \App\Models\Unit::findOrFail($request->unit_id);
+        $unit->update([
+            'attendance_start' => $request->attendance_start,
+            'attendance_end' => $request->attendance_end,
+        ]);
+
+        return back()->with('success', 'Pengaturan batas waktu absen berhasil diperbarui.');
+    }
+
+    // ================== ATTENDANCE DATA ==================
+
+    public function attendanceData(Request $request)
+    {
+        $allowedUnits = Auth::user()->getKesiswaanUnits();
+        $allowedUnitIds = $allowedUnits->pluck('id')->toArray();
+
+        $activeYear = \App\Models\AcademicYear::where('status', 'active')->first();
+        $academicYearId = $request->input('academic_year_id', $activeYear ? $activeYear->id : null);
+        $date = $request->input('date', now()->format('Y-m-d'));
+
+        $units = $allowedUnits;
+        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
+
+        $classesQuery = SchoolClass::query();
+        if ($request->filled('unit_id')) {
+            if (in_array($request->unit_id, $allowedUnitIds)) {
+                $classesQuery->where('unit_id', $request->unit_id);
+            } else {
+                $classesQuery->whereIn('unit_id', $allowedUnitIds);
+            }
+        } else {
+            $classesQuery->whereIn('unit_id', $allowedUnitIds);
+        }
+
+        if ($academicYearId) {
+            $classesQuery->where('academic_year_id', $academicYearId);
+        }
+        $classes = $classesQuery->orderBy('name')->get();
+
+        $attendanceQuery = \App\Models\StudentAttendance::with(['student', 'schoolClass', 'academicYear'])
+            ->whereHas('schoolClass', function($q) use ($allowedUnitIds) {
+                $q->whereIn('unit_id', $allowedUnitIds);
+            });
+
+        if ($request->filled('unit_id') && in_array($request->unit_id, $allowedUnitIds)) {
+            $attendanceQuery->whereHas('schoolClass', function($q) use ($request) {
+                $q->where('unit_id', $request->unit_id);
+            });
+        }
+
+        if ($request->filled('class_id')) {
+            $attendanceQuery->where('class_id', $request->class_id);
+        }
+
+        if ($academicYearId) {
+            $attendanceQuery->where('academic_year_id', $academicYearId);
+        }
+
+        $attendanceQuery->where('date', $date);
+
+        $attendances = $attendanceQuery->get();
+
+        return view('student_affairs.attendance.index', compact('attendances', 'units', 'academicYears', 'classes', 'academicYearId', 'date'));
+    }
 }

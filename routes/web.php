@@ -362,6 +362,11 @@ Route::middleware(['auth'])->group(function () {
         Route::put('extracurriculars/{extracurricular}/achievements', [\App\Http\Controllers\StudentAffairsController::class, 'updateExtracurricularAchievements'])->name('extracurriculars.update-achievements');
         Route::post('extracurriculars/{extracurricular}/reports', [\App\Http\Controllers\StudentAffairsController::class, 'storeExtracurricularReport'])->name('extracurriculars.store-report');
         Route::delete('extracurriculars/reports/{report}', [\App\Http\Controllers\StudentAffairsController::class, 'deleteExtracurricularReport'])->name('extracurriculars.delete-report');
+
+        // Attendance Features
+        Route::get('attendance-settings', [\App\Http\Controllers\StudentAffairsController::class, 'attendanceSettings'])->name('attendance-settings');
+        Route::post('attendance-settings', [\App\Http\Controllers\StudentAffairsController::class, 'updateAttendanceSettings'])->name('attendance-settings.update');
+        Route::get('attendance-data', [\App\Http\Controllers\StudentAffairsController::class, 'attendanceData'])->name('attendance-data');
     });
 });
 

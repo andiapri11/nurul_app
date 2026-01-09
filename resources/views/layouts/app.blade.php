@@ -715,6 +715,19 @@
                             <p>Buku Hitam</p>
                           </a>
                         </li>
+                        <li class="nav-header text-uppercase small opacity-50">Monitoring & Absensi</li>
+                        <li class="nav-item">
+                          <a href="{{ route('student-affairs.attendance-data') }}" class="nav-link {{ request()->routeIs('student-affairs.attendance-data') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-calendar-check text-success"></i>
+                            <p>Laporan Absensi Unit</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('student-affairs.attendance-settings') }}" class="nav-link {{ request()->routeIs('student-affairs.attendance-settings') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-clock-history text-info"></i>
+                            <p>Batas Waktu Absen</p>
+                          </a>
+                        </li>
                       </ul>
                     </li>
                     @endif

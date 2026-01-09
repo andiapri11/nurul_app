@@ -280,6 +280,16 @@ class WaliKelasController extends Controller
             'attendances.*.notes' => 'nullable|string',
         ]);
 
+        // --- Time Limit Check ---
+        $unit = $myClass->unit;
+        if ($unit && $unit->attendance_start && $unit->attendance_end) {
+            $currentTime = now()->format('H:i:s');
+            if ($currentTime < $unit->attendance_start || $currentTime > $unit->attendance_end) {
+                return redirect()->back()->with('error', "Batas waktu absen di unit {$unit->name} adalah pukul {$unit->attendance_start} s/d {$unit->attendance_end}. Saat ini: " . now()->format('H:i'));
+            }
+        }
+        // ------------------------
+
         $date = $request->date;
         $academicYearId = $myClass->academic_year_id; 
         // fallback active year if class doesn't store it properly (it should)
