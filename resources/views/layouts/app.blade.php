@@ -615,6 +615,12 @@
                           </a>
                         </li>
                         <li class="nav-item">
+                          <a href="{{ route('curriculum.teaching-assignments.index') }}" class="nav-link {{ request()->routeIs('curriculum.teaching-assignments.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-person-video3"></i>
+                            <p>Tugas Mengajar</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
                           <a href="{{ route('curriculum.jurnal-kelas') }}" class="nav-link {{ request()->routeIs('curriculum.jurnal-kelas') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-journal-check"></i>
                             <p>Jurnal Kelas</p>

@@ -550,4 +550,273 @@ class CurriculumController extends Controller
 
         return redirect()->back()->with('success', 'Dokumen berhasil diupload.');
     }
+
+    // --- Teaching Assignments Management (New) ---
+
+    public function teachingAssignments(Request $request)
+    {
+        $user = Auth::user();
+        $allowedUnits = $user->getKurikulumUnits();
+        $allowedIds = $allowedUnits->pluck('id')->toArray();
+
+        $academicYears = AcademicYear::orderBy('start_year', 'desc')->get();
+        $activeYear = $academicYears->where('status', 'active')->first();
+        $filterYearId = $request->get('academic_year_id', $activeYear ? $activeYear->id : null);
+
+        $query = User::whereIn('role', ['guru', 'staff']) // Focus on teachers
+            ->where('status', 'aktif')
+            ->with([
+                'teachingAssignments' => function($q) use ($filterYearId) {
+                    if ($filterYearId) {
+                         $q->where('academic_year_id', $filterYearId)
+                           ->orWhereNull('academic_year_id');
+                    }
+                }, 
+                'teachingAssignments.subject', 
+                'teachingAssignments.schoolClass',
+                'unit'
+            ]);
+
+        // Authorization matching GuruKaryawanController logic
+        if (!in_array($user->role, ['administrator', 'direktur'])) {
+            // Mode Discovery: Wakasek could search for ANY active teacher to assign to their unit
+            if ($request->has('global')) {
+                // No additional where filter, showing all active guru/staff globally
+            } else {
+                 $query->where(function($q) use ($allowedIds) {
+                     $q->whereIn('unit_id', $allowedIds)
+                       ->orWhereHas('jabatanUnits', function($sq) use ($allowedIds) {
+                           $sq->whereIn('unit_id', $allowedIds);
+                       })
+                       ->orWhereHas('teachingAssignments.schoolClass', function($sq) use ($allowedIds) {
+                           $sq->whereIn('unit_id', $allowedIds);
+                       });
+                 });
+            }
+        }
+
+        if ($request->filled('unit_id')) {
+            $unitId = $request->unit_id;
+            if (in_array($unitId, $allowedIds)) {
+                $query->where(function($q) use ($unitId) {
+                     $q->where('unit_id', $unitId)
+                       ->orWhereHas('teachingAssignments.schoolClass', function($sq) use ($unitId) {
+                           $sq->where('unit_id', $unitId);
+                       });
+                });
+            }
+        }
+
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('nip', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $teachers = $query->orderBy('name')->paginate(12)->withQueryString();
+
+        return view('curriculum.teaching_assignments.index', compact('teachers', 'allowedUnits', 'academicYears', 'filterYearId'));
+    }
+
+    public function exportTeachingAssignments(Request $request)
+    {
+        $user = Auth::user();
+        $allowedUnits = $user->getKurikulumUnits();
+        $allowedIds = $allowedUnits->pluck('id')->toArray();
+
+        $academicYears = AcademicYear::orderBy('start_year', 'desc')->get();
+        $activeYear = $academicYears->where('status', 'active')->first();
+        $filterYearId = $request->get('academic_year_id', $activeYear ? $activeYear->id : null);
+
+        $query = User::whereIn('role', ['guru', 'staff'])
+            ->where('status', 'aktif')
+            ->with([
+                'teachingAssignments' => function($q) use ($filterYearId) {
+                    if ($filterYearId) {
+                         $q->where('academic_year_id', $filterYearId)
+                           ->orWhereNull('academic_year_id');
+                    }
+                }, 
+                'teachingAssignments.subject', 
+                'teachingAssignments.schoolClass',
+                'unit'
+            ]);
+
+        if (!in_array($user->role, ['administrator', 'direktur'])) {
+            // No global in export for security/scoping
+            $query->where(function($q) use ($allowedIds) {
+                $q->whereIn('unit_id', $allowedIds)
+                  ->orWhereHas('jabatanUnits', function($sq) use ($allowedIds) {
+                      $sq->whereIn('unit_id', $allowedIds);
+                  })
+                  ->orWhereHas('teachingAssignments.schoolClass', function($sq) use ($allowedIds) {
+                      $sq->whereIn('unit_id', $allowedIds);
+                  });
+            });
+        }
+
+        if ($request->filled('unit_id')) {
+            $unitId = $request->unit_id;
+            if (in_array($unitId, $allowedIds)) {
+                $query->where(function($q) use ($unitId) {
+                     $q->where('unit_id', $unitId)
+                       ->orWhereHas('teachingAssignments.schoolClass', function($sq) use ($unitId) {
+                           $sq->where('unit_id', $unitId);
+                       });
+                });
+            }
+        }
+
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%')
+                  ->orWhere('nip', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $teachers = $query->orderBy('name')->get();
+        
+        $selectedYear = AcademicYear::find($filterYearId);
+        $selectedUnit = $request->filled('unit_id') ? \App\Models\Unit::find($request->unit_id) : null;
+
+        $wakasekName = null;
+        if ($selectedUnit) {
+            $wakasek = User::whereHas('jabatanUnits', function($q) use ($selectedUnit) {
+                $q->where('unit_id', $selectedUnit->id)
+                  ->whereHas('jabatan', function($sq) {
+                      $sq->where('kode_jabatan', 'wakil_kurikulum')
+                         ->orWhere('nama_jabatan', 'LIKE', '%Wakil Kurikulum%')
+                         ->orWhere('nama_jabatan', 'LIKE', '%Wakasek Kurikulum%');
+                  });
+            })->first();
+            $wakasekName = $wakasek ? $wakasek->name : null;
+        }
+
+        if (!$wakasekName && $user->isKurikulum()) {
+            $wakasekName = $user->name;
+        }
+
+        return view('curriculum.teaching_assignments.export', compact('teachers', 'selectedYear', 'selectedUnit', 'wakasekName'));
+    }
+
+    public function editTeachingAssignments(User $user)
+    {
+        $currikulumUser = Auth::user();
+        $allowedUnits = $currikulumUser->getKurikulumUnits();
+        $allowedUnitIds = $allowedUnits->pluck('id')->toArray();
+
+        // Security check: teacher must be linked to allowed unit
+        if (!in_array($currikulumUser->role, ['administrator', 'direktur'])) {
+            $hasAccess = in_array($user->unit_id, $allowedUnitIds) || 
+                         $user->jabatanUnits()->whereIn('unit_id', $allowedUnitIds)->exists() ||
+                         $user->teachingAssignments()->whereHas('schoolClass', function($q) use ($allowedUnitIds) {
+                             $q->whereIn('unit_id', $allowedUnitIds);
+                         })->exists();
+            
+            if (!$hasAccess) {
+                abort(403, 'Anda tidak memiliki akses ke guru ini.');
+            }
+        }
+
+        $activeYear = AcademicYear::where('status', 'active')->first();
+        $activeYearId = $activeYear ? $activeYear->id : null;
+
+        $user->load(['teachingAssignments' => function($q) use ($activeYearId) {
+            if ($activeYearId) {
+                $q->where('academic_year_id', $activeYearId)
+                  ->orWhereNull('academic_year_id'); 
+            }
+        }, 'teachingAssignments.schoolClass', 'teachingAssignments.subject']); 
+        
+        $units = $allowedUnits;
+        $allSubjects = \App\Models\Subject::whereIn('unit_id', $allowedUnitIds)->select('id', 'name', 'code', 'unit_id')->orderBy('name')->get()->groupBy('unit_id');
+        $allClasses = \App\Models\SchoolClass::whereIn('unit_id', $allowedUnitIds)->select('id', 'name', 'unit_id')->orderBy('name')->get()->groupBy('unit_id');
+
+        return view('curriculum.teaching_assignments.edit', compact('user', 'units', 'allSubjects', 'allClasses'));
+    }
+
+    public function updateTeachingAssignments(Request $request, User $user)
+    {
+        $currikulumUser = Auth::user();
+        $allowedUnits = $currikulumUser->getKurikulumUnits();
+        $allowedUnitIds = $allowedUnits->pluck('id')->toArray();
+
+        if (!in_array($currikulumUser->role, ['administrator', 'direktur'])) {
+            $hasAccess = in_array($user->unit_id, $allowedUnitIds) || 
+                         $user->jabatanUnits()->whereIn('unit_id', $allowedUnitIds)->exists() ||
+                         $user->teachingAssignments()->whereHas('schoolClass', function($q) use ($allowedUnitIds) {
+                             $q->whereIn('unit_id', $allowedUnitIds);
+                         })->exists();
+            
+            if (!$hasAccess) abort(403);
+        }
+
+        $request->validate([
+            'assignments' => 'nullable|array',
+        ]);
+
+        // Conflict check (same as GuruKaryawanController)
+        if ($request->has('assignments') && is_array($request->assignments)) {
+            foreach ($request->assignments as $assignment) {
+                if (!empty($assignment['subject_id']) && !empty($assignment['class_id'])) {
+                    
+                    $conflict = \App\Models\TeachingAssignment::where('subject_id', $assignment['subject_id'])
+                        ->where('class_id', $assignment['class_id'])
+                        ->where('user_id', '!=', $user->id) 
+                        ->first();
+
+                    if ($conflict) {
+                        $conflict->load(['user', 'subject', 'schoolClass']);
+                        $mapel = $conflict->subject->name ?? 'Mapel';
+                        $kelas = $conflict->schoolClass->name ?? 'Kelas';
+                        $guruLain = $conflict->user->name ?? 'Guru Lain';
+
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', "GAGAL SIMPAN: $mapel di $kelas sudah diajar oleh $guruLain. Satu mapel di kelas hanya boleh 1 guru!");
+                    }
+                }
+            }
+        }
+
+        $activeYear = AcademicYear::where('status', 'active')->first();
+        $activeYearId = $activeYear ? $activeYear->id : null;
+
+        // Sync Assignments
+        if ($activeYearId) {
+             \App\Models\TeachingAssignment::where('user_id', $user->id)
+                ->where('academic_year_id', $activeYearId)
+                ->delete();
+             \App\Models\TeachingAssignment::where('user_id', $user->id)
+                ->whereNull('academic_year_id')
+                ->delete();
+        } else {
+             \App\Models\TeachingAssignment::where('user_id', $user->id)
+                ->whereNull('academic_year_id')
+                ->delete();
+        }
+
+        if ($request->has('assignments') && is_array($request->assignments)) {
+            $uniqueAssignments = collect($request->assignments)
+                ->filter(function($item) {
+                     return !empty($item['subject_id']) && !empty($item['class_id']);
+                })
+                ->unique(function ($item) {
+                    return $item['subject_id'] . '-' . $item['class_id'];
+                });
+
+            foreach ($uniqueAssignments as $assignment) {
+                \App\Models\TeachingAssignment::create([
+                    'user_id' => $user->id,
+                    'subject_id' => $assignment['subject_id'],
+                    'class_id' => $assignment['class_id'],
+                    'academic_year_id' => $activeYearId,
+                ]);
+            }
+        }
+
+        return redirect()->route('curriculum.teaching-assignments.index')
+            ->with('success', "Tugas mengajar untuk {$user->name} berhasil diperbarui.");
+    }
 }

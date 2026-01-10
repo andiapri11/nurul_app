@@ -286,6 +286,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/get-teachers', [\App\Http\Controllers\CurriculumController::class, 'getTeachers'])->name('get-teachers');
         Route::get('/get-grades', [\App\Http\Controllers\CurriculumController::class, 'getGrades'])->name('get-grades');
         Route::get('/get-subjects', [\App\Http\Controllers\CurriculumController::class, 'getSubjects'])->name('get-subjects');
+        
+        // Teaching Assignments Management
+        Route::get('/teaching-assignments', [\App\Http\Controllers\CurriculumController::class, 'teachingAssignments'])->name('teaching-assignments.index');
+        Route::get('/teaching-assignments/export', [\App\Http\Controllers\CurriculumController::class, 'exportTeachingAssignments'])->name('teaching-assignments.export');
+        Route::get('/teaching-assignments/{user}/edit', [\App\Http\Controllers\CurriculumController::class, 'editTeachingAssignments'])->name('teaching-assignments.edit');
+        Route::put('/teaching-assignments/{user}', [\App\Http\Controllers\CurriculumController::class, 'updateTeachingAssignments'])->name('teaching-assignments.update');
+
         Route::get('/calendar', [\App\Http\Controllers\KurikulumCalendarController::class, 'index'])->name('calendar.index');
         Route::get('/calendar/manage', [\App\Http\Controllers\KurikulumCalendarController::class, 'manage'])->name('calendar.manage');
         Route::post('/calendar', [\App\Http\Controllers\KurikulumCalendarController::class, 'store'])->name('calendar.store');
