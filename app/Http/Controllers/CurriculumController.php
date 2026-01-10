@@ -566,10 +566,19 @@ class CurriculumController extends Controller
         $query = User::whereIn('role', ['guru', 'staff']) // Focus on teachers
             ->where('status', 'aktif')
             ->with([
-                'teachingAssignments' => function($q) use ($filterYearId) {
+                'teachingAssignments' => function($q) use ($filterYearId, $user, $allowedIds) {
                     if ($filterYearId) {
-                         $q->where('academic_year_id', $filterYearId)
-                           ->orWhereNull('academic_year_id');
+                         $q->where(function($sq) use ($filterYearId) {
+                             $sq->where('academic_year_id', $filterYearId)
+                               ->orWhereNull('academic_year_id');
+                         });
+                    }
+                    
+                    // Filter assignments to only show what the current Wakasek manages
+                    if (!in_array($user->role, ['administrator', 'direktur'])) {
+                        $q->whereHas('schoolClass', function($sq) use ($allowedIds) {
+                            $sq->whereIn('unit_id', $allowedIds);
+                        });
                     }
                 }, 
                 'teachingAssignments.subject', 
@@ -632,10 +641,19 @@ class CurriculumController extends Controller
         $query = User::whereIn('role', ['guru', 'staff'])
             ->where('status', 'aktif')
             ->with([
-                'teachingAssignments' => function($q) use ($filterYearId) {
+                'teachingAssignments' => function($q) use ($filterYearId, $user, $allowedIds) {
                     if ($filterYearId) {
-                         $q->where('academic_year_id', $filterYearId)
-                           ->orWhereNull('academic_year_id');
+                         $q->where(function($sq) use ($filterYearId) {
+                             $sq->where('academic_year_id', $filterYearId)
+                               ->orWhereNull('academic_year_id');
+                         });
+                    }
+
+                    // For export, only show assignments in the Wakasek's units
+                    if (!in_array($user->role, ['administrator', 'direktur'])) {
+                        $q->whereHas('schoolClass', function($sq) use ($allowedIds) {
+                            $sq->whereIn('unit_id', $allowedIds);
+                        });
                     }
                 }, 
                 'teachingAssignments.subject', 
