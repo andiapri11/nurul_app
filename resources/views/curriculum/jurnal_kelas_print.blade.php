@@ -47,10 +47,14 @@
         .text-center { text-align: center !important; }
         .badge {
             display: inline-block;
-            padding: 2px 5px;
+            padding: 4px 8px;
             border: 1px solid #666;
             font-size: 8pt;
             text-transform: uppercase;
+            white-space: nowrap;
+            border-radius: 4px;
+            font-weight: bold;
+            min-width: 80px;
         }
         @media print {
             @page {
@@ -111,8 +115,8 @@
                 <th width="12%">WAKTU CHECK-IN</th>
                 <th width="8%">KELAS</th>
                 <th width="12%">GURU PENGAJAR</th>
-                <th width="10%">BUKTI</th>
-                <th width="8%" class="text-center">STATUS</th>
+                <th width="8%">BUKTI</th>
+                <th width="12%" class="text-center">STATUS</th>
                 <th>KETERANGAN / MATERI</th>
             </tr>
         </thead>
@@ -160,7 +164,12 @@
                         @endif
                     </td>
                     <td class="text-center">
-                        <div class="badge" style="@if($c->status == 'absent') border-color: #dc3545; color: #dc3545; @elseif($c->status == 'break') border-color: #0d6efd; color: #0d6efd; @endif">
+                        <div class="badge" style="
+                            @if($c->status == 'absent') border-color: #dc3545; color: #721c24; background-color: #f8d7da;
+                            @elseif($c->status == 'break') border-color: #0d6efd; color: #084298; background-color: #cfe2ff;
+                            @elseif($c->status == 'ontime' || $c->status == 'present') border-color: #198754; color: #0f5132; background-color: #d1e7dd;
+                            @elseif($c->status == 'late') border-color: #fd7e14; color: #664d03; background-color: #fff3cd;
+                            @endif">
                             @if($c->status == 'ontime' || $c->status == 'present') HADIR @elseif($c->status == 'late') TERLAMBAT @elseif($c->status == 'absent') TIDAK HADIR @elseif($c->status == 'break') ISTIRAHAT @else {{ strtoupper($c->status) }} @endif
                         </div>
                     </td>

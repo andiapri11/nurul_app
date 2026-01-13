@@ -34,6 +34,7 @@
         border-radius: 50px;
         font-weight: 600;
         font-size: 0.75rem;
+        white-space: nowrap;
     }
     .teacher-avatar {
         width: 32px;
