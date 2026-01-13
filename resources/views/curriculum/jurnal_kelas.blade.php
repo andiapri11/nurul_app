@@ -222,7 +222,7 @@
                         </thead>
                         <tbody>
                             @forelse($checkins as $index => $c)
-                                <tr class="checkin-row">
+                                <tr class="checkin-row @if($c->status == 'absent') bg-light @elseif($c->status == 'break') bg-light-info @endif">
                                     <td class="ps-4 text-muted small">{{ $index + 1 }}</td>
                                     {{-- Kolom 2: Jam Jadwal --}}
                                     <td>
@@ -232,13 +232,23 @@
                                     </td>
                                     {{-- Kolom 3: Mata Pelajaran --}}
                                     <td>
-                                        <div class="fw-bold text-primary">{{ $c->schedule?->subject?->name ?? 'Mata Pelajaran Tidak Ditemukan' }}</div>
-                                        <div class="small text-muted">{{ $c->schedule?->unit?->name ?? '-' }}</div>
+                                        @if($c->status == 'break')
+                                            <div class="fw-bold text-info"><i class="bi bi-clock me-1"></i> {{ $c->notes }}</div>
+                                        @else
+                                            <div class="fw-bold text-primary">{{ $c->schedule?->subject?->name ?? 'Mata Pelajaran Tidak Ditemukan' }}</div>
+                                            <div class="small text-muted">{{ $c->schedule?->unit?->name ?? '-' }}</div>
+                                        @endif
                                     </td>
                                     {{-- Kolom 4: Waktu Check-in --}}
                                     <td>
-                                        <div class="fw-bold">{{ $c->checkin_time->format('H:i:s') }}</div>
-                                        <div class="text-muted small" style="font-size: 0.7rem;">{{ $c->checkin_time->translatedFormat('d M Y') }}</div>
+                                        @if($c->checkin_time)
+                                            <div class="fw-bold">{{ $c->checkin_time->format('H:i:s') }}</div>
+                                            <div class="text-muted small" style="font-size: 0.7rem;">{{ $c->checkin_time->translatedFormat('d M Y') }}</div>
+                                        @elseif($c->status == 'future')
+                                            <span class="text-muted small fw-bold"><i class="bi bi-hourglass-split"></i> Belum Waktunya</span>
+                                        @else
+                                            <span class="text-danger small fw-bold"><i class="bi bi-x-circle"></i> Belum Check-in</span>
+                                        @endif
                                     </td>
                                     {{-- Kolom 5: Kelas --}}
                                     <td>
@@ -246,16 +256,25 @@
                                     </td>
                                     {{-- Kolom 6: Guru Pengajar --}}
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <img src="{{ isset($c->user) && $c->user->photo ? asset('photos/' . $c->user->photo) : 'https://ui-avatars.com/api/?name=' . urlencode($c->user->name ?? 'Guru') }}" 
-                                                 class="teacher-avatar">
-                                            <div>
-                                                <div class="fw-bold small">{{ $c->user->name ?? 'User Tidak Ditemukan' }}</div>
-                                                <div class="text-muted" style="font-size: 0.7rem;">NIP: {{ $c->user->nip ?? '-' }}</div>
+                                        @if($c->status != 'break')
+                                            <div class="d-flex align-items-center">
+                                                @php
+                                                    $userPhoto = $c->user?->photo ?? $c->schedule?->teacher?->photo;
+                                                    $userName = $c->user?->name ?? $c->schedule?->teacher?->name;
+                                                    $userNip = $c->user?->nip ?? $c->schedule?->teacher?->nip;
+                                                @endphp
+                                                <img src="{{ $userPhoto ? asset('photos/' . $userPhoto) : 'https://ui-avatars.com/api/?name=' . urlencode($userName ?? 'Guru') }}" 
+                                                     class="teacher-avatar">
+                                                <div>
+                                                    <div class="fw-bold small">{{ $userName ?? 'Guru Tidak Ditemukan' }}</div>
+                                                    <div class="text-muted" style="font-size: 0.7rem;">NIP: {{ $userNip ?? '-' }}</div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
                                     </td>
-                                    {{-- Kolom 7 (DIPINDAH): Status (Tadinya 7, sekarang tetap 7 jika urutan dijaga) --}}
+                                    {{-- Kolom 7: Status --}}
                                     <td class="text-center">
                                         @if($c->status == 'present' || $c->status == 'ontime')
                                             <span class="status-badge bg-success-subtle text-success">
@@ -264,6 +283,18 @@
                                         @elseif($c->status == 'late')
                                             <span class="status-badge bg-danger-subtle text-danger">
                                                 <i class="bi bi-clock-history"></i> TERLAMBAT
+                                            </span>
+                                        @elseif($c->status == 'absent')
+                                            <span class="status-badge bg-danger text-white">
+                                                <i class="bi bi-exclamation-triangle"></i> TIDAK HADIR
+                                            </span>
+                                        @elseif($c->status == 'future')
+                                            <span class="status-badge bg-light text-muted border">
+                                                <i class="bi bi-hourglass"></i> BELUM DIMULAI
+                                            </span>
+                                        @elseif($c->status == 'break')
+                                            <span class="status-badge bg-info-subtle text-info">
+                                                <i class="bi bi-cup-hot"></i> ISTIRAHAT
                                             </span>
                                         @else
                                             <span class="status-badge bg-warning-subtle text-warning">
@@ -289,13 +320,15 @@
                                                  style="width: 45px; height: 45px; object-fit: cover;"
                                                  alt="Bukti Mengajar">
                                         @else
-                                            <span class="text-muted small italic">No Photo</span>
+                                            <span class="text-muted small italic">-</span>
                                         @endif
                                     </td>
                                     {{-- Kolom 9: Keterangan --}}
                                     <td class="pe-4">
                                         <div class="text-dark" style="max-width: 250px; white-space: normal; font-size: 0.85rem; line-height: 1.4;">
-                                            @if(trim($c->notes))
+                                            @if($c->status == 'break')
+                                                <span class="text-info fw-bold small text-uppercase">{{ $c->notes }}</span>
+                                            @elseif(trim($c->notes))
                                                 {{ $c->notes }}
                                             @else
                                                 <span class="text-muted">-</span>
@@ -307,12 +340,12 @@
                                 <tr>
                                     <td colspan="9" class="text-center py-5">
                                         <i class="bi bi-inbox display-1 text-muted opacity-25"></i>
-                                        <p class="text-muted mt-3">Tidak ada data check-in jurnal pada filter ini.</p>
+                                        <p class="text-muted mt-3">Tidak ada data jadwal atau jurnal pada filter ini.</p>
                                     </td>
                                 </tr>
                             @endforelse
                         </tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </div>

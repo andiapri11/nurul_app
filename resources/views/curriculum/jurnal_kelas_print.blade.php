@@ -118,43 +118,63 @@
         </thead>
         <tbody>
             @forelse($checkins as $index => $c)
-                <tr>
+                <tr @if($c->status == 'absent') style="background-color: #fff0f0;" @elseif($c->status == 'break') style="background-color: #f0f7ff;" @endif>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>
                         {{ $c->schedule ? substr($c->schedule->start_time, 0, 5) . ' - ' . substr($c->schedule->end_time, 0, 5) : '-' }}
                     </td>
                     <td>
-                        <b>{{ $c->schedule?->subject?->name ?? 'Mata Pelajaran Tidak Ditemukan' }}</b><br>
-                        <small>{{ $c->schedule?->unit?->name ?? '-' }}</small>
+                        @if($c->status == 'break')
+                            <b>{{ $c->notes }}</b>
+                        @else
+                            <b>{{ $c->schedule?->subject?->name ?? 'Mata Pelajaran Tidak Ditemukan' }}</b><br>
+                            <small>{{ $c->schedule?->unit?->name ?? '-' }}</small>
+                        @endif
                     </td>
                     <td>
-                        {{ $c->checkin_time->format('H:i:s') }}<br>
-                        <small>{{ $c->checkin_time->translatedFormat('d M Y') }}</small>
+                        @if($c->checkin_time)
+                            {{ $c->checkin_time->format('H:i:s') }}<br>
+                            <small>{{ $c->checkin_time->translatedFormat('d M Y') }}</small>
+                        @else
+                            <span style="color: #dc3545; font-weight: bold;">BELUM CHECK-IN</span>
+                        @endif
                     </td>
                     <td>{{ $c->schedule?->schoolClass?->name ?? '-' }}</td>
                     <td>
-                        <b>{{ $c->user->name ?? 'User Tidak Ditemukan' }}</b><br>
-                        <small>NIP: {{ $c->user->nip ?? '-' }}</small>
-                    </td>
-                    <td class="text-center">
-                        @if($c->photo)
-                            <img src="{{ asset('storage/' . $c->photo) }}" style="max-width: 80px; max-height: 80px; border: 1px solid #ddd;">
+                        @if($c->status != 'break')
+                            @php
+                                $userName = $c->user?->name ?? $c->schedule?->teacher?->name;
+                                $userNip = $c->user?->nip ?? $c->schedule?->teacher?->nip;
+                            @endphp
+                            <b>{{ $userName ?? 'Guru Tidak Ditemukan' }}</b><br>
+                            <small>NIP: {{ $userNip ?? '-' }}</small>
                         @else
-                            <small class="text-muted">Tidak ada foto</small>
+                            -
                         @endif
                     </td>
                     <td class="text-center">
-                        <div class="badge">
-                            @if($c->status == 'ontime') TEPAT WAKTU @elseif($c->status == 'late') TERLAMBAT @else ALFA @endif
+                        @if($c->photo)
+                            <img src="{{ asset('storage/' . $c->photo) }}" style="max-width: 60px; max-height: 60px; border: 1px solid #ddd;">
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td class="text-center">
+                        <div class="badge" style="@if($c->status == 'absent') border-color: #dc3545; color: #dc3545; @elseif($c->status == 'break') border-color: #0d6efd; color: #0d6efd; @endif">
+                            @if($c->status == 'ontime' || $c->status == 'present') HADIR @elseif($c->status == 'late') TERLAMBAT @elseif($c->status == 'absent') TIDAK HADIR @elseif($c->status == 'break') ISTIRAHAT @else {{ strtoupper($c->status) }} @endif
                         </div>
                     </td>
                     <td>
-                        {{ $c->notes ?: '-' }}
+                        @if($c->status == 'break')
+                            <small><b>ISTIRAHAT</b></small>
+                        @else
+                            {{ $c->notes ?: '-' }}
+                        @endif
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="text-center" style="padding: 50px;">Tidak ada data check-in jurnal pada filter ini.</td>
+                    <td colspan="9" class="text-center" style="padding: 50px;">Tidak ada data jadwal atau jurnal pada filter ini.</td>
                 </tr>
             @endforelse
         </tbody>
