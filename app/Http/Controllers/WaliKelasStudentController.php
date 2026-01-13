@@ -142,7 +142,7 @@ class WaliKelasStudentController extends Controller
             
             // Pribadi & Alamat
             'tempat_lahir' => 'nullable|string|max:100',
-            'tanggal_lahir' => 'nullable|date',
+            'tanggal_lahir' => 'nullable|date_format:d/m/Y',
             'agama' => 'nullable|string|max:50',
             'alamat' => 'nullable|string',
             'alamat_rt' => 'nullable|string|max:10',

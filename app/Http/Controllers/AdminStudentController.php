@@ -371,7 +371,7 @@ class AdminStudentController extends Controller
             'nama_lengkap' => 'required|string|max:255',
             'jenis_kelamin' => 'required|in:L,P',
             'tempat_lahir' => 'required|string|max:255',
-            'tanggal_lahir' => 'required|date',
+            'tanggal_lahir' => 'required|date_format:d/m/Y',
             'agama' => 'nullable|string|max:50',
             'alamat' => 'required|string',
             'alamat_rt' => 'nullable|string|max:10',
