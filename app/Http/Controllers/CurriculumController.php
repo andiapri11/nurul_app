@@ -112,32 +112,51 @@ class CurriculumController extends Controller
         
         $classes = $classesQuery->orderBy('name')->get();
 
+        // Check for Holiday in Academic Calendar
+        $holiday = \App\Models\AcademicCalendar::where('date', $date)
+            ->when($unitId, function($q) use ($unitId) {
+                $q->where('unit_id', $unitId);
+            })
+            ->where('is_holiday', true)
+            ->first();
+
         // Prepare data for the view
         $journalEntries = collect();
-        $dayMap = [
-            'Sunday' => 'Minggu',
-            'Monday' => 'Senin',
-            'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu',
-            'Thursday' => 'Kamis',
-            'Friday' => 'Jumat',
-            'Saturday' => 'Sabtu',
-        ];
-        $dayName = $dayMap[\Carbon\Carbon::parse($date)->format('l')] ?? 'Senin';
+        
+        if ($holiday) {
+            // If holiday, push a virtual holiday entry
+            $journalEntries->push((object)[
+                'is_holiday' => true,
+                'holiday_name' => $holiday->description ?? 'Hari Libur',
+                'status' => 'holiday',
+                'checkin_time' => null,
+                'notes' => $holiday->description
+            ]);
+        } else {
+            $dayMap = [
+                'Sunday' => 'Minggu',
+                'Monday' => 'Senin',
+                'Tuesday' => 'Selasa',
+                'Wednesday' => 'Rabu',
+                'Thursday' => 'Kamis',
+                'Friday' => 'Jumat',
+                'Saturday' => 'Sabtu',
+            ];
+            $dayName = $dayMap[\Carbon\Carbon::parse($date)->format('l')] ?? 'Senin';
 
-        if ($classId) {
-            // Scenario: SPECIFIC CLASS -> SHOW ALL SCHEDULE SLOTS
-            $schedules = \App\Models\Schedule::where('class_id', $classId)
-                ->where('day', $dayName)
-                ->with(['subject', 'teacher', 'unit', 'schoolClass'])
-                ->orderBy('start_time')
-                ->get();
+            if ($classId) {
+                // Scenario: SPECIFIC CLASS -> SHOW ALL SCHEDULE SLOTS
+                $schedules = \App\Models\Schedule::where('class_id', $classId)
+                    ->where('day', $dayName)
+                    ->with(['subject', 'teacher', 'unit', 'schoolClass'])
+                    ->orderBy('start_time')
+                    ->get();
 
-            $checkins = \App\Models\ClassCheckin::whereDate('checkin_time', $date)
-                ->whereIn('schedule_id', $schedules->pluck('id'))
-                ->with('user')
-                ->get()
-                ->keyBy('schedule_id');
+                $checkins = \App\Models\ClassCheckin::whereDate('checkin_time', $date)
+                    ->whereIn('schedule_id', $schedules->pluck('id'))
+                    ->with('user')
+                    ->get()
+                    ->keyBy('schedule_id');
 
             foreach ($schedules as $s) {
                 // Skip break items if needed, but usually breaks are just labels
@@ -174,9 +193,9 @@ class CurriculumController extends Controller
                     'photo' => $c?->photo,
                     'notes' => $c?->notes,
                 ]);
+                }
             }
-        } else {
-            // Scenario: ALL CLASSES -> SHOW ONLY EXISTING CHECKINS (original behavior)
+        // Scenario: ALL CLASSES -> SHOW ONLY EXISTING CHECKINS (original behavior)
             $checkinsQuery = \App\Models\ClassCheckin::with([
                 'schedule.subject', 
                 'schedule.schoolClass', 
@@ -238,32 +257,125 @@ class CurriculumController extends Controller
         $classId = $request->get('class_id');
         $date = $request->get('date', now()->toDateString());
 
-        // Get Checkins (Jurnal) with complete eager loading
-        $checkinsQuery = \App\Models\ClassCheckin::with([
-            'schedule.subject', 
-            'schedule.schoolClass', 
-            'schedule.unit', 
-            'user'
-        ])
-            ->whereDate('checkin_time', $date)
-            ->whereHas('schedule')
-            ->orderBy('checkin_time', 'asc');
+        // Check for Holiday
+        $holiday = \App\Models\AcademicCalendar::where('date', $date)
+            ->when($unitId, function($q) use ($unitId) {
+                $q->where('unit_id', $unitId);
+            })
+            ->where('is_holiday', true)
+            ->first();
+
+        // Prepare data (Synchronized with jurnalKelas logic)
+        $journalEntries = collect();
+
+        if ($holiday) {
+            $journalEntries->push((object)[
+                'is_holiday' => true,
+                'holiday_name' => $holiday->description ?? 'Hari Libur',
+                'status' => 'holiday',
+                'checkin_time' => null,
+                'notes' => $holiday->description
+            ]);
+        } else {
+            $dayMap = [
+            'Sunday' => 'Minggu',
+            'Monday' => 'Senin',
+            'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday' => 'Kamis',
+            'Friday' => 'Jumat',
+            'Saturday' => 'Sabtu',
+        ];
+        $dayName = $dayMap[\Carbon\Carbon::parse($date)->format('l')] ?? 'Senin';
 
         if ($classId) {
-            $checkinsQuery->whereHas('schedule', function($q) use ($classId) {
-                $q->where('class_id', $classId);
-            });
-        } elseif ($unitId) {
-             $checkinsQuery->whereHas('schedule', function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            });
-        } else {
-             $checkinsQuery->whereHas('schedule', function($q) use ($allowedUnits) {
-                $q->whereIn('unit_id', $allowedUnits->pluck('id'));
-            });
-        }
+            $schedules = \App\Models\Schedule::where('class_id', $classId)
+                ->where('day', $dayName)
+                ->with(['subject', 'teacher', 'unit', 'schoolClass'])
+                ->orderBy('start_time')
+                ->get();
 
-        $checkins = $checkinsQuery->get();
+            $checkins = \App\Models\ClassCheckin::whereDate('checkin_time', $date)
+                ->whereIn('schedule_id', $schedules->pluck('id'))
+                ->with('user')
+                ->get()
+                ->keyBy('schedule_id');
+
+            foreach ($schedules as $s) {
+                if ($s->is_break) {
+                     $journalEntries->push((object)[
+                        'schedule' => $s,
+                        'checkin' => null,
+                        'is_virtual' => true,
+                        'is_break' => true,
+                        'user' => null,
+                        'checkin_time' => null,
+                        'status' => 'break',
+                        'photo' => null,
+                        'notes' => $s->break_name ?? 'ISTIRAHAT',
+                    ]);
+                    continue;
+                }
+
+                $c = $checkins->get($s->id);
+                $isFuture = false;
+                if (!$c && $date == now()->toDateString()) {
+                    $isFuture = now()->format('H:i:s') < $s->start_time;
+                }
+
+                $journalEntries->push((object)[
+                    'schedule' => $s,
+                    'checkin' => $c,
+                    'is_virtual' => $c ? false : true,
+                    'is_break' => false,
+                    'id' => $c?->id,
+                    'user' => $c?->user ?? $s->teacher,
+                    'checkin_time' => $c?->checkin_time,
+                    'status' => $c?->status ?? ($isFuture ? 'future' : 'absent'),
+                    'photo' => $c?->photo,
+                    'notes' => $c?->notes,
+                ]);
+            }
+        } else {
+            $checkinsQuery = \App\Models\ClassCheckin::with([
+                'schedule.subject', 
+                'schedule.schoolClass', 
+                'schedule.unit', 
+                'user'
+            ])
+                ->whereDate('checkin_time', $date)
+                ->whereHas('schedule')
+                ->orderBy('checkin_time', 'asc');
+
+            if ($unitId) {
+                 $checkinsQuery->whereHas('schedule', function($q) use ($unitId) {
+                    $q->where('unit_id', $unitId);
+                });
+            } else {
+                 $checkinsQuery->whereHas('schedule', function($q) use ($allowedUnits) {
+                    $q->whereIn('unit_id', $allowedUnits->pluck('id'));
+                });
+            }
+
+            $checkins = $checkinsQuery->get();
+            foreach ($checkins as $c) {
+                $journalEntries->push((object)[
+                    'schedule' => $c->schedule,
+                    'checkin' => $c,
+                    'is_virtual' => false,
+                    'is_break' => false,
+                    'id' => $c->id,
+                    'user' => $c->user,
+                    'checkin_time' => $c->checkin_time,
+                    'status' => $c->status,
+                    'photo' => $c->photo,
+                    'notes' => $c->notes,
+                ]);
+            }
+        }
+    }
+
+        $checkins = $journalEntries;
 
         return view('curriculum.jurnal_kelas_print', compact(
             'unitId', 'academicYearId', 'classId', 'date', 'checkins'

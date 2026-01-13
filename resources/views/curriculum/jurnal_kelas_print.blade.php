@@ -7,27 +7,29 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            font-size: 10pt;
+            font-size: 8.5pt;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             color: #333;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         .header h2 {
             margin: 0;
             text-transform: uppercase;
+            font-size: 14pt;
         }
         .info-table {
             width: 100%;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            font-size: 8pt;
         }
         .info-table td {
-            padding: 3px 0;
+            padding: 2px 0;
         }
         .data-table {
             width: 100%;
@@ -35,31 +37,31 @@
         }
         .data-table th, .data-table td {
             border: 1px solid #000;
-            padding: 8px 5px;
+            padding: 4px 3px;
             text-align: left;
             vertical-align: middle;
         }
         .data-table th {
             background-color: #f2f2f2;
             text-transform: uppercase;
-            font-size: 8pt;
+            font-size: 7.5pt;
         }
         .text-center { text-align: center !important; }
         .badge {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 2px 4px;
             border: 1px solid #666;
-            font-size: 8pt;
+            font-size: 7pt;
             text-transform: uppercase;
             white-space: nowrap;
-            border-radius: 4px;
+            border-radius: 3px;
             font-weight: bold;
-            min-width: 80px;
+            min-width: 60px;
         }
         @media print {
             @page {
                 size: A4 landscape;
-                margin: 1cm;
+                margin: 0.5cm;
             }
             .no-print { display: none; }
         }
@@ -122,9 +124,18 @@
         </thead>
         <tbody>
             @forelse($checkins as $index => $c)
-                <tr @if($c->status == 'absent') style="background-color: #fff0f0;" @elseif($c->status == 'break') style="background-color: #f0f7ff;" @endif>
+                @if($c->status == 'holiday')
+                    <tr>
+                        <td colspan="9" class="text-center" style="padding: 30px; background-color: #fff5f5;">
+                            <h3 style="margin: 0; color: #dc3545;">HARI LIBUR</h3>
+                            <p style="margin: 5px 0 0 0; font-size: 11pt;">{{ $c->holiday_name }}</p>
+                        </td>
+                    </tr>
+                    @break
+                @endif
+                <tr @if($c->status == 'absent') style="background-color: #fff0f0;" @elseif($c->status == 'break') style="background-color: #fff9db;" @endif>
                     <td class="text-center">{{ $index + 1 }}</td>
-                    <td>
+                    <td style="font-size: 7.5pt; white-space: nowrap;">
                         {{ $c->schedule ? substr($c->schedule->start_time, 0, 5) . ' - ' . substr($c->schedule->end_time, 0, 5) : '-' }}
                     </td>
                     <td>
@@ -132,15 +143,19 @@
                             <b>{{ $c->notes }}</b>
                         @else
                             <b>{{ $c->schedule?->subject?->name ?? 'Mata Pelajaran Tidak Ditemukan' }}</b><br>
-                            <small>{{ $c->schedule?->unit?->name ?? '-' }}</small>
+                            <small style="font-size: 7pt; color: #666;">{{ $c->schedule?->unit?->name ?? '-' }}</small>
                         @endif
                     </td>
-                    <td>
+                    <td class="@if($c->status == 'break') text-center @endif" style="font-size: 7.5pt;">
                         @if($c->checkin_time)
                             {{ $c->checkin_time->format('H:i:s') }}<br>
-                            <small>{{ $c->checkin_time->translatedFormat('d M Y') }}</small>
+                            <small style="font-size: 6.5pt;">{{ $c->checkin_time->translatedFormat('d M Y') }}</small>
+                        @elseif($c->status == 'break')
+                            -
+                        @elseif($c->status == 'future')
+                            <span style="color: #6c757d; font-size: 7pt;">BELUM MULAI</span>
                         @else
-                            <span style="color: #dc3545; font-weight: bold;">BELUM CHECK-IN</span>
+                            <span style="color: #dc3545; font-size: 7pt;">BELUM CHECK-IN</span>
                         @endif
                     </td>
                     <td>{{ $c->schedule?->schoolClass?->name ?? '-' }}</td>
@@ -158,7 +173,7 @@
                     </td>
                     <td class="text-center">
                         @if($c->photo)
-                            <img src="{{ asset('storage/' . $c->photo) }}" style="max-width: 60px; max-height: 60px; border: 1px solid #ddd;">
+                            <img src="{{ asset('storage/' . $c->photo) }}" style="max-width: 50px; max-height: 50px; border: 1px solid #ddd;">
                         @else
                             -
                         @endif
@@ -169,8 +184,9 @@
                             @elseif($c->status == 'break') border-color: #0d6efd; color: #084298; background-color: #cfe2ff;
                             @elseif($c->status == 'ontime' || $c->status == 'present') border-color: #198754; color: #0f5132; background-color: #d1e7dd;
                             @elseif($c->status == 'late') border-color: #fd7e14; color: #664d03; background-color: #fff3cd;
+                            @elseif($c->status == 'future') border-color: #6c757d; color: #6c757d; background-color: #f8f9fa;
                             @endif">
-                            @if($c->status == 'ontime' || $c->status == 'present') HADIR @elseif($c->status == 'late') TERLAMBAT @elseif($c->status == 'absent') TIDAK HADIR @elseif($c->status == 'break') ISTIRAHAT @else {{ strtoupper($c->status) }} @endif
+                            @if($c->status == 'ontime' || $c->status == 'present') HADIR @elseif($c->status == 'late') TERLAMBAT @elseif($c->status == 'absent') TIDAK HADIR @elseif($c->status == 'break') ISTIRAHAT @elseif($c->status == 'future') BELUM MULAI @else {{ strtoupper($c->status) }} @endif
                         </div>
                     </td>
                     <td>
@@ -189,9 +205,9 @@
         </tbody>
     </table>
 
-    <div style="margin-top: 50px; text-align: right;">
+    <div style="margin-top: 15px; text-align: right; font-size: 8pt;">
         <div style="display: inline-block; text-align: center;">
-            Dicetak pada: {{ now()->translatedFormat('d F Y H:i') }}<br><br><br><br>
+            Dicetak pada: {{ now()->translatedFormat('d F Y H:i') }}<br><br><br>
             ( ............................................ )
         </div>
     </div>

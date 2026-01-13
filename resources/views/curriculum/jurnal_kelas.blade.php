@@ -223,7 +223,16 @@
                         </thead>
                         <tbody>
                             @forelse($checkins as $index => $c)
-                                <tr class="checkin-row @if($c->status == 'absent') bg-light @elseif($c->status == 'break') bg-light-info @endif">
+                                @if($c->status == 'holiday')
+                                    <tr class="bg-light">
+                                        <td colspan="9" class="text-center py-5">
+                                            <div class="display-6 text-danger fw-bold mb-2"><i class="bi bi-calendar-x"></i> HARI LIBUR</div>
+                                            <h5 class="text-muted">{{ $c->holiday_name }}</h5>
+                                        </td>
+                                    </tr>
+                                    @break
+                                @endif
+                                <tr class="checkin-row @if($c->status == 'absent') bg-light @elseif($c->status == 'break') bg-warning-subtle @endif">
                                     <td class="ps-4 text-muted small">{{ $index + 1 }}</td>
                                     {{-- Kolom 2: Jam Jadwal --}}
                                     <td>
@@ -241,14 +250,16 @@
                                         @endif
                                     </td>
                                     {{-- Kolom 4: Waktu Check-in --}}
-                                    <td>
+                                    <td class="@if($c->status == 'break') text-center @endif">
                                         @if($c->checkin_time)
                                             <div class="fw-bold">{{ $c->checkin_time->format('H:i:s') }}</div>
-                                            <div class="text-muted small" style="font-size: 0.7rem;">{{ $c->checkin_time->translatedFormat('d M Y') }}</div>
+                                            <div class="text-muted small" style="font-size: 0.70rem;">{{ $c->checkin_time->translatedFormat('d M Y') }}</div>
+                                        @elseif($c->status == 'break')
+                                            <span class="text-muted small">-</span>
                                         @elseif($c->status == 'future')
-                                            <span class="text-muted small fw-bold"><i class="bi bi-hourglass-split"></i> Belum Waktunya</span>
+                                            <span class="text-muted fw-bold" style="font-size: 0.65rem;"><i class="bi bi-hourglass-split"></i> Belum Mulai</span>
                                         @else
-                                            <span class="text-danger small fw-bold"><i class="bi bi-x-circle"></i> Belum Check-in</span>
+                                            <span class="text-danger fw-bold" style="font-size: 0.65rem;"><i class="bi bi-x-circle"></i> Belum Check-in</span>
                                         @endif
                                     </td>
                                     {{-- Kolom 5: Kelas --}}
@@ -291,7 +302,7 @@
                                             </span>
                                         @elseif($c->status == 'future')
                                             <span class="status-badge bg-light text-muted border">
-                                                <i class="bi bi-hourglass"></i> BELUM DIMULAI
+                                                <i class="bi bi-hourglass"></i> BELUM MULAI
                                             </span>
                                         @elseif($c->status == 'break')
                                             <span class="status-badge bg-info-subtle text-info">
