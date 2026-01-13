@@ -10,95 +10,384 @@
     #inventoryTable {
         min-width: 1300px;
     }
+    .stats-card {
+        background: #ffffff;
+        border: 1px solid #eaedf3;
+        border-radius: 12px;
+        padding: 1.25rem;
+        position: relative;
+        transition: all 0.25s ease-in-out;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .stats-card:hover {
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        border-color: #d1d9e6;
+        transform: translateY(-3px);
+    }
+    .stats-card .stats-label {
+        color: #8a94a6;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 4px;
+    }
+    .stats-card .stats-value {
+        color: #1e293b;
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+    .stats-card .stats-sub {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+    .stats-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .stats-icon-box i {
+        font-size: 1.15rem;
+    }
+    /* Colors */
+    .bg-soft-primary { background: #eef2ff; color: #4f46e5; }
+    .bg-soft-success { background: #ecfdf5; color: #10b981; }
+    .bg-soft-warning { background: #fffbeb; color: #f59e0b; }
+    .bg-soft-danger { background: #fef2f2; color: #ef4444; }
+
+    .progress-slim {
+        height: 5px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        margin-top: 12px;
+        overflow: hidden;
+    }
+    
+    .nav-tabs-custom {
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .nav-tabs-custom .nav-link {
+        border: none;
+        padding: 10px 16px;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.875rem;
+        position: relative;
+        background: transparent;
+        transition: color 0.2s ease;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+    }
+    .nav-tabs-custom .nav-link:hover {
+        color: #1e293b;
+    }
+    .nav-tabs-custom .nav-link.active {
+        color: #3b82f6;
+        background: transparent;
+        border-bottom: 2px solid #3b82f6;
+    }
+
+    .card-search-filter {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+    .form-filter-select {
+        border: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        font-size: 0.85rem;
+        padding: 0.45rem 0.75rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    .form-filter-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Grid View Style */
+    .inventory-grid-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        transition: all 0.2s ease;
+        height: 100%;
+        overflow: hidden;
+    }
+    .inventory-grid-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+        border-color: #cbd5e1;
+    }
+    .grid-img-container {
+        position: relative;
+        padding-top: 75%;
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+        overflow: hidden;
+    }
+    .grid-img-container img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    .inventory-grid-card:hover .grid-img-container img {
+        transform: scale(1.1);
+    }
+    .grid-badge-condition {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .grid-content {
+        padding: 0.75rem;
+    }
+    .grid-item-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.85rem;
+        line-height: 1.3;
+        margin-bottom: 4px;
+        height: 2.3rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .grid-item-code {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.7rem;
+        color: #3b82f6;
+        font-weight: 600;
+    }
+    .grid-footer {
+        padding: 0.5rem 0.75rem;
+        background: #fafafa;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .btn-view-toggle {
+        padding: 0.35rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+    }
+    .btn-view-toggle.active {
+        background: #3b82f6;
+        color: #fff;
+        border-color: #3b82f6;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    }
 </style>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 text-gray-800">Daftar Inventaris</h1>
+        <div>
+            <h1 class="h3 mb-1 text-gray-800 fw-bold">Manajemen Inventaris</h1>
+            <p class="text-muted small mb-0">Kelola dan pantau seluruh aset sekolah secara terpusat.</p>
+        </div>
         <div class="d-flex gap-2">
-            <a href="{{ route('sarpras.inventory.disposed') }}" class="btn btn-outline-danger">
+            <a href="{{ route('sarpras.inventory.disposed') }}" class="btn btn-outline-danger btn-sm border-0 shadow-sm">
                 <i class="bi bi-trash-fill"></i> Arsip Penghapusan
             </a>
-            <a href="{{ route('sarpras.inventory.print', request()->query()) }}" target="_blank" class="btn btn-outline-secondary">
+            <div class="vr mx-1"></div>
+            <a href="{{ route('sarpras.inventory.print', request()->query()) }}" target="_blank" class="btn btn-white btn-sm shadow-sm">
                 <i class="bi bi-printer"></i> Cetak Data
             </a>
-            <button type="button" class="btn btn-outline-dark" id="btnPrintBarcodes">
-                <i class="bi bi-qr-code"></i> Cetak Barcode Terpilih
+            <button type="button" class="btn btn-white btn-sm shadow-sm" id="btnPrintBarcodes">
+                <i class="bi bi-qr-code"></i> Barcode
             </button>
             @if(empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id))
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importExcelModal">
-                <i class="bi bi-file-earmark-excel"></i> Import Excel
+            <button type="button" class="btn btn-success btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#importExcelModal">
+                <i class="bi bi-file-earmark-excel"></i> Import
             </button>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+            <button type="button" class="btn btn-primary btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
                 <i class="bi bi-plus-lg"></i> Tambah Barang
             </button>
             @endif
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <form method="GET" action="{{ route('sarpras.inventory.index') }}" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Unit Pendidikan</label>
-                    <select name="unit_id" class="form-select" onchange="this.form.submit()">
-                        @if($units->count() > 1 && (Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur'))
-                            <option value="">Semua Unit</option>
-                        @endif
-                        @foreach($units as $unit)
-                            <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Tahun Pelajaran</label>
-                    <select name="academic_year_id" class="form-select" onchange="this.form.submit()">
-                        <option value="">Semua Tahun</option>
-                        @foreach($academicYears as $year)
-                           <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>{{ $year->name }} {{ $year->status == 'active' ? '(Aktif)' : '' }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Kategori</label>
-                    <select name="category_id" class="form-select" onchange="this.form.submit()">
-                        <option value="">Semua Kategori</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Ruangan</label>
-                    <select name="room_id" class="form-select" onchange="this.form.submit()">
-                        <option value="">Semua Ruangan</option>
-                        @foreach($rooms as $room)
-                            <option value="{{ $room->id }}" {{ request('room_id') == $room->id ? 'selected' : '' }}>{{ $room->name }} ({{ $room->unit->name }})</option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold">Kondisi</label>
-                    <select name="condition" class="form-select" onchange="this.form.submit()">
-                        <option value="">Semua Kondisi</option>
-                        <option value="Good" {{ request('condition') == 'Good' ? 'selected' : '' }}>Baik</option>
-                        <option value="Repairing" {{ request('condition') == 'Repairing' ? 'selected' : '' }}>Perbaikan</option>
-                        <option value="Damaged" {{ request('condition') == 'Damaged' ? 'selected' : '' }}>Rusak Ringan</option>
-                        <option value="Broken" {{ request('condition') == 'Broken' ? 'selected' : '' }}>Rusak Berat</option>
-                    </select>
-                </div>
-                <div class="col-md-7">
-                    <label class="form-label small fw-bold">Cari Barang / Kode</label>
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="Cari nama barang atau kode inventaris...">
-                        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
+    <!-- Stats Overview -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <div class="stats-label text-primary">Total Aset</div>
+                        <div class="stats-value text-dark">{{ number_format($stats['total']) }}</div>
+                    </div>
+                    <div class="stats-icon-box bg-soft-primary">
+                        <i class="bi bi-box-seam"></i>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <a href="{{ route('sarpras.inventory.index') }}" class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-clockwise"></i> Reset</a>
+                <div class="stats-sub">Seluruh barang di unit saat ini.</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <div class="stats-label text-success">Estimasi Nilai</div>
+                        <div class="stats-value text-dark">Rp {{ number_format($totalValue, 0, ',', '.') }}</div>
+                    </div>
+                    <div class="stats-icon-box bg-soft-success">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
                 </div>
-            </form>
+                <div class="stats-sub">Total pengeluaran aset.</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stats-label text-warning">Kondisi Aman</div>
+                        <div class="stats-value text-dark">{{ number_format($stats['good']) }} <small class="text-muted fw-normal" style="font-size: 0.8rem">Item</small></div>
+                    </div>
+                    <div class="stats-icon-box bg-soft-warning">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                </div>
+                <div class="progress-slim">
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $stats['total'] > 0 ? ($stats['good'] / $stats['total'] * 100) : 0 }}%"></div>
+                </div>
+                <div class="stats-sub mt-2">Status inventaris kondisi baik.</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="stats-card h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                        <div class="stats-label text-danger">Perhatian</div>
+                        <div class="stats-value text-dark">{{ number_format($needsAttention) }}</div>
+                    </div>
+                    <div class="stats-icon-box bg-soft-danger">
+                        <i class="bi bi-exclamation-octagon"></i>
+                    </div>
+                </div>
+                <div class="stats-sub">Aset rusak atau perlu perbaikan.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segment Tabs -->
+    <div class="mb-4">
+        <ul class="nav nav-tabs nav-tabs-custom mb-4" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link {{ empty(request('condition')) ? 'active' : '' }}" href="{{ route('sarpras.inventory.index', request()->except('condition')) }}">
+                    Semua Barang
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request('condition') == 'urgent' ? 'active' : '' }}" 
+                   href="{{ route('sarpras.inventory.index', array_merge(request()->query(), ['condition' => 'urgent'])) }}">
+                    Perlu Perbaikan
+                </a>
+            </li>
+        </ul>
+
+        <div class="card card-search-filter border-0 shadow-sm">
+            <div class="card-body p-3">
+                <form method="GET" action="{{ route('sarpras.inventory.index') }}" class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary mb-1">Unit</label>
+                        <select name="unit_id" class="form-select form-filter-select" onchange="this.form.submit()">
+                            @if($units->count() > 1 && (Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur'))
+                                <option value="">Semua Unit</option>
+                            @endif
+                            @foreach($units as $unit)
+                                <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary mb-1">Tahun Pelajaran</label>
+                        <select name="academic_year_id" class="form-select form-filter-select" onchange="this.form.submit()">
+                            <option value="">Semua Tahun</option>
+                            @foreach($academicYears as $year)
+                               <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>
+                                   {{ $year->name }} {{ $year->status == 'active' ? '(Aktif)' : '' }}
+                               </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-bold text-secondary mb-1">Kategori</label>
+                        <select name="category_id" class="form-select form-filter-select" onchange="this.form.submit()">
+                            <option value="">Semua</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary mb-1">Lokasi / Ruang</label>
+                        <select name="room_id" class="form-select form-filter-select" onchange="this.form.submit()">
+                            <option value="">Semua Ruangan</option>
+                            @foreach($rooms as $room)
+                                <option value="{{ $room->id }}" {{ request('room_id') == $room->id ? 'selected' : '' }}>{{ $room->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary mb-1">Cari Nama / Kode</label>
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control form-filter-select" value="{{ request('search') }}" placeholder="Cari aset...">
+                            <button class="btn btn-primary btn-sm px-2" type="submit" style="border-radius: 0 8px 8px 0;"><i class="bi bi-search"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                         <div class="row g-2 align-items-end">
+                             <div class="col-5">
+                                 <label class="form-label small fw-bold text-secondary mb-1">Items</label>
+                                 <select name="per_page" class="form-select form-filter-select" onchange="this.form.submit()">
+                                    <option value="20" {{ $perPage == 20 ? 'selected' : '' }}>20</option>
+                                    <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100</option>
+                                </select>
+                             </div>
+                             <div class="col-7">
+                                <label class="form-label d-block small fw-bold text-secondary mb-1">Tampilan</label>
+                                <div class="btn-group shadow-sm w-100" role="group">
+                                    <a href="{{ route('sarpras.inventory.index', array_merge(request()->query(), ['view' => 'table'])) }}" 
+                                       class="btn btn-view-toggle {{ $view == 'table' ? 'active' : '' }}" title="Table View">
+                                        <i class="bi bi-list-task"></i>
+                                    </a>
+                                    <a href="{{ route('sarpras.inventory.index', array_merge(request()->query(), ['view' => 'grid'])) }}" 
+                                       class="btn btn-view-toggle {{ $view == 'grid' ? 'active' : '' }}" title="Grid View">
+                                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                                    </a>
+                                </div>
+                                <input type="hidden" name="view" value="{{ $view }}">
+                             </div>
+                         </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -129,13 +418,14 @@
         </div>
     @endif
 
-    <div class="card shadow mb-4">
+    @if($view == 'table')
+    <div class="card shadow-sm mb-4 border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" width="100%" cellspacing="0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th width="30" class="text-center">
+                    <thead class="bg-light text-secondary">
+                        <tr style="font-size: 0.85rem;">
+                            <th width="30" class="text-center px-3">
                                 <input type="checkbox" id="checkAll" class="form-check-input">
                             </th>
                             <th width="50" class="text-center">No</th>
@@ -143,9 +433,9 @@
                             <th>Kategori</th>
                             <th>Lokasi</th>
                             <th>Kondisi</th>
-                            <th class="text-end">Harga / Sumber</th>
+                            <th class="text-end">Harga</th>
                             <th>Kode Item</th>
-                            <th width="100" class="text-center">Aksi</th>
+                            <th width="100" class="text-center pe-3">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -405,9 +695,87 @@
                     </tbody>
                 </table>
             </div>
-            <div class="px-4 py-3 bg-light border-top">
-                {{ $inventories->appends(request()->query())->links() }}
+        </div>
+    </div>
+    @else
+    <!-- Grid View -->
+    <div class="row g-3 mb-4">
+        @forelse($inventories as $item)
+        @php
+            $conditions = [
+                'Good' => ['label' => 'Baik', 'color' => 'success'],
+                'Repairing' => ['label' => 'Perbaikan', 'color' => 'info'],
+                'Damaged' => ['label' => 'Rusak', 'color' => 'warning'],
+                'Broken' => ['label' => 'Rusak Berat', 'color' => 'danger'],
+            ];
+            $cond = $conditions[$item->condition] ?? ['label' => $item->condition, 'color' => 'secondary'];
+        @endphp
+        <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 col-6">
+            <div class="inventory-grid-card h-100 d-flex flex-column">
+                <div class="grid-img-container">
+                    <span class="grid-badge-condition bg-{{ $cond['color'] }}">{{ $cond['label'] }}</span>
+                    @if($item->photo)
+                        <img src="{{ asset('storage/' . $item->photo) }}" alt="{{ $item->name }}" loading="lazy">
+                    @else
+                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-muted" style="background: #f8fafc;">
+                            <i class="bi bi-image display-6 mb-2 opacity-50"></i>
+                            <span class="small fw-bold">NO PHOTO</span>
+                        </div>
+                    @endif
+                </div>
+                <div class="grid-content flex-grow-1">
+                    <div class="grid-item-code mb-1">{{ $item->code }}</div>
+                    <div class="grid-item-name" title="{{ $item->name }}">{{ $item->name }}</div>
+                    
+                    <div class="d-flex align-items-center justify-content-between mt-3 px-1">
+                        <div>
+                            <div class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Lokasi</div>
+                            <div class="fw-bold text-dark small">{{ $item->room->name ?? '-' }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">Harga</div>
+                            <div class="fw-bold text-primary small">Rp{{ number_format($item->price, 0, ',', '.') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid-footer">
+                    <div class="form-check m-0">
+                        <input type="checkbox" class="form-check-input item-checkbox" value="{{ $item->id }}">
+                    </div>
+                    <div class="btn-group shadow-sm border" style="border-radius: 6px; overflow: hidden;">
+                        <button type="button" class="btn btn-xs btn-white text-info px-2 border-end" onclick="showHistory('{{ $item->id }}')" title="Histori">
+                            <i class="bi bi-clock-history"></i>
+                        </button>
+                        @if(Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur' || (empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id)))
+                        <button type="button" class="btn btn-xs btn-white text-primary px-2 border-end" data-bs-toggle="modal" data-bs-target="#editInventory{{ $item->id }}" title="Edit">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        @endif
+                        <button type="button" class="btn btn-xs btn-white text-danger px-2" data-bs-toggle="modal" data-bs-target="#reportItem{{ $item->id }}" title="Laporan">
+                            <i class="bi bi-megaphone"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
+        </div>
+        @empty
+        <div class="col-12 py-5 text-center">
+            <div class="bg-light rounded-4 py-5 border">
+                <i class="bi bi-box-seam display-1 text-muted opacity-25 mb-3"></i>
+                <h5 class="text-muted">Oops! Tidak ada barang ditemukan.</h5>
+                <p class="text-muted small">Coba ubah filter atau pencarian Anda.</p>
+            </div>
+        </div>
+        @endforelse
+    </div>
+    @endif
+
+    <div class="mb-5 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <div class="small text-muted fw-500">
+            Menampilkan <span class="text-dark fw-bold">{{ $inventories->firstItem() ?? 0 }}</span> - <span class="text-dark fw-bold">{{ $inventories->lastItem() ?? 0 }}</span> dari <span class="text-dark fw-bold">{{ $inventories->total() }}</span> aset
+        </div>
+        <div>
+            {{ $inventories->appends(request()->query())->links() }}
         </div>
     </div>
 </div>

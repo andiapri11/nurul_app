@@ -598,6 +598,72 @@ class SarprasController extends Controller
         return back()->with('success', 'Ruangan berhasil dihapus.');
     }
 
+    // ================== HELPERS ==================
+    private function compressImage($file, $path, $maxWidth = 800, $maxHeight = 800, $quality = 75)
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $filename = uniqid() . '.' . $extension;
+        $fullPath = storage_path('app/public/' . $path . '/' . $filename);
+        
+        if (!file_exists(storage_path('app/public/' . $path))) {
+            mkdir(storage_path('app/public/' . $path), 0755, true);
+        }
+
+        list($width, $height) = getimagesize($file->getRealPath());
+        $ratio = $width / $height;
+
+        if ($width > $maxWidth || $height > $maxHeight) {
+            if ($maxWidth / $maxHeight > $ratio) {
+                $maxWidth = $maxHeight * $ratio;
+            } else {
+                $maxHeight = $maxWidth / $ratio;
+            }
+        } else {
+            $maxWidth = $width;
+            $maxHeight = $height;
+        }
+
+        $src = null;
+        if ($extension == 'jpg' || $extension == 'jpeg') {
+            $src = imagecreatefromjpeg($file->getRealPath());
+        } elseif ($extension == 'png') {
+            $src = imagecreatefrompng($file->getRealPath());
+        } elseif ($extension == 'gif') {
+            $src = imagecreatefromgif($file->getRealPath());
+        } elseif ($extension == 'webp') {
+            $src = imagecreatefromwebp($file->getRealPath());
+        }
+
+        if (!$src) return $file->store($path, 'public');
+
+        $dst = imagecreatetruecolor($maxWidth, $maxHeight);
+        
+        // Handle transparency for PNG/WebP
+        if ($extension == 'png' || $extension == 'webp') {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 255, 255, 255, 127);
+            imagefilledrectangle($dst, 0, 0, $maxWidth, $maxHeight, $transparent);
+        }
+
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
+
+        if ($extension == 'jpg' || $extension == 'jpeg') {
+            imagejpeg($dst, $fullPath, $quality);
+        } elseif ($extension == 'png') {
+            imagepng($dst, $fullPath, 9 - ($quality / 10)); // PNG quality is 0-9
+        } elseif ($extension == 'gif') {
+            imagegif($dst, $fullPath);
+        } elseif ($extension == 'webp') {
+            imagewebp($dst, $fullPath, $quality);
+        }
+
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        return $path . '/' . $filename;
+    }
+
     // ================== INVENTORY ==================
     public function inventory(Request $request)
     {
@@ -647,14 +713,42 @@ class SarprasController extends Controller
         $query->where('room_id', $request->room_id);
     }
     if ($request->filled('condition')) {
-        $query->where('condition', $request->condition);
+        $condition = $request->condition;
+        if ($condition === 'urgent') {
+            $query->whereIn('condition', ['Repairing', 'Damaged', 'Broken']);
+        } elseif (is_array($condition)) {
+            $query->whereIn('condition', $condition);
+        } else {
+            $query->where('condition', $condition);
+        }
     }
     if ($request->filled('search')) {
         $query->where('name', 'like', '%' . $request->search . '%')
               ->orWhere('code', 'like', '%' . $request->search . '%');
     }
 
-    $inventories = $query->paginate(20);
+    // Generate Statistics for the Header (based on current filtered query)
+    $statsQuery = clone $query;
+    $totalItems = $statsQuery->count();
+    $totalValue = $statsQuery->sum('price');
+    
+    $stats = [
+        'total' => $totalItems,
+        'good' => (clone $query)->where('condition', 'Good')->count(),
+        'repair' => (clone $query)->where('condition', 'Repairing')->count(),
+        'damaged' => (clone $query)->where('condition', 'Damaged')->count(),
+        'broken' => (clone $query)->where('condition', 'Broken')->count(),
+    ];
+    $needsAttention = $stats['repair'] + $stats['damaged'] + $stats['broken'];
+
+    // Pagination & View Settings
+    $perPage = $request->get('per_page', 20);
+    if (!in_array($perPage, [20, 50, 100])) $perPage = 20;
+    
+    $view = $request->get('view', 'table');
+    if (!in_array($view, ['table', 'grid'])) $view = 'table';
+
+    $inventories = $query->paginate($perPage);
     $categories = InventoryCategory::all();
     
     // Filter rooms dropdown for the main filter (flexible)
@@ -690,7 +784,11 @@ class SarprasController extends Controller
     // Generate a suggested code for the first row in "Input Banyak"
     $nextCode = $this->generateNextCode();
 
-    return view('sarpras.inventory.index', compact('inventories', 'categories', 'rooms', 'nextCode', 'units', 'academicYears', 'activeRooms', 'activeYear'));
+    return view('sarpras.inventory.index', compact(
+        'inventories', 'categories', 'rooms', 'nextCode', 'units', 
+        'academicYears', 'activeRooms', 'activeYear', 'stats', 'totalValue', 'needsAttention',
+        'perPage', 'view'
+    ));
 }
 
     public function printInventory(Request $request)
@@ -840,8 +938,7 @@ class SarprasController extends Controller
                     }
 
                     if ($request->hasFile("items.$key.photo")) {
-                        $path = $request->file("items.$key.photo")->store('inventory-photos', 'public');
-                        $item['photo'] = $path;
+                        $item['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
                     }
                     $inv = Inventory::create($item);
                     $this->logAction($inv->id, 'Created', 'Barang ditambahkan via Input Banyak.');
@@ -875,7 +972,7 @@ class SarprasController extends Controller
         }
 
         if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('inventory-photos', 'public');
+            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos');
         }
         
         $data['is_grant'] = $request->has('is_grant');
@@ -919,7 +1016,7 @@ class SarprasController extends Controller
             if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
             }
-            $data['photo'] = $request->file('photo')->store('inventory-photos', 'public');
+            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos');
         }
 
         $changes = [];
