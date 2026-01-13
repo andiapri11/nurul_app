@@ -112,13 +112,14 @@ class CurriculumController extends Controller
         
         $classes = $classesQuery->orderBy('name')->get();
 
-        // Check for Holiday in Academic Calendar
-        $holiday = \App\Models\AcademicCalendar::where('date', $date)
-            ->when($unitId, function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            })
-            ->where('is_holiday', true)
-            ->first();
+        // Check for Holiday (Only if a specific unit is selected)
+        $holiday = null;
+        if ($unitId) {
+            $holiday = \App\Models\AcademicCalendar::where('date', $date)
+                ->where('unit_id', $unitId)
+                ->where('is_holiday', true)
+                ->first();
+        }
 
         // Prepare data for the view
         $journalEntries = collect();
@@ -194,8 +195,8 @@ class CurriculumController extends Controller
                     'notes' => $c?->notes,
                 ]);
                 }
-            }
-        // Scenario: ALL CLASSES -> SHOW ONLY EXISTING CHECKINS (original behavior)
+            } else {
+                // Scenario: ALL CLASSES -> SHOW ONLY EXISTING CHECKINS (original behavior)
             $checkinsQuery = \App\Models\ClassCheckin::with([
                 'schedule.subject', 
                 'schedule.schoolClass', 
@@ -241,6 +242,7 @@ class CurriculumController extends Controller
             'unitId', 'academicYearId', 'classId', 'date', 'checkins'
         ));
     }
+}
 
     public function jurnalKelasPrint(Request $request)
     {
@@ -257,13 +259,14 @@ class CurriculumController extends Controller
         $classId = $request->get('class_id');
         $date = $request->get('date', now()->toDateString());
 
-        // Check for Holiday
-        $holiday = \App\Models\AcademicCalendar::where('date', $date)
-            ->when($unitId, function($q) use ($unitId) {
-                $q->where('unit_id', $unitId);
-            })
-            ->where('is_holiday', true)
-            ->first();
+        // Check for Holiday (Only if a specific unit is selected)
+        $holiday = null;
+        if ($unitId) {
+            $holiday = \App\Models\AcademicCalendar::where('date', $date)
+                ->where('unit_id', $unitId)
+                ->where('is_holiday', true)
+                ->first();
+        }
 
         // Prepare data (Synchronized with jurnalKelas logic)
         $journalEntries = collect();
@@ -335,10 +338,10 @@ class CurriculumController extends Controller
                     'photo' => $c?->photo,
                     'notes' => $c?->notes,
                 ]);
-            }
-        } else {
-            $checkinsQuery = \App\Models\ClassCheckin::with([
-                'schedule.subject', 
+                }
+            } else {
+                $checkinsQuery = \App\Models\ClassCheckin::with([
+                    'schedule.subject', 
                 'schedule.schoolClass', 
                 'schedule.unit', 
                 'user'
