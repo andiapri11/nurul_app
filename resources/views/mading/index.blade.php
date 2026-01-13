@@ -214,20 +214,22 @@
             flex: 1;
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
+            grid-auto-rows: min-content;
+            gap: 1.25rem;
             padding-bottom: 2rem;
             align-content: start;
         }
         .schedule-grid::-webkit-scrollbar { display: none; }
 
         .class-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(15, 23, 42, 0.95);
             border: 1px solid var(--border-glass);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            height: fit-content;
+            height: auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         .class-header {
@@ -345,8 +347,8 @@
 
         /* Past State */
         .schedule-row.past-subject {
-            opacity: 0.3;
-            filter: grayscale(0.8);
+            opacity: 0.5;
+            filter: grayscale(0.5);
         }
 
         /* Break Row */
@@ -752,28 +754,30 @@
 
         // Auto Scroll Lists logic
         function autoScroll(elementClass, speed = 40) {
-            const container = document.querySelector(elementClass);
-            if (!container) return;
+            const containers = document.querySelectorAll(elementClass);
+            if (containers.length === 0) return;
             
-            let direction = 1;
-            let scrollAmount = 0;
-            const scrollStep = 0.5;
-            
-            setInterval(() => {
-                const maxScroll = container.scrollHeight - container.clientHeight;
-                if(maxScroll <= 0) return;
+            containers.forEach(container => {
+                let direction = 1;
+                let scrollAmount = 0;
+                const scrollStep = 0.5;
+                
+                setInterval(() => {
+                    const maxScroll = container.scrollHeight - container.clientHeight;
+                    if(maxScroll <= 0) return;
 
-                scrollAmount += (scrollStep * direction);
-                container.scrollTop = scrollAmount;
+                    scrollAmount += (scrollStep * direction);
+                    container.scrollTop = scrollAmount;
 
-                if (scrollAmount >= maxScroll) {
-                    setTimeout(() => direction = -1, 2000); // Pause at bottom
-                    scrollAmount = maxScroll;
-                } else if (scrollAmount <= 0) {
-                    setTimeout(() => direction = 1, 2000); // Pause at top
-                    scrollAmount = 0;
-                }
-            }, speed);
+                    if (scrollAmount >= maxScroll) {
+                        setTimeout(() => direction = -1, 3000); // Longer pause at bottom
+                        scrollAmount = maxScroll;
+                    } else if (scrollAmount <= 0) {
+                        setTimeout(() => direction = 1, 3000); // Longer pause at top
+                        scrollAmount = 0;
+                    }
+                }, speed);
+            });
         }
 
         // Initialize scrolls
