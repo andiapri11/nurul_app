@@ -233,6 +233,7 @@ class CurriculumController extends Controller
                 ]);
             }
         }
+    }
 
         // We pass journalEntries as 'checkins' to minimize view changes
         $checkins = $journalEntries;
@@ -242,7 +243,6 @@ class CurriculumController extends Controller
             'unitId', 'academicYearId', 'classId', 'date', 'checkins'
         ));
     }
-}
 
     public function jurnalKelasPrint(Request $request)
     {
