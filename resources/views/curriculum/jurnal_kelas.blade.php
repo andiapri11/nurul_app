@@ -359,6 +359,11 @@
                         </tbody>
                      </table>
                 </div>
+                
+                {{-- Pagination Links --}}
+                <div class="card-footer bg-white border-top-0 py-3 d-flex justify-content-center">
+                    {{ $checkins->links() }}
+                </div>
             </div>
         </div>
     </div>

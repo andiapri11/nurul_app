@@ -235,8 +235,14 @@ class CurriculumController extends Controller
         }
     }
 
-        // We pass journalEntries as 'checkins' to minimize view changes
-        $checkins = $journalEntries;
+        // Manual Pagination for Collection (Optimize performance by limiting rows to 30)
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 30;
+        $currentItems = $journalEntries->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        $checkins = new \Illuminate\Pagination\LengthAwarePaginator($currentItems, count($journalEntries), $perPage, $currentPage, [
+            'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+            'query' => $request->query(),
+        ]);
 
         return view('curriculum.jurnal_kelas', compact(
             'allowedUnits', 'academicYears', 'classes', 
