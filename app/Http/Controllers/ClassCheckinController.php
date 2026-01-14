@@ -510,8 +510,8 @@ class ClassCheckinController extends Controller
         $x = ($width - $size) / 2;
         $y = ($height - $size) / 2;
 
-        // 2. Create optimized canvas (600x600 is enough for checkin)
-        $targetSize = 600;
+        // 2. Create optimized canvas (300x300 is enough for checkin and ultra-efficient)
+        $targetSize = 300;
         $dst = imagecreatetruecolor($targetSize, $targetSize);
         if (!$dst) return null;
 

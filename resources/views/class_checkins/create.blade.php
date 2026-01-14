@@ -357,7 +357,7 @@
             
             const canvas = document.createElement('canvas');
             const size = Math.min(video.videoWidth, video.videoHeight);
-            const targetSize = 600; // Match server-side optimization
+            const targetSize = 300; // Ultra-efficient 300x300
             
             canvas.width = targetSize;
             canvas.height = targetSize;
