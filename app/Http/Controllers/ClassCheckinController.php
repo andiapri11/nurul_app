@@ -500,6 +500,10 @@ class ClassCheckinController extends Controller
 
     private function processImage($binaryData)
     {
+        // Increase memory for processing high-res photos
+        ini_set('memory_limit', '256M');
+
+        // Suppress errors and check if image creation from string works
         $src = @imagecreatefromstring($binaryData);
         if (!$src) return null;
 
@@ -514,20 +518,28 @@ class ClassCheckinController extends Controller
         // 2. Create optimized canvas (600x600 is enough for checkin)
         $targetSize = 600;
         $dst = imagecreatetruecolor($targetSize, $targetSize);
+        if (!$dst) return null;
 
         // 3. Resample & Crop
         imagecopyresampled($dst, $src, 0, 0, $x, $y, $targetSize, $targetSize, $size, $size);
 
-        // 4. Save as WebP with 80% quality
-        $filename = 'checkin_' . uniqid() . '.webp';
-        $fullPath = storage_path('app/public/checkins/' . $filename);
+        // 4. Save Image (Prefer WebP, fallback to JPEG)
+        $useWebp = function_exists('imagewebp');
+        $extension = $useWebp ? 'webp' : 'jpg';
+        $filename = 'checkin_' . uniqid() . '.' . $extension;
         
-        // Ensure directory exists
-        if (!file_exists(storage_path('app/public/checkins'))) {
-            mkdir(storage_path('app/public/checkins'), 0755, true);
+        // Ensure directory exists via Storage facade (more portable)
+        if (!\Illuminate\Support\Facades\Storage::disk('public')->exists('checkins')) {
+            \Illuminate\Support\Facades\Storage::disk('public')->makeDirectory('checkins');
         }
 
-        imagewebp($dst, $fullPath, 80);
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path('checkins/' . $filename);
+        
+        if ($useWebp) {
+            imagewebp($dst, $fullPath, 80);
+        } else {
+            imagejpeg($dst, $fullPath, 85);
+        }
 
         // 5. Cleanup memory
         imagedestroy($src);
