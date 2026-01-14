@@ -21,9 +21,15 @@ class ClassCheckinController extends Controller
         $query->with(['user', 'schedule.schoolClass', 'schedule.subject', 'schedule.schoolClass.unit', 'schedule.schoolClass.academicYear']);
 
         $user = auth()->user();
+        $isTeacherOnly = !in_array($user->role, ['administrator', 'staff']) && !$user->isKurikulum();
+
         // Allow Administrator, Staff, AND Kurikulum to see all. Others see only their own.
-        if (!in_array($user->role, ['administrator', 'staff']) && !$user->isKurikulum()) {
+        if ($isTeacherOnly) {
              $query->where('user_id', $user->id);
+             // Requirement: show only today's history by default for teacher
+             if (!$request->filled('date') && !$request->filled('start_date')) {
+                 $query->whereDate('checkin_time', now()->toDateString());
+             }
         }
 
         // Filter: Unit
@@ -71,7 +77,15 @@ class ClassCheckinController extends Controller
             }
         }
 
-        $checkins = $query->latest()->paginate(10);
+        $pageSize = $isTeacherOnly ? 30 : 10;
+        $checkins = $query->latest()->paginate($pageSize);
+
+        // Calculate Total Today for Stats Card
+        $todayQuery = \App\Models\ClassCheckin::whereDate('checkin_time', now()->toDateString());
+        if ($isTeacherOnly) {
+            $todayQuery->where('user_id', $user->id);
+        }
+        $totalTodayCount = $todayQuery->count();
         
         // Data for filters
         // Units Logic
@@ -127,7 +141,7 @@ class ClassCheckinController extends Controller
         $activeYear = \App\Models\AcademicYear::where('status', 'active')->first();
         $activeYearId = $activeYear ? $activeYear->id : null;
 
-        return view('class_checkins.index', compact('checkins', 'units', 'academicYears', 'classes', 'activeYearId'));
+        return view('class_checkins.index', compact('checkins', 'units', 'academicYears', 'classes', 'activeYearId', 'totalTodayCount'));
     }
 
     public function create()
@@ -360,25 +374,24 @@ class ClassCheckinController extends Controller
             ]);
         }
         
-        // Handle Base64 Photo (Camera)
+        // Handle Photo Processing (Optimized for Space: Square & WebP)
         if ($request->filled('photo_base64')) {
-            $image = $request->photo_base64;  // your base64 encoded
-            $image = str_replace('data:image/jpeg;base64,', '', $image);
-            $image = str_replace(' ', '+', $image);
+            $imageData = $request->photo_base64;
+            $imageData = str_replace('data:image/jpeg;base64,', '', $imageData);
+            $imageData = str_replace('data:image/png;base64,', '', $imageData);
+            $imageData = str_replace(' ', '+', $imageData);
+            $binaryData = base64_decode($imageData);
             
-            // Validate valid base64
-            if (base64_decode($image, true)) {
-                $imageName = 'checkin_'.time().'.jpg';
-                \Illuminate\Support\Facades\Storage::disk('public')->put('checkins/' . $imageName, base64_decode($image));
-                $checkin->photo = 'checkins/' . $imageName;
+            if ($binaryData) {
+                $path = $this->processImage($binaryData);
+                $checkin->photo = $path;
                 $checkin->save();
             }
-        } 
-        // Handle Fallback File Upload
-        elseif ($request->hasFile('photo')) {
-             $path = $request->file('photo')->store('checkins', 'public');
-             $checkin->photo = $path;
-             $checkin->save();
+        } elseif ($request->hasFile('photo')) {
+            $binaryData = file_get_contents($request->file('photo')->getRealPath());
+            $path = $this->processImage($binaryData);
+            $checkin->photo = $path;
+            $checkin->save();
         }
 
         return redirect()->route('class-checkins.index')->with('success', 'Berhasil Check-in kelas!');
@@ -483,5 +496,43 @@ class ClassCheckinController extends Controller
         ];
 
         return view('class_checkins.pdf', compact('checkins', 'filterSummary'));
+    }
+
+    private function processImage($binaryData)
+    {
+        $src = @imagecreatefromstring($binaryData);
+        if (!$src) return null;
+
+        $width = imagesx($src);
+        $height = imagesy($src);
+
+        // 1. Calculate Square Crop
+        $size = min($width, $height);
+        $x = ($width - $size) / 2;
+        $y = ($height - $size) / 2;
+
+        // 2. Create optimized canvas (600x600 is enough for checkin)
+        $targetSize = 600;
+        $dst = imagecreatetruecolor($targetSize, $targetSize);
+
+        // 3. Resample & Crop
+        imagecopyresampled($dst, $src, 0, 0, $x, $y, $targetSize, $targetSize, $size, $size);
+
+        // 4. Save as WebP with 80% quality
+        $filename = 'checkin_' . uniqid() . '.webp';
+        $fullPath = storage_path('app/public/checkins/' . $filename);
+        
+        // Ensure directory exists
+        if (!file_exists(storage_path('app/public/checkins'))) {
+            mkdir(storage_path('app/public/checkins'), 0755, true);
+        }
+
+        imagewebp($dst, $fullPath, 80);
+
+        // 5. Cleanup memory
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        return 'checkins/' . $filename;
     }
 }

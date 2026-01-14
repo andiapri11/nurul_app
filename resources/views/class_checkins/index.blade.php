@@ -29,7 +29,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold text-uppercase mb-1">Total Hari Ini</div>
-                        <div class="h3 fw-bold mb-0 text-primary">{{ $checkins->count() }}</div>
+                        <div class="h3 fw-bold mb-0 text-primary">{{ $totalTodayCount }}</div>
                     </div>
                     <div class="stats-icon bg-soft-primary p-3 rounded-3">
                         <i class="bi bi-calendar-check fs-4"></i>
@@ -83,11 +83,8 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small fw-bold text-muted">Rentang Tanggal</label>
-                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                        <input type="date" name="start_date" class="form-control border-0" value="{{ request('start_date') }}">
-                        <input type="date" name="end_date" class="form-control border-0" value="{{ request('end_date') }}">
-                    </div>
+                    <label class="form-label small fw-bold text-muted">Tanggal</label>
+                    <input type="date" name="date" class="form-control border-0 shadow-sm rounded-3" value="{{ request('date', (auth()->user()->role != 'administrator' && auth()->user()->role != 'staff' && !auth()->user()->isKurikulum()) ? now()->toDateString() : '') }}">
                 </div>
                 <div class="col-md-1 d-flex gap-2">
                     <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center flex-grow-1 py-2 shadow-sm rounded-3">
