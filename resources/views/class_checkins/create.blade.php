@@ -219,17 +219,21 @@
                     <div class="mb-3">
                         <label class="form-label">Foto Bukti</label>
                         
-                        <!-- Camera Preview -->
+                        <!-- Camera Preview (Square) -->
                         <div id="camera_container" class="mb-2 text-center" style="display:none;">
-                            <video id="camera_preview" width="100%" style="border-radius: 8px;" autoplay playsinline></video>
-                            <button type="button" class="btn btn-warning mt-2 w-100" id="take_photo_btn">
-                                <i class="bi bi-camera-fill"></i> Ambil Foto
+                            <div class="position-relative mx-auto" style="max-width: 400px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; background: #000;">
+                                <video id="camera_preview" style="width: 100%; height: 100%; object-fit: cover;" autoplay playsinline></video>
+                            </div>
+                            <button type="button" class="btn btn-warning mt-2 w-100 py-2 fw-bold" id="take_photo_btn">
+                                <i class="bi bi-camera-fill me-2"></i> Ambil Foto
                             </button>
                         </div>
 
-                        <!-- Captured Result -->
+                        <!-- Captured Result (Square) -->
                         <div id="result_container" class="mb-2 text-center" style="display:none;">
-                            <img id="saved_photo" src="" class="img-fluid rounded mb-2">
+                            <div class="mx-auto" style="max-width: 400px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px;">
+                                <img id="saved_photo" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
                             <button type="button" class="btn btn-secondary btn-sm" id="retake_photo_btn">
                                 <i class="bi bi-arrow-counterclockwise"></i> Foto Ulang
                             </button>
@@ -352,14 +356,24 @@
             if (!stream) return;
             
             const canvas = document.createElement('canvas');
-            // Match the video dimensions
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const size = Math.min(video.videoWidth, video.videoHeight);
+            const targetSize = 600; // Match server-side optimization
             
-            // Convert to Base64
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8); // 80% quality
+            canvas.width = targetSize;
+            canvas.height = targetSize;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Calculate center-crop coordinates
+            const xOffset = (video.videoWidth - size) / 2;
+            const yOffset = (video.videoHeight - size) / 2;
+            
+            // Draw cropped square to canvas
+            ctx.drawImage(video, xOffset, yOffset, size, size, 0, 0, targetSize, targetSize);
+            
+            // Convert to Base64 (WebP if possible, fallback to JPEG)
+            const type = video.canPlayType('image/webp') ? 'image/webp' : 'image/jpeg';
+            const dataUrl = canvas.toDataURL(type, 0.8);
             
             // Show Result
             savedPhoto.src = dataUrl;

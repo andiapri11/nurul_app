@@ -431,11 +431,6 @@ class ClassCheckinController extends Controller
         }
 
         $checkin = \App\Models\ClassCheckin::findOrFail($id);
-        
-        if ($checkin->photo) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($checkin->photo);
-        }
-        
         $checkin->delete();
 
         return redirect()->route('class-checkins.index')->with('success', 'Data Check-in berhasil dihapus.');
