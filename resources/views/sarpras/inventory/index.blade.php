@@ -1228,12 +1228,12 @@
     // Bulk Edit Selection Logic
     const btnBulkEdit = document.getElementById('btnBulkEdit');
     const bulkEditModalEl = document.getElementById('bulkEditModal');
-    const bulkEditModal = bulkEditModalEl ? new bootstrap.Modal(bulkEditModalEl) : null;
     const bulkEditBody = document.getElementById('bulkEditBody');
     const bulkEditContent = document.getElementById('bulkEditContent');
     const bulkEditPickerNotice = document.getElementById('bulkEditPickerNotice');
     const modalBulkUnitFilter = document.getElementById('modal_bulk_unit_filter');
     let currentSelectedItems = [];
+    let bulkEditModalInstance = null;
 
     function toggleBulkEditBtn() {
         if (!btnBulkEdit) return;
@@ -1270,33 +1270,45 @@
                 .then(res => res.json())
                 .then(response => {
                     if (response.success) {
-                        currentSelectedItems = response.data;
-                        
-                        // Auto-detect unit
-                        const mainUnitFilter = document.querySelector('select.form-filter-select[name="unit_id"]');
-                        let autoUnitId = "";
-                        
-                        if (mainUnitFilter && mainUnitFilter.value) {
-                            autoUnitId = mainUnitFilter.value;
-                        } else if (currentSelectedItems.length > 0) {
-                            const firstItem = currentSelectedItems[0];
-                            autoUnitId = firstItem.room ? firstItem.room.unit_id : (firstItem.unit_id || "");
-                        }
+                        try {
+                            currentSelectedItems = response.data;
+                            
+                            // Auto-detect unit
+                            const mainUnitFilter = document.querySelector('select.form-filter-select[name="unit_id"]');
+                            let autoUnitId = "";
+                            
+                            if (mainUnitFilter && mainUnitFilter.value) {
+                                autoUnitId = mainUnitFilter.value;
+                            } else if (currentSelectedItems.length > 0) {
+                                const firstItem = currentSelectedItems[0];
+                                autoUnitId = firstItem.room ? firstItem.room.unit_id : (firstItem.unit_id || "");
+                            }
 
-                        if (modalBulkUnitFilter && autoUnitId) {
-                            modalBulkUnitFilter.value = autoUnitId;
-                        }
-                        
-                        populateBulkEditModal(currentSelectedItems);
+                            if (modalBulkUnitFilter && autoUnitId) {
+                                modalBulkUnitFilter.value = autoUnitId;
+                            }
+                            
+                            populateBulkEditModal(currentSelectedItems);
 
-                        // Close loading and show modal
-                        Swal.close();
-                        if (bulkEditModal) {
-                            bulkEditModal.show();
-                        } else {
-                            console.error('Modal instance is missing');
+                            // Close loading
+                            Swal.close();
+
+                            // Show modal with a tiny delay for smoother transition
+                            setTimeout(() => {
+                                if (bulkEditModalEl) {
+                                    if (!bulkEditModalInstance) {
+                                        bulkEditModalInstance = new bootstrap.Modal(bulkEditModalEl);
+                                    }
+                                    bulkEditModalInstance.show();
+                                }
+                            }, 100);
+                        } catch (populateError) {
+                            console.error('Populate Error:', populateError);
+                            Swal.close();
+                            Swal.fire('Error', 'Gagal memproses data: ' + populateError.message, 'error');
                         }
                     } else {
+                        Swal.close();
                         Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
                     }
                 })
