@@ -589,7 +589,7 @@ class SarprasController extends Controller
     }
 
     // ================== HELPERS ==================
-    private function compressImage($file, $path, $maxWidth = 800, $maxHeight = 800, $quality = 75)
+    private function compressImage($file, $path, $maxWidth = 800, $maxHeight = 800, $quality = 75, $square = false)
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $filename = uniqid() . '.' . $extension;
@@ -600,17 +600,38 @@ class SarprasController extends Controller
         }
 
         list($width, $height) = getimagesize($file->getRealPath());
-        $ratio = $width / $height;
+        
+        $src_x = 0;
+        $src_y = 0;
+        $src_w = $width;
+        $src_h = $height;
 
-        if ($width > $maxWidth || $height > $maxHeight) {
-            if ($maxWidth / $maxHeight > $ratio) {
-                $maxWidth = $maxHeight * $ratio;
+        if ($square) {
+            // Calculate square dimensions (center crop)
+            if ($width > $height) {
+                $src_w = $height;
+                $src_x = ($width - $height) / 2;
             } else {
-                $maxHeight = $maxWidth / $ratio;
+                $src_h = $width;
+                $src_y = ($height - $width) / 2;
             }
+            $targetWidth = $maxWidth;
+            $targetHeight = $maxHeight;
         } else {
-            $maxWidth = $width;
-            $maxHeight = $height;
+            // Proportional scaling
+            $ratio = $width / $height;
+            if ($width > $maxWidth || $height > $maxHeight) {
+                if ($maxWidth / $maxHeight > $ratio) {
+                    $targetWidth = $maxHeight * $ratio;
+                    $targetHeight = $maxHeight;
+                } else {
+                    $targetWidth = $maxWidth;
+                    $targetHeight = $maxWidth / $ratio;
+                }
+            } else {
+                $targetWidth = $width;
+                $targetHeight = $height;
+            }
         }
 
         $src = null;
@@ -626,17 +647,17 @@ class SarprasController extends Controller
 
         if (!$src) return $file->store($path, 'public');
 
-        $dst = imagecreatetruecolor($maxWidth, $maxHeight);
+        $dst = imagecreatetruecolor($targetWidth, $targetHeight);
         
         // Handle transparency for PNG/WebP
         if ($extension == 'png' || $extension == 'webp') {
             imagealphablending($dst, false);
             imagesavealpha($dst, true);
             $transparent = imagecolorallocatealpha($dst, 255, 255, 255, 127);
-            imagefilledrectangle($dst, 0, 0, $maxWidth, $maxHeight, $transparent);
+            imagefilledrectangle($dst, 0, 0, $targetWidth, $targetHeight, $transparent);
         }
 
-        imagecopyresampled($dst, $src, 0, 0, 0, 0, $maxWidth, $maxHeight, $width, $height);
+        imagecopyresampled($dst, $src, 0, 0, $src_x, $src_y, $targetWidth, $targetHeight, $src_w, $src_h);
 
         if ($extension == 'jpg' || $extension == 'jpeg') {
             imagejpeg($dst, $fullPath, $quality);
@@ -938,7 +959,7 @@ public function getMultipleInventories(Request $request)
                     }
 
                     if ($request->hasFile("items.$key.photo")) {
-                        $item['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
+                        $item['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos', 300, 300, 75, true);
                     }
                     $inv = Inventory::create($item);
                     $this->logAction($inv->id, 'Created', 'Barang ditambahkan via Input Banyak.');
@@ -972,7 +993,7 @@ public function getMultipleInventories(Request $request)
         }
 
         if ($request->hasFile('photo')) {
-            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos');
+            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos', 300, 300, 75, true);
         }
         
         $data['is_grant'] = $request->has('is_grant');
@@ -1018,7 +1039,7 @@ public function getMultipleInventories(Request $request)
             if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
             }
-            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos');
+            $data['photo'] = $this->compressImage($request->file('photo'), 'inventory-photos', 300, 300, 75, true);
         }
 
         $changes = [];
@@ -1094,7 +1115,7 @@ public function getMultipleInventories(Request $request)
                             if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
                                 \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
                             }
-                            $updateData['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
+                            $updateData['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos', 300, 300, 75, true);
                         }
 
                         $changes = [];
