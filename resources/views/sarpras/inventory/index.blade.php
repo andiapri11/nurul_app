@@ -199,6 +199,17 @@
         border-color: #3b82f6;
         box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     }
+    .pulse-warning {
+        animation: pulse-yellow 2s infinite;
+        background-color: #ffc107 !important;
+        border-color: #ffc107 !important;
+        color: #000 !important;
+    }
+    @keyframes pulse-yellow {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+        70% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
 </style>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -217,17 +228,22 @@
             <button type="button" class="btn btn-white btn-sm shadow-sm" id="btnPrintBarcodes">
                 <i class="bi bi-qr-code"></i> Barcode
             </button>
-            @if(empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id))
-            <button type="button" class="btn btn-warning btn-sm shadow-sm px-3 d-none" id="btnBulkEdit">
+            @php
+                $userRole = strtolower(Auth::user()->role);
+                $isManagement = in_array($userRole, ['administrator', 'direktur', 'wakil kepala sekolah', 'kepala sekolah', 'staff']);
+                $isActiveYear = (empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id));
+                $canEdit = $isManagement || $isActiveYear;
+            @endphp
+
+            <button type="button" class="btn btn-warning btn-sm shadow-sm px-3" id="btnBulkEdit" disabled title="Pilih barang terlebih dahulu">
                 <i class="bi bi-pencil-square"></i> Edit Masal
             </button>
-            <button type="button" class="btn btn-success btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#importExcelModal">
+            <button type="button" class="btn btn-success btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#importExcelModal" {{ $canEdit ? '' : 'disabled' }}>
                 <i class="bi bi-file-earmark-excel"></i> Import
             </button>
-            <button type="button" class="btn btn-primary btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+            <button type="button" class="btn btn-primary btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#addInventoryModal" {{ $canEdit ? '' : 'disabled' }}>
                 <i class="bi bi-plus-lg"></i> Tambah Barang
             </button>
-            @endif
         </div>
     </div>
 
@@ -1191,11 +1207,14 @@
     const bulkEditBody = document.getElementById('bulkEditBody');
 
     function toggleBulkEditBtn() {
+        if (!btnBulkEdit) return;
         const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
         if (selectedCount > 0) {
-            btnBulkEdit.classList.remove('d-none');
+            btnBulkEdit.disabled = false;
+            btnBulkEdit.classList.add('pulse-warning'); // Subtle hint
         } else {
-            btnBulkEdit.classList.add('d-none');
+            btnBulkEdit.disabled = true;
+            btnBulkEdit.classList.remove('pulse-warning');
         }
     }
 
