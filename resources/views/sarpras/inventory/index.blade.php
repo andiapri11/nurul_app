@@ -607,49 +607,38 @@
 
                         <!-- Edit Modal -->
                         <div class="modal fade" id="editInventory{{ $item->id }}" tabindex="-1">
-                            <div class="modal-dialog">
+                            <div class="modal-dialog modal-lg">
                                 <form action="{{ route('sarpras.inventory.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                     @csrf @method('PUT')
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Edit Barang: {{ $item->code }}</h5>
+                                    <div class="modal-content text-dark">
+                                        <div class="modal-header bg-light">
+                                            <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit Barang: <span class="text-primary">{{ $item->code }}</span></h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <div class="modal-body text-start">
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label font-weight-bold">Kode Barang</label>
-                                                    <input type="text" name="code" class="form-control bg-light" value="{{ $item->code }}" required>
-                                                    <small class="text-muted text-xs">Pastikan kode barang unik.</small>
+                                        <div class="modal-body p-4 text-start">
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Kode Barang</label>
+                                                    <input type="text" name="code" class="form-control bg-light fw-bold text-primary" value="{{ $item->code }}" required>
+                                                    <small class="text-muted">Pastikan kode barang unik.</small>
                                                 </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label font-weight-bold">Nama Barang</label>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Nama Barang</label>
                                                     <input type="text" name="name" class="form-control" value="{{ $item->name }}" required>
                                                 </div>
                                             </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label font-weight-bold">Kategori</label>
+
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Kategori</label>
                                                     <select name="inventory_category_id" class="form-select" required>
                                                         @foreach($categories as $cat)
                                                             <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label font-weight-bold">Lokasi / Ruangan</label>
-                                                    <select name="room_id" class="form-select" required>
-                                                        @foreach($activeRooms as $room)
-                                                            <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
-                                                                {{ $room->name }} ({{ $room->unit->name }})
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label font-weight-bold">Kondisi</label>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Kondisi</label>
                                                     <select name="condition" class="form-select" required>
                                                         <option value="Good" {{ $item->condition == 'Good' ? 'selected' : '' }}>Baik</option>
                                                         <option value="Repairing" {{ $item->condition == 'Repairing' ? 'selected' : '' }}>Perbaikan</option>
@@ -659,49 +648,72 @@
                                                 </div>
                                             </div>
 
-                                            <div class="mb-3">
-                                                <label class="form-label font-weight-bold">Foto Barang</label>
-                                                @if($item->photo)
-                                                    <div class="mb-2">
-                                                        <img src="{{ asset('storage/' . $item->photo) }}" class="rounded shadow-sm" style="height: 100px; object-fit: cover;">
-                                                        <div class="small text-muted">Foto saat ini</div>
-                                                    </div>
-                                                @endif
-                                                <input type="file" name="photo" class="form-control" accept="image/*">
-                                                <small class="text-muted text-xs">Biarkan kosong jika tidak ingin mengubah foto.</small>
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Lokasi / Ruangan</label>
+                                                    <select name="room_id" class="form-select" required>
+                                                        @foreach($activeRooms as $room)
+                                                            <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
+                                                                {{ $room->name }} ({{ $room->unit->name }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Penanggung Jawab</label>
+                                                    <input type="text" name="person_in_charge" class="form-control" value="{{ $item->person_in_charge }}" placeholder="Nama Guru/Staff...">
+                                                </div>
                                             </div>
 
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Harga Beli (Rp)</label>
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">Rp</span>
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Harga Beli (Rp)</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light text-muted small">Rp</span>
                                                         <input type="text" name="price" class="form-control currency-input" value="{{ number_format($item->price, 0, ',', '.') }}">
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label class="form-label">Sumber / Keterangan</label>
-                                                    <input type="text" name="source" class="form-control form-control-sm" value="{{ $item->source }}" placeholder="Contoh: BOS, Yayasan, Bantuan Pemerintah">
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Tanggal Beli</label>
+                                                    <input type="date" name="purchase_date" class="form-control" value="{{ $item->purchase_date ? $item->purchase_date->format('Y-m-d') : '' }}">
                                                 </div>
                                             </div>
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="is_grant" value="1" id="is_grant_edit{{ $item->id }}" {{ $item->is_grant ? 'checked' : '' }}>
-                                                    <label class="form-check-label fw-bold" for="is_grant_edit{{ $item->id }}">
-                                                        Barang Bantuan / Hibah
-                                                    </label>
+
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-12">
+                                                    <label class="form-label fw-bold">Sumber / Keterangan</label>
+                                                    <input type="text" name="source" class="form-control" value="{{ $item->source }}" placeholder="Contoh: BOS, Yayasan, Bantuan Pemerintah">
+                                                    <div class="form-check mt-2">
+                                                        <input class="form-check-input" type="checkbox" name="is_grant" value="1" id="is_grant_edit{{ $item->id }}" {{ $item->is_grant ? 'checked' : '' }}>
+                                                        <label class="form-check-label fw-bold text-muted small" for="is_grant_edit{{ $item->id }}">
+                                                            Barang ini merupakan Bantuan / Hibah
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="row">
-                                                 <div class="col-md-6 mb-3">
-                                                     <label class="form-label">Tanggal Beli</label>
-                                                     <input type="date" name="purchase_date" class="form-control" value="{{ $item->purchase_date ? $item->purchase_date->format('Y-m-d') : '' }}">
-                                                 </div>
-                                                 <div class="col-md-6 mb-3">
-                                                     <label class="form-label font-weight-bold">Penanggung Jawab</label>
-                                                     <input type="text" name="person_in_charge" class="form-control form-control-sm" value="{{ $item->person_in_charge }}" placeholder="Nama Guru/Staff...">
-                                                 </div>
-                                             </div>
+
+                                            <hr class="my-4 opacity-50">
+
+                                            <div class="mb-0">
+                                                <label class="form-label fw-bold"><i class="bi bi-camera me-1"></i>Foto Barang</label>
+                                                <div class="row align-items-center">
+                                                    @if($item->photo)
+                                                        <div class="col-auto">
+                                                            <img src="{{ asset('storage/' . $item->photo) }}" class="rounded shadow-sm border p-1" style="height: 120px; width: 120px; object-fit: cover;">
+                                                            <div class="small text-muted mt-1 text-center">Foto saat ini</div>
+                                                        </div>
+                                                    @endif
+                                                    <div class="col">
+                                                        <div class="upload-box border rounded-3 p-3 bg-light">
+                                                            <input type="file" name="photo" class="form-control" accept="image/*">
+                                                            <div class="mt-2 small text-muted">
+                                                                <i class="bi bi-info-circle-fill text-info me-1"></i>Biarkan kosong jika tidak ingin mengubah foto. 
+                                                                <br>Sistem akan otomatis memotong foto menjadi persegi (300x300px).
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
