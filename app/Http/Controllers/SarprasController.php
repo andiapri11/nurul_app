@@ -68,56 +68,56 @@ class SarprasController extends Controller
             ? $request->get('academic_year_id') 
             : ($activeAcademicYear ? $activeAcademicYear->id : null);
 
-        // Filter Categories Counts
-        $categoriesQuery = InventoryCategory::query();
-        
+        // 1. Fetch Categories with counts
+        $categoriesQuery = InventoryCategory::with(['unit'])
+            ->withCount([
+                'inventories' => function ($query) use ($unit_id, $academic_year_id, $allowedUnitIds) {
+                    if ($unit_id) {
+                        $query->whereHas('room', function ($q) use ($unit_id) { $q->where('unit_id', $unit_id); });
+                    } else {
+                        $query->whereHas('room', function ($q) use ($allowedUnitIds) { $q->whereIn('unit_id', $allowedUnitIds); });
+                    }
+                    if ($academic_year_id) {
+                        $query->whereHas('room', function ($q) use ($academic_year_id) { $q->where('academic_year_id', $academic_year_id); });
+                    }
+                },
+                'consumables' => function ($query) use ($unit_id, $allowedUnitIds) {
+                    if ($unit_id) {
+                        $query->where('unit_id', $unit_id);
+                    } else {
+                        $query->whereIn('unit_id', $allowedUnitIds);
+                    }
+                }
+            ]);
+
         if ($unit_id) {
             $categoriesQuery->where(function($q) use ($unit_id) {
-                $q->where('unit_id', $unit_id)
-                  ->orWhereNull('unit_id');
+                $q->where('unit_id', $unit_id)->orWhereNull('unit_id');
             });
         } else {
             $categoriesQuery->where(function($q) use ($allowedUnitIds) {
-                $q->whereIn('unit_id', $allowedUnitIds)
-                  ->orWhereNull('unit_id');
+                $q->whereIn('unit_id', $allowedUnitIds)->orWhereNull('unit_id');
             });
         }
 
         if ($academic_year_id) {
             $categoriesQuery->where('academic_year_id', $academic_year_id);
         }
+        $categories = $categoriesQuery->orderBy('name')->get();
 
-        $categories = $categoriesQuery->orderBy('name')
-            ->withCount([
-            'inventories' => function ($query) use ($unit_id, $academic_year_id, $allowedUnitIds) {
-                if ($unit_id) {
-                    $query->whereHas('room', function ($q) use ($unit_id) {
-                        $q->where('unit_id', $unit_id);
-                    });
-                } else {
-                    $query->whereHas('room', function ($q) use ($allowedUnitIds) {
-                        $q->whereIn('unit_id', $allowedUnitIds);
-                    });
-                }
-
-                if ($academic_year_id) {
-                    $query->whereHas('room', function ($q) use ($academic_year_id) {
-                        $q->where('academic_year_id', $academic_year_id);
-                    });
-                }
-            },
-            'consumables' => function ($query) use ($unit_id, $allowedUnitIds) {
+        // 2. Fetch Room Types with counts
+        $roomTypesQuery = \App\Models\RoomType::with(['unit'])
+            ->withCount(['rooms' => function ($query) use ($unit_id, $academic_year_id, $allowedUnitIds) {
                 if ($unit_id) {
                     $query->where('unit_id', $unit_id);
                 } else {
                     $query->whereIn('unit_id', $allowedUnitIds);
                 }
-            }
-        ])->get();
+                if ($academic_year_id) {
+                    $query->where('academic_year_id', $academic_year_id);
+                }
+            }]);
 
-        // Filter Room Types Counts
-        $roomTypesQuery = \App\Models\RoomType::query();
-        
         if ($unit_id) {
             $roomTypesQuery->where('unit_id', $unit_id);
         } else {
@@ -127,26 +127,16 @@ class SarprasController extends Controller
         if ($academic_year_id) {
             $roomTypesQuery->where('academic_year_id', $academic_year_id);
         }
+        $roomTypes = $roomTypesQuery->orderBy('name')->get();
 
-        $roomTypes = $roomTypesQuery->orderBy('name')
-            ->withCount(['rooms' => function ($query) use ($unit_id, $academic_year_id, $allowedUnitIds) {
-                if ($unit_id) {
-                    $query->where('unit_id', $unit_id);
-                } else {
-                    $query->whereIn('unit_id', $allowedUnitIds);
-                }
-
-                if ($academic_year_id) {
-                    $query->where('academic_year_id', $academic_year_id);
-                }
-            }])
-            ->get();
-
-        // Data for Filters (Only show allowed units)
+        // 3. Units for grouping and filters
         $units = $allowedUnits;
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
-        return view('sarpras.categories.index', compact('categories', 'roomTypes', 'units', 'academicYears', 'unit_id', 'academic_year_id', 'activeAcademicYear'));
+        return view('sarpras.categories.index', compact(
+            'categories', 'roomTypes', 'units', 'academicYears', 
+            'unit_id', 'academic_year_id', 'activeAcademicYear'
+        ));
     }
 
     public function storeCategory(Request $request)
