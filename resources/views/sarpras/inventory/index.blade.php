@@ -1230,6 +1230,10 @@
     const bulkEditModalEl = document.getElementById('bulkEditModal');
     const bulkEditModal = bulkEditModalEl ? new bootstrap.Modal(bulkEditModalEl) : null;
     const bulkEditBody = document.getElementById('bulkEditBody');
+    const bulkEditContent = document.getElementById('bulkEditContent');
+    const bulkEditPickerNotice = document.getElementById('bulkEditPickerNotice');
+    const modalBulkUnitFilter = document.getElementById('modal_bulk_unit_filter');
+    let currentSelectedItems = [];
 
     function toggleBulkEditBtn() {
         if (!btnBulkEdit) return;
@@ -1267,7 +1271,15 @@
                 .then(response => {
                     Swal.close();
                     if (response.success) {
-                        populateBulkEditModal(response.data);
+                        currentSelectedItems = response.data;
+                        
+                        // Pre-select unit from main filter if exists
+                        const mainUnitFilter = document.querySelector('select[name="unit_id"]');
+                        if (modalBulkUnitFilter) {
+                            modalBulkUnitFilter.value = mainUnitFilter ? mainUnitFilter.value : "";
+                        }
+                        
+                        populateBulkEditModal(currentSelectedItems);
                         if (bulkEditModal) bulkEditModal.show();
                     } else {
                         Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
@@ -1281,15 +1293,45 @@
         });
     }
 
+    if (modalBulkUnitFilter) {
+        modalBulkUnitFilter.addEventListener('change', function() {
+            populateBulkEditModal(currentSelectedItems);
+        });
+    }
+
     function populateBulkEditModal(items) {
+        if (!bulkEditBody) return;
         bulkEditBody.innerHTML = '';
+        
+        const selectedUnitId = modalBulkUnitFilter ? modalBulkUnitFilter.value : "";
+        
+        if (!selectedUnitId) {
+            if (bulkEditContent) bulkEditContent.style.display = 'none';
+            if (bulkEditPickerNotice) bulkEditPickerNotice.style.display = 'block';
+            return;
+        }
+
+        if (bulkEditContent) bulkEditContent.style.display = 'block';
+        if (bulkEditPickerNotice) bulkEditPickerNotice.style.display = 'none';
+
         const catSelectSrc = document.querySelector('select[name="items[0][inventory_category_id]"]');
         const roomSelectSrc = document.querySelector('select[name="items[0][room_id]"]');
         
         const categoriesHtml = catSelectSrc ? catSelectSrc.innerHTML : '';
         const roomsHtml = roomSelectSrc ? roomSelectSrc.innerHTML : '';
 
-        items.forEach((item, index) => {
+        // Only show items from selected unit
+        const filteredItems = items.filter(item => {
+            const itemUnitId = item.room ? item.room.unit_id : (item.unit_id || null);
+            return itemUnitId == selectedUnitId;
+        });
+
+        if (filteredItems.length === 0) {
+            bulkEditBody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada barang terpilih dari unit ini.</td></tr>`;
+            return;
+        }
+
+        filteredItems.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <input type="hidden" name="items[${index}][id]" value="${item.id}">
@@ -1344,10 +1386,10 @@
             
             bulkEditBody.appendChild(row);
 
-            // Filter room/category specific to this item's unit
+            // Filter room/category specific to selected unit
             const catSelect = row.querySelector('.bulk-category-select');
             const roomSelect = row.querySelector('.bulk-room-select');
-            const itemUnitId = item.room ? item.room.unit_id : null;
+            const itemUnitId = selectedUnitId;
 
             if (catSelect) {
                 Array.from(catSelect.options).forEach(opt => {
@@ -1568,27 +1610,50 @@
                     <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Edit Inventaris (Massal)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle" id="bulkEditTable">
-                            <thead class="bg-light">
-                                <tr>
-                                    <th width="220">Nama Barang</th>
-                                    <th width="200">Lokasi / Ruangan</th>
-                                    <th width="150">Kategori</th>
-                                    <th width="130">Kondisi</th>
-                                    <th width="140">Harga (Rp)</th>
-                                    <th width="200">Sumber / Bantuan</th>
-                                    <th width="180">Penanggung Jawab</th>
-                                    <th width="140">Tanggal Beli</th>
-                                    <th width="140">Foto</th>
-                                    <th width="120">Kode Item</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bulkEditBody">
-                                <!-- Populated via JS -->
-                            </tbody>
-                        </table>
+                <div class="modal-body p-4">
+                    <div class="row mb-4 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-primary mb-2 d-block"><i class="bi bi-building me-1"></i>Pilih Unit Sekolah untuk Filter Pilihan</label>
+                            <select id="modal_bulk_unit_filter" class="form-select border-primary shadow-sm fw-bold py-2">
+                                <option value="">-- PILIH UNIT SEKOLAH TERLEBIH DAHULU --</option>
+                                @foreach($units as $unit)
+                                    <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text small text-muted mt-2">
+                                <i class="bi bi-info-circle me-1 text-info"></i>Hanya barang dari unit terpilih yang akan tampil dan bisa diedit.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="bulkEditContent" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle" id="bulkEditTable">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th width="220">Nama Barang</th>
+                                        <th width="200">Lokasi / Ruangan</th>
+                                        <th width="150">Kategori</th>
+                                        <th width="130">Kondisi</th>
+                                        <th width="140">Harga (Rp)</th>
+                                        <th width="200">Sumber / Bantuan</th>
+                                        <th width="180">Penanggung Jawab</th>
+                                        <th width="140">Tanggal Beli</th>
+                                        <th width="140">Foto</th>
+                                        <th width="120">Kode Item</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkEditBody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="bulkEditPickerNotice" class="text-center py-5 bg-light rounded border border-dashed mb-4">
+                        <i class="bi bi-building display-4 text-muted mb-3 d-block"></i>
+                        <h6 class="text-muted fw-bold">Silakan Pilih Unit Sekolah</h6>
+                        <p class="text-muted small">Pilih unit di atas untuk memfilter barang yang akan diedit masal.</p>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
