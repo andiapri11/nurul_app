@@ -1004,6 +1004,7 @@ public function getMultipleInventories(Request $request)
             'room_id' => 'required|exists:rooms,id',
             'condition' => 'required|string',
             'name' => 'required|string|max:255',
+            'code' => 'required|string|max:255|unique:inventories,code,' . $inventory->id,
             'price' => 'nullable|numeric',
             'source' => 'nullable|string|max:255',
             'person_in_charge' => 'nullable|string|max:255',
@@ -1036,6 +1037,10 @@ public function getMultipleInventories(Request $request)
             $newRoom = \App\Models\Room::find($request->room_id)->name ?? 'None';
             $changes[] = "Pindah Ruangan: {$oldRoom} -> {$newRoom}";
         }
+        
+        if ($request->filled('code') && $inventory->code != $request->code) {
+            $changes[] = "Ubah Kode: {$inventory->code} -> {$request->code}";
+        }
 
         $inventory->update($data);
         
@@ -1067,6 +1072,7 @@ public function getMultipleInventories(Request $request)
                 'items.*.id' => 'required|exists:inventories,id',
                 'items.*.inventory_category_id' => 'required|exists:inventory_categories,id',
                 'items.*.name' => 'required|string|max:255',
+                'items.*.code' => 'required|string|max:255', // Unique check per row in transaction or via custom rule
                 'items.*.room_id' => 'nullable|exists:rooms,id',
                 'items.*.condition' => 'required|string',
                 'items.*.purchase_date' => 'nullable|date',
@@ -1077,45 +1083,57 @@ public function getMultipleInventories(Request $request)
                 'items.*.photo' => 'nullable|image|max:2048',
             ]);
 
-            DB::transaction(function() use ($items, $request) {
-                foreach ($items as $key => $itemData) {
-                    $inventory = Inventory::findOrFail($itemData['id']);
-                    
-                    $updateData = $itemData;
-                    unset($updateData['id']);
-                    
-                    $updateData['is_grant'] = isset($itemData['is_grant']) && $itemData['is_grant'] == '1';
+            try {
+                DB::transaction(function() use ($items, $request) {
+                    foreach ($items as $key => $itemData) {
+                        $inventory = Inventory::findOrFail($itemData['id']);
+                        
+                        $updateData = $itemData;
+                        unset($updateData['id']);
+                        
+                        $updateData['is_grant'] = isset($itemData['is_grant']) && $itemData['is_grant'] == '1';
 
-                    if (empty($updateData['person_in_charge'])) {
-                        $room = \App\Models\Room::with('unit')->find($updateData['room_id'] ?? null);
-                        if ($room) {
-                            $updateData['person_in_charge'] = $room->person_in_charge ?: $room->unit->getSarprasOfficerName();
+                        if (empty($updateData['person_in_charge'])) {
+                            $room = \App\Models\Room::with('unit')->find($updateData['room_id'] ?? null);
+                            if ($room) {
+                                $updateData['person_in_charge'] = $room->person_in_charge ?: $room->unit->getSarprasOfficerName();
+                            }
+                        }
+
+                        if ($request->hasFile("items.$key.photo")) {
+                            if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
+                                \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
+                            }
+                            $updateData['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
+                        }
+
+                        $changes = [];
+                        if (isset($updateData['room_id']) && $inventory->room_id != $updateData['room_id']) {
+                            $oldRoom = $inventory->room->name ?? 'None';
+                            $newRoom = \App\Models\Room::find($updateData['room_id'])->name ?? 'None';
+                            $changes[] = "Pindah Ruangan: {$oldRoom} -> {$newRoom}";
+                        }
+                        
+                        if (isset($updateData['code']) && $inventory->code != $updateData['code']) {
+                            // Check if this code is already used by another inventory (safety)
+                            if (Inventory::where('code', $updateData['code'])->where('id', '!=', $inventory->id)->exists()) {
+                                throw new \Exception("Kode barang '{$updateData['code']}' sudah digunakan oleh barang lain.");
+                            }
+                            $changes[] = "Ubah Kode: {$inventory->code} -> {$updateData['code']}";
+                        }
+
+                        $inventory->update($updateData);
+
+                        if (!empty($changes)) {
+                            $this->logAction($inventory->id, 'Updated', implode(', ', $changes) . ' (Bulk Edit)');
+                        } else {
+                            $this->logAction($inventory->id, 'Updated', 'Informasi barang diperbarui (Bulk Edit).');
                         }
                     }
-
-                    if ($request->hasFile("items.$key.photo")) {
-                        if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
-                            \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
-                        }
-                        $updateData['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
-                    }
-
-                    $changes = [];
-                    if (isset($updateData['room_id']) && $inventory->room_id != $updateData['room_id']) {
-                        $oldRoom = $inventory->room->name ?? 'None';
-                        $newRoom = \App\Models\Room::find($updateData['room_id'])->name ?? 'None';
-                        $changes[] = "Pindah Ruangan: {$oldRoom} -> {$newRoom}";
-                    }
-
-                    $inventory->update($updateData);
-
-                    if (!empty($changes)) {
-                        $this->logAction($inventory->id, 'Updated', implode(', ', $changes) . ' (Bulk Edit)');
-                    } else {
-                        $this->logAction($inventory->id, 'Updated', 'Informasi barang diperbarui (Bulk Edit).');
-                    }
-                }
-            });
+                });
+            } catch (\Exception $e) {
+                return back()->with('error', 'Gagal update masal: ' . $e->getMessage());
+            }
 
             return back()->with('success', count($items) . ' barang inventaris berhasil diperbarui.');
         }

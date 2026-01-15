@@ -618,9 +618,15 @@
                                         <div class="modal-body text-start">
                                             <div class="row">
                                                 <div class="col-md-6 mb-3">
+                                                    <label class="form-label font-weight-bold">Kode Barang</label>
+                                                    <input type="text" name="code" class="form-control bg-light" value="{{ $item->code }}" required>
+                                                    <small class="text-muted text-xs">Pastikan kode barang unik.</small>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
                                                     <label class="form-label font-weight-bold">Nama Barang</label>
                                                     <input type="text" name="name" class="form-control" value="{{ $item->name }}" required>
                                                 </div>
+                                            </div>
                                                 <div class="col-md-6 mb-3">
                                                     <label class="form-label font-weight-bold">Kategori</label>
                                                     <select name="inventory_category_id" class="form-select" required>
@@ -826,7 +832,21 @@
                     <h5 class="modal-title"><i class="bi bi-box-seam"></i> Tambah Inventaris (Input Banyak)</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
+                    <div class="row mb-4 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-primary mb-2 d-block"><i class="bi bi-building me-1"></i>Pilih Unit Sekolah</label>
+                            <select id="modal_unit_filter" class="form-select border-primary shadow-sm fw-bold py-2">
+                                <option value="">-- PILIH UNIT SEKOLAH TERLEBIH DAHULU --</option>
+                                @foreach($units as $unit)
+                                    <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="form-text small text-muted mt-2">
+                                <i class="bi bi-info-circle me-1 text-info"></i>Daftar <strong>Kategori</strong> dan <strong>Lokasi/Ruangan</strong> akan otomatis menyaring berdasarkan unit yang dipilih.
+                            </div>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-bordered align-middle" id="inventoryTable">
                             <thead class="bg-light">
@@ -847,10 +867,10 @@
                             <tbody id="inventoryBody">
                                 <tr class="inventory-row">
                                     <td>
-                                        <select name="items[0][inventory_category_id]" class="form-select form-select-sm" required>
+                                        <select name="items[0][inventory_category_id]" class="form-select form-select-sm category-select" required>
                                             <option value="">Pilih...</option>
                                             @foreach($categories as $cat)
-                                                <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                                <option value="{{ $cat->id }}" data-unit-id="{{ $cat->unit_id }}">{{ $cat->name }}</option>
                                             @endforeach
                                         </select>
                                     </td>
@@ -861,7 +881,7 @@
                                         <select name="items[0][room_id]" class="form-select form-select-sm room-select">
                                             <option value="" data-unit="GUDANG" data-pj="">Pilih Lokasi...</option>
                                             @foreach($activeRooms as $room)
-                                                <option value="{{ $room->id }}" data-unit="{{ $room->unit->name }}" data-pj="{{ $room->person_in_charge }}">
+                                                <option value="{{ $room->id }}" data-unit-id="{{ $room->unit_id }}" data-unit="{{ $room->unit->name }}" data-pj="{{ $room->person_in_charge }}">
                                                     {{ $room->name }} ({{ $room->unit->name }})
                                                 </option>
                                             @endforeach
@@ -939,6 +959,49 @@
 
         rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
         return rupiah;
+    }
+
+    // Unit Filter Logic for Add Modal
+    const modalUnitFilter = document.getElementById('modal_unit_filter');
+    const categorySelects = document.querySelectorAll('.category-select');
+    const roomSelects = document.querySelectorAll('.room-select');
+
+    if (modalUnitFilter) {
+        modalUnitFilter.addEventListener('change', function() {
+            const unitId = this.value;
+            const rows = document.querySelectorAll('.inventory-row');
+            
+            rows.forEach(row => {
+                const catSelect = row.querySelector('.category-select');
+                const roomSelect = row.querySelector('.room-select');
+                
+                // Filter Categories
+                Array.from(catSelect.options).forEach(opt => {
+                    if (opt.value === "") {
+                        opt.style.display = 'block';
+                    } else {
+                        const optUnitId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
+                    }
+                });
+                catSelect.value = ""; // Reset value
+
+                // Filter Rooms
+                Array.from(roomSelect.options).forEach(opt => {
+                    if (opt.value === "") {
+                        opt.style.display = 'block';
+                    } else {
+                        const optUnitId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
+                    }
+                });
+                roomSelect.value = ""; // Reset value
+                
+                // Clear PJ if any
+                const pjInput = row.querySelector('[name*="[person_in_charge]"]');
+                if (pjInput) pjInput.value = "";
+            });
+        });
     }
 
     // Attach listener for price inputs
@@ -1036,8 +1099,34 @@
                 }
             });
 
-            // Update the code for the new row
-            updateRowCode(newRow, rowCount);
+            // Re-apply unit filter to new row
+            if (modalUnitFilter && modalUnitFilter.value) {
+                const unitId = modalUnitFilter.value;
+                const catSelect = newRow.querySelector('.category-select');
+                const roomSelect = newRow.querySelector('.room-select');
+                
+                if (catSelect) {
+                    Array.from(catSelect.options).forEach(opt => {
+                        if (opt.value === "") {
+                            opt.style.display = 'block';
+                        } else {
+                            const optUnitId = opt.getAttribute('data-unit-id');
+                            opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
+                        }
+                    });
+                }
+                
+                if (roomSelect) {
+                    Array.from(roomSelect.options).forEach(opt => {
+                        if (opt.value === "") {
+                            opt.style.display = 'block';
+                        } else {
+                            const optUnitId = opt.getAttribute('data-unit-id');
+                            opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
+                        }
+                    });
+                }
+            }
 
             // Enable delete button for new rows
             const removeBtn = newRow.querySelector('.remove-row');
@@ -1045,8 +1134,6 @@
                 removeBtn.disabled = false;
                 removeBtn.addEventListener('click', function() {
                     newRow.remove();
-                    // Optional: re-sequence other rows? 
-                    // Usually better to leave them as is to avoid confusion
                 });
             }
 
@@ -1190,7 +1277,7 @@
                     ${item.photo ? `<div class="mt-1 small text-success"><i class="bi bi-check-circle"></i> Ada Foto</div>` : ''}
                 </td>
                 <td class="small fw-bold text-primary">
-                    ${item.code}
+                    <input type="text" name="items[${index}][code]" class="form-control form-control-sm font-monospace" value="${item.code}" required>
                 </td>
             `;
             
