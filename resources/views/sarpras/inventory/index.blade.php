@@ -1269,18 +1269,33 @@
             fetch(`{{ route('sarpras.inventory.get-multiple') }}?ids=${selectedIds.join(',')}`)
                 .then(res => res.json())
                 .then(response => {
-                    Swal.close();
                     if (response.success) {
                         currentSelectedItems = response.data;
                         
-                        // Pre-select unit from main filter if exists
-                        const mainUnitFilter = document.querySelector('select[name="unit_id"]');
-                        if (modalBulkUnitFilter) {
-                            modalBulkUnitFilter.value = mainUnitFilter ? mainUnitFilter.value : "";
+                        // Auto-detect unit
+                        const mainUnitFilter = document.querySelector('select.form-filter-select[name="unit_id"]');
+                        let autoUnitId = "";
+                        
+                        if (mainUnitFilter && mainUnitFilter.value) {
+                            autoUnitId = mainUnitFilter.value;
+                        } else if (currentSelectedItems.length > 0) {
+                            const firstItem = currentSelectedItems[0];
+                            autoUnitId = firstItem.room ? firstItem.room.unit_id : (firstItem.unit_id || "");
+                        }
+
+                        if (modalBulkUnitFilter && autoUnitId) {
+                            modalBulkUnitFilter.value = autoUnitId;
                         }
                         
                         populateBulkEditModal(currentSelectedItems);
-                        if (bulkEditModal) bulkEditModal.show();
+
+                        // Close loading and show modal
+                        Swal.close();
+                        if (bulkEditModal) {
+                            bulkEditModal.show();
+                        } else {
+                            console.error('Modal instance is missing');
+                        }
                     } else {
                         Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
                     }
@@ -1323,11 +1338,20 @@
         // Only show items from selected unit
         const filteredItems = items.filter(item => {
             const itemUnitId = item.room ? item.room.unit_id : (item.unit_id || null);
-            return itemUnitId == selectedUnitId;
+            return String(itemUnitId) === String(selectedUnitId);
         });
 
         if (filteredItems.length === 0) {
-            bulkEditBody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">Tidak ada barang terpilih dari unit ini.</td></tr>`;
+            const totalCount = items.length;
+            bulkEditBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-5">
+                        <i class="bi bi-info-circle display-4 text-muted mb-3 d-block"></i>
+                        <h6 class="text-muted fw-bold">Tidak ada barang dari unit ini</h6>
+                        <p class="text-muted small mb-0">Bapak memilih ${totalCount} barang, tapi tidak ada yang berasal dari unit ${modalBulkUnitFilter.options[modalBulkUnitFilter.selectedIndex].text}.</p>
+                        <p class="text-muted small">Silakan ubah pilihan Unit di atas.</p>
+                    </td>
+                </tr>`;
             return;
         }
 
