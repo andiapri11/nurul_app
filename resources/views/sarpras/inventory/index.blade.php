@@ -1203,26 +1203,32 @@
     const checkAll = document.getElementById('checkAll');
     const btnPrintBarcodes = document.getElementById('btnPrintBarcodes');
 
-    checkAll.addEventListener('change', function() {
-        document.querySelectorAll('.item-checkbox').forEach(cb => {
-            cb.checked = checkAll.checked;
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            document.querySelectorAll('.item-checkbox').forEach(cb => {
+                cb.checked = checkAll.checked;
+            });
+            toggleBulkEditBtn();
         });
-    });
+    }
 
-    btnPrintBarcodes.addEventListener('click', function() {
-        const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-        if (selected.length === 0) {
-            Swal.fire('Info', 'Pilih minimal satu barang untuk mencetak barcode.', 'info');
-            return;
-        }
-        
-        const url = "{{ route('sarpras.inventory.print-barcodes') }}?ids=" + selected.join(',');
-        window.open(url, '_blank');
-    });
+    if (btnPrintBarcodes) {
+        btnPrintBarcodes.addEventListener('click', function() {
+            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) {
+                Swal.fire('Info', 'Pilih minimal satu barang untuk mencetak barcode.', 'info');
+                return;
+            }
+            
+            const url = "{{ route('sarpras.inventory.print-barcodes') }}?ids=" + selected.join(',');
+            window.open(url, '_blank');
+        });
+    }
 
     // Bulk Edit Selection Logic
     const btnBulkEdit = document.getElementById('btnBulkEdit');
-    const bulkEditModal = new bootstrap.Modal(document.getElementById('bulkEditModal'));
+    const bulkEditModalEl = document.getElementById('bulkEditModal');
+    const bulkEditModal = bulkEditModalEl ? new bootstrap.Modal(bulkEditModalEl) : null;
     const bulkEditBody = document.getElementById('bulkEditBody');
 
     function toggleBulkEditBtn() {
@@ -1243,35 +1249,37 @@
         }
     });
 
-    btnBulkEdit.addEventListener('click', function() {
-        const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-        if (selectedIds.length === 0) return;
+    if (btnBulkEdit) {
+        btnBulkEdit.addEventListener('click', function() {
+            const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return;
 
-        Swal.fire({
-            title: 'Memuat Data...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        fetch(`/sarpras/inventory/get-multiple?ids=${selectedIds.join(',')}`)
-            .then(res => res.json())
-            .then(response => {
-                Swal.close();
-                if (response.success) {
-                    populateBulkEditModal(response.data);
-                    bulkEditModal.show();
-                } else {
-                    Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
+            Swal.fire({
+                title: 'Memuat Data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
-            })
-            .catch(err => {
-                Swal.close();
-                console.error(err);
-                Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
             });
-    });
+
+            fetch(`/sarpras/inventory/get-multiple?ids=${selectedIds.join(',')}`)
+                .then(res => res.json())
+                .then(response => {
+                    Swal.close();
+                    if (response.success) {
+                        populateBulkEditModal(response.data);
+                        if (bulkEditModal) bulkEditModal.show();
+                    } else {
+                        Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.close();
+                    console.error(err);
+                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+                });
+        });
+    }
 
     function populateBulkEditModal(items) {
         bulkEditBody.innerHTML = '';
