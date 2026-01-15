@@ -1262,7 +1262,7 @@
                 }
             });
 
-            fetch(`/sarpras/inventory/get-multiple?ids=${selectedIds.join(',')}`)
+            fetch(`{{ route('sarpras.inventory.get-multiple') }}?ids=${selectedIds.join(',')}`)
                 .then(res => res.json())
                 .then(response => {
                     Swal.close();
@@ -1283,8 +1283,11 @@
 
     function populateBulkEditModal(items) {
         bulkEditBody.innerHTML = '';
-        const categoriesHtml = document.querySelector('select[name="items[0][inventory_category_id]"]').innerHTML;
-        const roomsHtml = document.querySelector('select[name="items[0][room_id]"]').innerHTML;
+        const catSelectSrc = document.querySelector('select[name="items[0][inventory_category_id]"]');
+        const roomSelectSrc = document.querySelector('select[name="items[0][room_id]"]');
+        
+        const categoriesHtml = catSelectSrc ? catSelectSrc.innerHTML : '';
+        const roomsHtml = roomSelectSrc ? roomSelectSrc.innerHTML : '';
 
         items.forEach((item, index) => {
             const row = document.createElement('tr');
@@ -1344,7 +1347,7 @@
             // Filter room/category specific to this item's unit
             const catSelect = row.querySelector('.bulk-category-select');
             const roomSelect = row.querySelector('.bulk-room-select');
-            const itemUnitId = item.unit_id;
+            const itemUnitId = item.room ? item.room.unit_id : null;
 
             if (catSelect) {
                 Array.from(catSelect.options).forEach(opt => {

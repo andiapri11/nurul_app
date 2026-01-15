@@ -208,7 +208,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Inventory
         Route::get('/inventory', [\App\Http\Controllers\SarprasController::class, 'inventory'])->name('inventory.index');
-        Route::get('/inventory/get-multiple', [\App\Http\Controllers\SarprasController::class, 'getMultipleInventories']);
+        Route::get('/inventory/get-multiple', [\App\Http\Controllers\SarprasController::class, 'getMultipleInventories'])->name('inventory.get-multiple');
         Route::get('/inventory/print', [\App\Http\Controllers\SarprasController::class, 'printInventory'])->name('inventory.print');
         Route::get('/inventory/disposed', [\App\Http\Controllers\SarprasController::class, 'disposedInventory'])->name('inventory.disposed'); // Archive list
         Route::get('/inventory/{id}/disposal-proof', [\App\Http\Controllers\SarprasController::class, 'printDisposalProof'])->name('inventory.disposal-proof'); // Print proof

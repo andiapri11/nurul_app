@@ -826,7 +826,7 @@ class SarprasController extends Controller
 public function getMultipleInventories(Request $request)
 {
     $ids = explode(',', $request->ids);
-    $inventories = Inventory::whereIn('id', $ids)->get();
+    $inventories = Inventory::with('room')->whereIn('id', $ids)->get();
     return response()->json([
         'success' => true,
         'data' => $inventories
