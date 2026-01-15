@@ -973,650 +973,8 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    // Format Rupiah function
-    function formatInputRupiah(angka) {
-        var number_string = angka.replace(/[^,\d]/g, '').toString(),
-            split = number_string.split(','),
-            sisa = split[0].length % 3,
-            rupiah = split[0].substr(0, sisa),
-            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
 
-        if (ribuan) {
-            separator = sisa ? '.' : '';
-            rupiah += separator + ribuan.join('.');
-        }
 
-        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-        return rupiah;
-    }
-
-    // Unit Filter Logic for Add Modal
-    const modalUnitFilter = document.getElementById('modal_unit_filter');
-    const categorySelects = document.querySelectorAll('.category-select');
-    const roomSelects = document.querySelectorAll('.room-select');
-
-    if (modalUnitFilter) {
-        const triggerFilter = () => {
-            const unitId = modalUnitFilter.value;
-            const rows = document.querySelectorAll('.inventory-row');
-            
-            rows.forEach(row => {
-                const catSelect = row.querySelector('.category-select');
-                const roomSelect = row.querySelector('.room-select');
-                
-                if (catSelect) {
-                    Array.from(catSelect.options).forEach(opt => {
-                        if (opt.value === "") {
-                            opt.style.display = 'block';
-                        } else {
-                            const optUnitId = opt.getAttribute('data-unit-id');
-                            opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
-                        }
-                    });
-                }
-
-                if (roomSelect) {
-                    Array.from(roomSelect.options).forEach(opt => {
-                        if (opt.value === "") {
-                            opt.style.display = 'block';
-                        } else {
-                            const optUnitId = opt.getAttribute('data-unit-id');
-                            opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
-                        }
-                    });
-                }
-            });
-        };
-
-        modalUnitFilter.addEventListener('change', function() {
-            triggerFilter();
-            // Additionally reset values on change
-            const rows = document.querySelectorAll('.inventory-row');
-            rows.forEach(row => {
-                const catSelect = row.querySelector('.category-select');
-                const roomSelect = row.querySelector('.room-select');
-                if (catSelect) catSelect.value = "";
-                if (roomSelect) roomSelect.value = "";
-                const pjInput = row.querySelector('[name*="[person_in_charge]"]');
-                if (pjInput) pjInput.value = "";
-            });
-        });
-
-        // Trigger on load if unit is pre-selected
-        if (modalUnitFilter.value) {
-            triggerFilter();
-        }
-    }
-
-    // Attach listener for price inputs
-    document.addEventListener('input', function(e) {
-        if (e.target.classList.contains('currency-input')) {
-            e.target.value = formatInputRupiah(e.target.value);
-        }
-    });
-
-    let rowCount = 1;
-    let baseNextNum = parseInt("{{ $nextCode }}") || 1;
-    
-    function updateRowCode(row, index) {
-        const roomSelect = row.querySelector('.room-select');
-        const codeInput = row.querySelector('.inventory-code');
-        
-        if (!roomSelect || !codeInput) return;
-        
-        let unit = roomSelect.options[roomSelect.selectedIndex]?.dataset.unit || 'GUDANG';
-        // Remove all spaces for unit
-        unit = unit.replace(/\s+/g, '').toUpperCase();
-        
-        const itemNumber = String(baseNextNum + index).padStart(5, '0');
-        const newCode = `${unit}/IVN-${itemNumber}`;
-        codeInput.value = newCode;
-    }
-
-    // Listener for dynamic updates
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('room-select') || e.target.classList.contains('date-input')) {
-            const row = e.target.closest('tr');
-            if (row) {
-                // Determine index
-                let index = 0;
-                const rows = Array.from(document.querySelectorAll('.inventory-row'));
-                index = rows.indexOf(row);
-                updateRowCode(row, index);
-
-                // Auto-fill Penanggung Jawab from Room
-                if (e.target.classList.contains('room-select')) {
-                    const pj = e.target.options[e.target.selectedIndex]?.dataset.pj || '';
-                    const pjInput = row.querySelector('input[name*="[person_in_charge]"]');
-                    if (pjInput) pjInput.value = pj;
-                }
-            }
-        }
-    });
-
-    const inventoryBody = document.getElementById('inventoryBody');
-    const addRowBtn = document.getElementById('addRow');
-
-    if (addRowBtn && inventoryBody) {
-        addRowBtn.addEventListener('click', function() {
-            const firstRow = document.querySelector('.inventory-row');
-            if (!firstRow) return;
-
-            const newRow = firstRow.cloneNode(true);
-            
-            // Update input names and values
-            newRow.querySelectorAll('[name]').forEach(input => {
-                const name = input.getAttribute('name');
-                input.setAttribute('name', name.replace(/\[\d+\]/, `[${rowCount}]`));
-                
-                if (input.classList.contains('inventory-code')) {
-                    // Will be updated by updateRowCode
-                } else if (input.tagName === 'SELECT') {
-                    if (input.name.includes('condition')) {
-                        input.value = firstRow.querySelector('[name*="condition"]').value || 'Good';
-                    } else if (input.name.includes('inventory_category_id')) {
-                         input.value = firstRow.querySelector('[name*="inventory_category_id"]').value;
-                    } else if (input.name.includes('room_id')) {
-                         input.value = firstRow.querySelector('[name*="room_id"]').value;
-                    }
-                } else if (input.name.includes('[name]')) {
-                    input.value = firstRow.querySelector('[name*="[name]"]').value;
-                } else if (input.name.includes('[price]')) {
-                    input.value = firstRow.querySelector('[name*="[price]"]').value;
-                } else if (input.name.includes('[source]')) {
-                    input.value = firstRow.querySelector('[name*="[source]"]').value;
-                } else if (input.name.includes('[person_in_charge]')) {
-                    input.value = firstRow.querySelector('[name*="[person_in_charge]"]').value;
-                } else if (input.name.includes('[is_grant]')) {
-                    input.checked = firstRow.querySelector('[name*="[is_grant]"]').checked;
-                    // Update ID and For to keep checkbox working
-                    const newId = `is_grant_${rowCount}`;
-                    input.id = newId;
-                    const label = input.nextElementSibling;
-                    if (label && label.tagName === 'LABEL') label.setAttribute('for', newId);
-                } else if (input.name.includes('[purchase_date]')) {
-                     input.value = firstRow.querySelector('[name*="[purchase_date]"]').value;
-                } else if (input.type === 'file') {
-                    input.value = ''; 
-                } else {
-                    input.value = ''; 
-                }
-            });
-
-            // Re-apply unit filter to new row
-            if (modalUnitFilter && modalUnitFilter.value) {
-                const unitId = modalUnitFilter.value;
-                const catSelect = newRow.querySelector('.category-select');
-                const roomSelect = newRow.querySelector('.room-select');
-                
-                if (catSelect) {
-                    Array.from(catSelect.options).forEach(opt => {
-                        if (opt.value === "") {
-                            opt.style.display = 'block';
-                        } else {
-                            const optUnitId = opt.getAttribute('data-unit-id');
-                            opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
-                        }
-                    });
-                }
-                
-                if (roomSelect) {
-                    Array.from(roomSelect.options).forEach(opt => {
-                        if (opt.value === "") {
-                            opt.style.display = 'block';
-                        } else {
-                            const optUnitId = opt.getAttribute('data-unit-id');
-                            opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
-                        }
-                    });
-                }
-            }
-
-            // Enable delete button for new rows
-            const removeBtn = newRow.querySelector('.remove-row');
-            if (removeBtn) {
-                removeBtn.disabled = false;
-                removeBtn.addEventListener('click', function() {
-                    newRow.remove();
-                });
-            }
-
-            inventoryBody.appendChild(newRow);
-            rowCount++;
-        });
-    }
-
-    // Handle delete for existing dynamically added rows (just in case)
-    document.querySelectorAll('.remove-row').forEach(btn => {
-        if (!btn.disabled) {
-            btn.addEventListener('click', function() {
-                const row = btn.closest('tr');
-                if (row) row.remove();
-            });
-        }
-    });
-
-    // Barcode Selection Logic
-    const checkAll = document.getElementById('checkAll');
-    const btnPrintBarcodes = document.getElementById('btnPrintBarcodes');
-
-    if (checkAll) {
-        checkAll.addEventListener('change', function() {
-            document.querySelectorAll('.item-checkbox').forEach(cb => {
-                cb.checked = checkAll.checked;
-            });
-            toggleBulkEditBtn();
-        });
-    }
-
-    if (btnPrintBarcodes) {
-        btnPrintBarcodes.addEventListener('click', function() {
-            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-            if (selected.length === 0) {
-                Swal.fire('Info', 'Pilih minimal satu barang untuk mencetak barcode.', 'info');
-                return;
-            }
-            
-            const url = "{{ route('sarpras.inventory.print-barcodes') }}?ids=" + selected.join(',');
-            window.open(url, '_blank');
-        });
-    }
-
-    // Bulk Edit Selection Logic
-    const btnBulkEdit = document.getElementById('btnBulkEdit');
-    const bulkEditModalEl = document.getElementById('bulkEditModal');
-    const bulkEditBody = document.getElementById('bulkEditBody');
-    const bulkEditContent = document.getElementById('bulkEditContent');
-    const bulkEditPickerNotice = document.getElementById('bulkEditPickerNotice');
-    const modalBulkUnitFilter = document.getElementById('modal_bulk_unit_filter');
-    let currentSelectedItems = [];
-    let bulkEditModalInstance = null;
-
-    function toggleBulkEditBtn() {
-        if (!btnBulkEdit) return;
-        const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
-        if (selectedCount > 0) {
-            btnBulkEdit.disabled = false;
-            btnBulkEdit.classList.add('pulse-warning'); // Subtle hint
-        } else {
-            btnBulkEdit.disabled = true;
-            btnBulkEdit.classList.remove('pulse-warning');
-        }
-    }
-
-    document.addEventListener('change', function(e) {
-        if (e.target.classList.contains('item-checkbox') || e.target.id === 'checkAll') {
-            toggleBulkEditBtn();
-        }
-    });
-
-    if (btnBulkEdit) {
-        btnBulkEdit.addEventListener('click', function() {
-            const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-            if (selectedIds.length === 0) return;
-
-            Swal.fire({
-                title: 'Memuat Data...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
-            fetch(`{{ route('sarpras.inventory.get-multiple') }}?ids=${selectedIds.join(',')}`)
-                .then(res => res.json())
-                .then(response => {
-                    if (response.success) {
-                        try {
-                            currentSelectedItems = response.data;
-                            
-                            // Auto-detect unit
-                            const mainUnitFilter = document.querySelector('select.form-filter-select[name="unit_id"]');
-                            let autoUnitId = "";
-                            
-                            if (mainUnitFilter && mainUnitFilter.value) {
-                                autoUnitId = mainUnitFilter.value;
-                            } else if (currentSelectedItems.length > 0) {
-                                const firstItem = currentSelectedItems[0];
-                                autoUnitId = firstItem.room ? firstItem.room.unit_id : (firstItem.unit_id || "");
-                            }
-
-                            if (modalBulkUnitFilter && autoUnitId) {
-                                modalBulkUnitFilter.value = autoUnitId;
-                            }
-                            
-                            populateBulkEditModal(currentSelectedItems);
-
-                            // Close loading
-                            Swal.close();
-
-                            // Show modal with a tiny delay for smoother transition
-                            setTimeout(() => {
-                                if (bulkEditModalEl) {
-                                    if (!bulkEditModalInstance) {
-                                        bulkEditModalInstance = new bootstrap.Modal(bulkEditModalEl);
-                                    }
-                                    bulkEditModalInstance.show();
-                                }
-                            }, 100);
-                        } catch (populateError) {
-                            console.error('Populate Error:', populateError);
-                            Swal.close();
-                            Swal.fire('Error', 'Gagal memproses data: ' + populateError.message, 'error');
-                        }
-                    } else {
-                        Swal.close();
-                        Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
-                    }
-                })
-                .catch(err => {
-                    Swal.close();
-                    console.error(err);
-                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
-                });
-        });
-    }
-
-    if (modalBulkUnitFilter) {
-        modalBulkUnitFilter.addEventListener('change', function() {
-            populateBulkEditModal(currentSelectedItems);
-        });
-    }
-
-    function populateBulkEditModal(items) {
-        if (!bulkEditBody) return;
-        bulkEditBody.innerHTML = '';
-        
-        const selectedUnitId = modalBulkUnitFilter ? modalBulkUnitFilter.value : "";
-        
-        if (!selectedUnitId) {
-            if (bulkEditContent) bulkEditContent.style.display = 'none';
-            if (bulkEditPickerNotice) bulkEditPickerNotice.style.display = 'block';
-            return;
-        }
-
-        if (bulkEditContent) bulkEditContent.style.display = 'block';
-        if (bulkEditPickerNotice) bulkEditPickerNotice.style.display = 'none';
-
-        const catSelectSrc = document.querySelector('select[name="items[0][inventory_category_id]"]');
-        const roomSelectSrc = document.querySelector('select[name="items[0][room_id]"]');
-        
-        const categoriesHtml = catSelectSrc ? catSelectSrc.innerHTML : '';
-        const roomsHtml = roomSelectSrc ? roomSelectSrc.innerHTML : '';
-
-        // Only show items from selected unit
-        const filteredItems = items.filter(item => {
-            const itemUnitId = item.room ? item.room.unit_id : (item.unit_id || null);
-            return String(itemUnitId) === String(selectedUnitId);
-        });
-
-        if (filteredItems.length === 0) {
-            const totalCount = items.length;
-            bulkEditBody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="text-center py-5">
-                        <i class="bi bi-info-circle display-4 text-muted mb-3 d-block"></i>
-                        <h6 class="text-muted fw-bold">Tidak ada barang dari unit ini</h6>
-                        <p class="text-muted small mb-0">Bapak memilih ${totalCount} barang, tapi tidak ada yang berasal dari unit ${modalBulkUnitFilter.options[modalBulkUnitFilter.selectedIndex].text}.</p>
-                        <p class="text-muted small">Silakan ubah pilihan Unit di atas.</p>
-                    </td>
-                </tr>`;
-            return;
-        }
-
-        filteredItems.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <input type="hidden" name="items[${index}][id]" value="${item.id}">
-                <td>
-                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm" value="${item.name}" required>
-                </td>
-                <td>
-                    <select name="items[${index}][room_id]" class="form-select form-select-sm bulk-room-select" required>
-                        ${roomsHtml}
-                    </select>
-                </td>
-                <td>
-                    <select name="items[${index}][inventory_category_id]" class="form-select form-select-sm bulk-category-select" required>
-                        ${categoriesHtml}
-                    </select>
-                </td>
-                <td>
-                    <select name="items[${index}][condition]" class="form-select form-select-sm" required>
-                        <option value="Good" ${item.condition === 'Good' ? 'selected' : ''}>Baik</option>
-                        <option value="Repairing" ${item.condition === 'Repairing' ? 'selected' : ''}>Perbaikan</option>
-                        <option value="Damaged" ${item.condition === 'Damaged' ? 'selected' : ''}>Rusak Ringan</option>
-                        <option value="Broken" ${item.condition === 'Broken' ? 'selected' : ''}>Rusak Berat</option>
-                    </select>
-                </td>
-                <td>
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text">Rp</span>
-                        <input type="text" name="items[${index}][price]" class="form-control currency-input" value="${formatInputRupiah(String(item.price))}">
-                    </div>
-                </td>
-                <td>
-                    <input type="text" name="items[${index}][source]" class="form-control form-control-sm mb-1" value="${item.source || ''}" placeholder="Sumber...">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="items[${index}][is_grant]" value="1" id="bulk_is_grant_${index}" ${item.is_grant ? 'checked' : ''}>
-                        <label class="form-check-label small" for="bulk_is_grant_${index}">Bantuan</label>
-                    </div>
-                </td>
-                <td>
-                    <input type="text" name="items[${index}][person_in_charge]" class="form-control form-control-sm" value="${item.person_in_charge || ''}" placeholder="Nama PJ...">
-                </td>
-                <td>
-                    <input type="date" name="items[${index}][purchase_date]" class="form-control form-control-sm" value="${item.purchase_date ? item.purchase_date.split('T')[0] : ''}">
-                </td>
-                <td>
-                    <input type="file" name="items[${index}][photo]" class="form-control form-control-sm" accept="image/*">
-                    ${item.photo ? `<div class="mt-1 small text-success"><i class="bi bi-check-circle"></i> Ada Foto</div>` : ''}
-                </td>
-                <td class="small fw-bold text-primary">
-                    <input type="text" name="items[${index}][code]" class="form-control form-control-sm font-monospace" value="${item.code}" required>
-                </td>
-            `;
-            
-            bulkEditBody.appendChild(row);
-
-            // Filter room/category specific to selected unit
-            const catSelect = row.querySelector('.bulk-category-select');
-            const roomSelect = row.querySelector('.bulk-room-select');
-            const itemUnitId = selectedUnitId;
-
-            if (catSelect) {
-                Array.from(catSelect.options).forEach(opt => {
-                    if (opt.value === "") {
-                        opt.style.display = 'block';
-                    } else {
-                        const optUnitId = opt.getAttribute('data-unit-id');
-                        opt.style.display = (optUnitId == itemUnitId || optUnitId === "" || optUnitId === "null" || !optUnitId) ? 'block' : 'none';
-                    }
-                });
-                catSelect.value = item.inventory_category_id;
-            }
-
-            if (roomSelect) {
-                Array.from(roomSelect.options).forEach(opt => {
-                    if (opt.value === "") {
-                        opt.style.display = 'block';
-                    } else {
-                        const optUnitId = opt.getAttribute('data-unit-id');
-                        opt.style.display = (optUnitId == itemUnitId) ? 'block' : 'none';
-                    }
-                });
-                roomSelect.value = item.room_id;
-            }
-        });
-    }
-
-    function confirmDelete(url) {
-        Swal.fire({
-            title: 'Apakah Anda yakin?',
-            text: "Data barang ini akan dihapus secara permanen!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                let form = document.createElement('form');
-                form.action = url;
-                form.method = 'POST';
-                form.innerHTML = `@csrf @method('DELETE')`;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        })
-    }
-
-    function showHistory(id) {
-        const modal = new bootstrap.Modal(document.getElementById('historyModal'));
-        const body = document.getElementById('historyContent');
-        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Memuat histori...</p></div>';
-        modal.show();
-
-        fetch(`/sarpras/inventory/${id}/history`)
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) throw new Error(data.message);
-                
-                document.getElementById('historyTitle').innerText = `Histori: ${data.inventory.name}`;
-                
-                let photoHtml = data.inventory.photo ? 
-                    `<img src="/storage/${data.inventory.photo}" class="rounded shadow-sm border mb-3" style="width: 100%; max-height: 200px; object-fit: cover;">` : 
-                    `<div class="bg-white rounded border mb-3 p-4 text-center text-muted"><i class="bi bi-image display-4"></i><br>Tidak ada foto</div>`;
-
-                let html = `
-                <div class="item-info-card p-3 bg-white rounded shadow-sm border mb-4">
-                    ${photoHtml}
-                    <div class="row small g-2">
-                        <div class="col-6"><strong>Kode:</strong><br>${data.inventory.code}</div>
-                        <div class="col-6"><strong>Kondisi:</strong><br>${data.inventory.condition}</div>
-                        <div class="col-12 mt-2"><strong>Penanggung Jawab:</strong><br>${data.inventory.person_in_charge ?? '-'}</div>
-                    </div>
-                </div>
-                <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-1"></i> Linimasa Aktivitas</h6>
-                <div class="timeline-v2">`;
-                
-                if (data.history.length === 0) {
-                    html += '<div class="alert alert-light text-center">Belum ada catatan histori untuk barang ini.</div>';
-                } else {
-                    data.history.forEach(item => {
-                        const dateStr = new Date(item.date).toLocaleString('id-ID', {
-                            day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                        });
-                        const isReport = item.type === 'report';
-                        const badgeClass = isReport ? 'text-bg-danger' : 'text-bg-primary';
-                        
-                        html += `
-                        <div class="timeline-item mb-3 pb-3 border-bottom position-relative ps-3">
-                            <div class="timeline-dot position-absolute start-0 top-0 mt-1 rounded-circle ${isReport ? 'bg-danger' : 'bg-primary'}" style="width: 8px; height: 8px;"></div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span class="badge ${badgeClass} border-0">${item.action}</span>
-                                <small class="text-muted" style="font-size: 10px;">${dateStr}</small>
-                            </div>
-                            <div class="text-dark small fw-medium">${item.details}</div>
-                            <div class="mt-1 text-muted" style="font-size: 10px;"><i class="bi bi-person"></i> Oleh: ${item.user}</div>
-                        </div>`;
-                    });
-                }
-                html += '</div>';
-                body.innerHTML = html;
-            })
-            .catch(err => {
-                body.innerHTML = `<div class="alert alert-danger">Gagal memuat histori: ${err.message}</div>`;
-            });
-    }
-    function submitDamageReport(event, code) {
-        event.preventDefault();
-        const form = event.target;
-        
-        Swal.fire({
-            title: 'Kirim Laporan?',
-            text: "Laporan akan diteruskan ke Kepala Sekolah untuk validasi.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, Kirim'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.showLoading();
-                const formData = new FormData(form);
-
-                fetch(`{{ route('sarpras.inventory.report-damage-by-code') }}`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire('Berhasil', data.message, 'success').then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire('Error', data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
-                });
-            }
-        });
-    }
-
-    // Dynamic Filter for Import Modal Guide
-    document.addEventListener('DOMContentLoaded', function() {
-        const unitSelect = document.getElementById('import_unit_id');
-        const importModal = document.getElementById('importExcelModal');
-
-        function filterGuide() {
-            if (!unitSelect) return;
-            const selectedUnitId = unitSelect.value;
-            
-            // Perform selection inside function to ensure we get current elements
-            const categoryItems = document.querySelectorAll('.category-guide-item');
-            const roomItems = document.querySelectorAll('.room-guide-item');
-
-            categoryItems.forEach(item => {
-                const unitId = item.getAttribute('data-unit-id');
-                // Show if unit matches OR if it has no unit (shared categories)
-                if (unitId == selectedUnitId || unitId === "" || unitId === "null" || !unitId) {
-                    item.style.setProperty('display', 'flex', 'important');
-                } else {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-
-            roomItems.forEach(item => {
-                const unitId = item.getAttribute('data-unit-id');
-                if (unitId == selectedUnitId) {
-                    item.style.setProperty('display', 'flex', 'important');
-                } else {
-                    item.style.setProperty('display', 'none', 'important');
-                }
-            });
-        }
-
-        if (unitSelect) {
-            unitSelect.addEventListener('change', filterGuide);
-        }
-
-        if (importModal) {
-            importModal.addEventListener('shown.bs.modal', filterGuide);
-        }
-        
-        filterGuide();
-    });
-</script>
 
 <!-- History Modal -->
 <div class="modal fade" id="historyModal" tabindex="-1">
@@ -1810,5 +1168,280 @@
         </div>
     </div>
 </div>
+
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Format Rupiah function
+    function formatInputRupiah(angka) {
+        if (!angka) return "";
+        var number_string = angka.replace(/[^,\d]/g, '').toString(),
+            split = number_string.split(','),
+            sisa = split[0].length % 3,
+            rupiah = split[0].substr(0, sisa),
+            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+        if (ribuan) {
+            separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+        return (split[1] != undefined ? rupiah + ',' + split[1] : rupiah);
+    }
+
+    // 2. Unit Filter Logic for Add Modal
+    const modalUnitFilter = document.getElementById('modal_unit_filter');
+    const categorySelects = document.querySelectorAll('.category-select');
+    const roomSelects = document.querySelectorAll('.room-select');
+
+    if (modalUnitFilter) {
+        const triggerFilter = () => {
+            const unitId = modalUnitFilter.value;
+            document.querySelectorAll('.inventory-row').forEach(row => {
+                const catSelect = row.querySelector('.category-select');
+                const roomSelect = row.querySelector('.room-select');
+                if (catSelect) {
+                    Array.from(catSelect.options).forEach(opt => {
+                        const uId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (opt.value === "" || uId == unitId || !uId || uId === "null") ? 'block' : 'none';
+                    });
+                }
+                if (roomSelect) {
+                    Array.from(roomSelect.options).forEach(opt => {
+                        opt.style.display = (opt.value === "" || opt.getAttribute('data-unit-id') == unitId) ? 'block' : 'none';
+                    });
+                }
+            });
+        };
+        modalUnitFilter.addEventListener('change', function() {
+            triggerFilter();
+            document.querySelectorAll('.inventory-row').forEach(row => {
+                const cat = row.querySelector('.category-select');
+                const room = row.querySelector('.room-select');
+                const pj = row.querySelector('[name*="[person_in_charge]"]');
+                if (cat) cat.value = "";
+                if (room) room.value = "";
+                if (pj) pj.value = "";
+            });
+        });
+        if (modalUnitFilter.value) triggerFilter();
+    }
+
+    // 3. Dynamic Currency Input
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('currency-input')) {
+            const cursor = e.target.selectionStart;
+            const oldLen = e.target.value.length;
+            e.target.value = formatInputRupiah(e.target.value);
+            const newLen = e.target.value.length;
+            e.target.setSelectionRange(cursor + (newLen - oldLen), cursor + (newLen - oldLen));
+        }
+    });
+
+    // 4. Barcode logic
+    const checkAll = document.getElementById('checkAll');
+    const btnPrintBarcodes = document.getElementById('btnPrintBarcodes');
+    const btnBulkEdit = document.getElementById('btnBulkEdit');
+
+    function updateBulkBtn() {
+        if (!btnBulkEdit) return;
+        const count = document.querySelectorAll('.item-checkbox:checked').length;
+        btnBulkEdit.disabled = count === 0;
+        if (count > 0) btnBulkEdit.classList.add('pulse-warning');
+        else btnBulkEdit.classList.remove('pulse-warning');
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = checkAll.checked);
+            updateBulkBtn();
+        });
+    }
+    document.addEventListener('change', e => {
+        if (e.target.classList.contains('item-checkbox')) updateBulkBtn();
+    });
+
+    if (btnPrintBarcodes) {
+        btnPrintBarcodes.addEventListener('click', function() {
+            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return Swal.fire('Info', 'Pilih barang dulu.', 'info');
+            window.open(`{{ route('sarpras.inventory.print-barcodes') }}?ids=${selected.join(',')}`, '_blank');
+        });
+    }
+
+    // 5. Bulk Edit Logic
+    const modalBulkUnitFilter = document.getElementById('modal_bulk_unit_filter');
+    let currentBulkItems = [];
+
+    if (btnBulkEdit) {
+        btnBulkEdit.addEventListener('click', function() {
+            const ids = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+            if (ids.length === 0) return;
+
+            Swal.fire({
+                title: 'Memuat Data...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`{{ route('sarpras.inventory.get-multiple') }}?ids=${ids.join(',')}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (!res.success) throw new Error(res.message);
+                    currentBulkItems = res.data;
+                    
+                    // Detect unit
+                    const mainUnit = document.querySelector('select[name="unit_id"]');
+                    let unitId = (mainUnit && mainUnit.value) ? mainUnit.value : "";
+                    if (!unitId && currentBulkItems.length > 0) {
+                        const first = currentBulkItems[0];
+                        unitId = first.room ? first.room.unit_id : (first.unit_id || "");
+                    }
+                    if (modalBulkUnitFilter) modalBulkUnitFilter.value = unitId;
+
+                    populateBulkModal(currentBulkItems);
+                    Swal.close();
+                    
+                    const mEl = document.getElementById('bulkEditModal');
+                    if (mEl) bootstrap.Modal.getOrCreateInstance(mEl).show();
+                })
+                .catch(err => {
+                    Swal.close();
+                    Swal.fire('Error', 'Gagal: ' + err.message, 'error');
+                });
+        });
+    }
+
+    if (modalBulkUnitFilter) {
+        modalBulkUnitFilter.addEventListener('change', () => populateBulkModal(currentBulkItems));
+    }
+
+    function populateBulkModal(items) {
+        const body = document.getElementById('bulkEditBody');
+        const content = document.getElementById('bulkEditContent');
+        const notice = document.getElementById('bulkEditPickerNotice');
+        if (!body) return;
+        body.innerHTML = '';
+        const unitId = modalBulkUnitFilter ? modalBulkUnitFilter.value : "";
+        
+        if (!unitId) {
+            if (content) content.style.display = 'none';
+            if (notice) notice.style.display = 'block';
+            return;
+        }
+        if (content) content.style.display = 'block';
+        if (notice) notice.style.display = 'none';
+
+        // Master sources from Add Modal
+        const catSrc = document.querySelector('#addInventoryModal select[name="items[0][inventory_category_id]"]');
+        const roomSrc = document.querySelector('#addInventoryModal select[name="items[0][room_id]"]');
+        const catsHtml = catSrc ? catSrc.innerHTML : '';
+        const roomsHtml = roomSrc ? roomSrc.innerHTML : '';
+
+        const filtered = items.filter(item => {
+            const iUId = item.room ? item.room.unit_id : (item.unit_id || null);
+            return String(iUId) === String(unitId);
+        });
+
+        if (filtered.length === 0) {
+            body.innerHTML = `<tr><td colspan="10" class="text-center py-5 text-muted">
+                <i class="bi bi-info-circle display-6 mb-2 d-block"></i>Tidak ada barang di unit ini.</td></tr>`;
+            return;
+        }
+
+        filtered.forEach((item, i) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <input type="hidden" name="items[${i}][id]" value="${item.id}">
+                <td><input type="text" name="items[${i}][name]" class="form-control form-control-sm" value="${item.name}" required></td>
+                <td><select name="items[${i}][room_id]" class="form-select form-select-sm b-room" required>${roomsHtml}</select></td>
+                <td><select name="items[${i}][inventory_category_id]" class="form-select form-select-sm b-cat" required>${catsHtml}</select></td>
+                <td><select name="items[${i}][condition]" class="form-select form-select-sm">
+                    <option value="Good" ${item.condition=='Good'?'selected':''}>Baik</option>
+                    <option value="Repairing" ${item.condition=='Repairing'?'selected':''}>Perbaikan</option>
+                    <option value="Damaged" ${item.condition=='Damaged'?'selected':''}>Rusak Ringan</option>
+                    <option value="Broken" ${item.condition=='Broken'?'selected':''}>Rusak Berat</option>
+                </select></td>
+                <td><div class="input-group input-group-sm"><span class="input-group-text">Rp</span>
+                    <input type="text" name="items[${i}][price]" class="form-control currency-input" value="${formatInputRupiah(String(item.price))}"></div></td>
+                <td><input type="text" name="items[${i}][source]" class="form-control form-control-sm mb-1" value="${item.source||''}">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" name="items[${i}][is_grant]" value="1" id="bg_${i}" ${item.is_grant?'checked':''}>
+                    <label class="form-check-label small" for="bg_${i}">Bantuan</label></div></td>
+                <td><input type="text" name="items[${i}][person_in_charge]" class="form-control form-control-sm" value="${item.person_in_charge||''}"></td>
+                <td><input type="date" name="items[${i}][purchase_date]" class="form-control form-control-sm" value="${item.purchase_date?item.purchase_date.split('T')[0]:''}"></td>
+                <td><input type="file" name="items[${i}][photo]" class="form-control form-control-sm"></td>
+                <td><input type="text" name="items[${i}][code]" class="form-control form-control-sm font-monospace" value="${item.code}" required></td>
+            `;
+            body.appendChild(row);
+            const rSel = row.querySelector('.b-room');
+            const cSel = row.querySelector('.b-cat');
+            if (rSel) { Array.from(rSel.options).forEach(o => o.style.display = (o.getAttribute('data-unit-id')==unitId)?'block':'none'); rSel.value = item.room_id || ""; }
+            if (cSel) { Array.from(cSel.options).forEach(o => { const oU = o.getAttribute('data-unit-id'); o.style.display = (o.value=="" || oU==unitId || !oU || oU=="null")?'block':'none'; }); cSel.value = item.inventory_category_id; }
+        });
+    }
+
+    // 6. Global Utils
+    window.confirmDelete = (url) => {
+        Swal.fire({ title:'Hapus Barang?', text:'Permanen!', icon:'warning', showCancelButton:true, confirmButtonColor:'#d33', confirmButtonText:'Ya, Hapus' })
+        .then(r => { if(r.isConfirmed){ const f=document.createElement('form'); f.action=url; f.method='POST'; f.innerHTML=`@csrf @method('DELETE')`; document.body.appendChild(f); f.submit(); } });
+    };
+
+    window.showHistory = (id) => {
+        const body = document.getElementById('historyContent');
+        if(!body) return;
+        body.innerHTML = '<div class="text-center py-5"><div class="spinner-border"></div></div>';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('historyModal')).show();
+        fetch(`/sarpras/inventory/${id}/history`).then(r=>r.json()).then(d=>{
+            if(!d.success) throw new Error(d.message);
+            document.getElementById('historyTitle').innerText = `Histori: ${d.inventory.name}`;
+            let h = `<div class="p-3 bg-white rounded border mb-4">${d.inventory.photo?`<img src="/storage/${d.inventory.photo}" class="w-100 rounded mb-2" style="max-height:200px;object-fit:cover;">`:'<div class="text-center p-3 text-muted border mb-2"><i class="bi bi-image display-6"></i></div>'}
+                    <div class="row small"> <div class="col-6"><strong>Kode:</strong><br>${d.inventory.code}</div> <div class="col-6"><strong>Kondisi:</strong><br>${d.inventory.condition}</div> </div></div><div class="timeline">`;
+            d.history.forEach(l => { h += `<div class="pb-2 mb-2 border-bottom small"><div class="d-flex justify-content-between"><strong>${l.action}</strong><span class="text-muted">${new Date(l.created_at).toLocaleDateString()}</span></div><p class="mb-0">${l.description}</p><em class="text-muted">Oleh: ${l.user?.name||'System'}</em></div>`; });
+            body.innerHTML = h || 'Tidak ada riwayat.';
+        }).catch(e => body.innerHTML = `<div class="alert alert-danger">${e.message}</div>`);
+    };
+
+    window.reportDamageByScan = () => {
+        Swal.fire({ title:'Lapor Rusak', input:'text', inputLabel:'Kode Barang', showCancelButton:true }).then(r => {
+            if(r.isConfirmed && r.value){
+                const fd = new FormData(); fd.append('code', r.value);
+                fetch(`{{ route('sarpras.inventory.report-damage-by-code') }}`, { method:'POST', body:fd, headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}'} })
+                .then(res=>res.json()).then(d => { if(d.success) Swal.fire('Ok', d.message, 'success').then(()=>location.reload()); else Swal.fire('Err', d.message, 'error'); })
+                .catch(()=>Swal.fire('Err', 'Error sistem', 'error'));
+            }
+        });
+    };
+
+    // 7. Import Guide logic
+    const impUnit = document.getElementById('import_unit_id');
+    const impModal = document.getElementById('importExcelModal');
+    function filterImp() {
+        const uId = impUnit ? impUnit.value : "";
+        document.querySelectorAll('.category-guide-item').forEach(i => { const dU = i.getAttribute('data-unit-id'); i.style.display = (dU==uId || !dU || dU=="null")?'flex':'none'; });
+        document.querySelectorAll('.room-guide-item').forEach(i => i.style.display = (i.getAttribute('data-unit-id')==uId)?'flex':'none');
+    }
+    if(impUnit) impUnit.addEventListener('change', filterImp);
+    if(impModal) impModal.addEventListener('shown.bs.modal', filterImp);
+    filterImp();
+
+    // 8. Add Row Logic (Extended)
+    if (addRowBtn && inventoryBody) {
+        addRowBtn.addEventListener('click', function() {
+            const firstRow = document.querySelector('.inventory-row');
+            if (!firstRow) return;
+            const newRow = firstRow.cloneNode(true);
+            newRow.querySelectorAll('[name]').forEach(i => {
+                const n = i.getAttribute('name'); i.setAttribute('name', n.replace(/\[\d+\]/, `[${rowCount}]`));
+                if(i.type==='file') i.value=''; else if(!i.classList.contains('date-input') && i.type!=='checkbox') i.value='';
+            });
+            const del = newRow.querySelector('.remove-row');
+            if(del){ del.disabled = false; del.addEventListener('click', ()=>newRow.remove()); }
+            inventoryBody.appendChild(newRow); rowCount++;
+        });
+    }
+});
+</script>
 @endpush
 @endsection
