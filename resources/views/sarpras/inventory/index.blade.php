@@ -649,7 +649,7 @@
                                                     <label class="form-label fw-bold">Lokasi / Ruangan</label>
                                                     <select name="room_id" class="form-select" required>
                                                         @foreach($modalRooms as $room)
-                                                            @if($room->unit_id == $item->unit_id)
+                                                            @if($room->unit_id == ($item->room->unit_id ?? null))
                                                                 <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
                                                                     {{ $room->name }} ({{ $room->unit->name }})
                                                                 </option>
@@ -661,7 +661,7 @@
                                                     <label class="form-label fw-bold">Kategori</label>
                                                     <select name="inventory_category_id" class="form-select" required>
                                                         @foreach($modalCategories as $cat)
-                                                            @if($cat->unit_id == $item->unit_id || is_null($cat->unit_id))
+                                                            @if($cat->unit_id == ($item->room->unit_id ?? null) || is_null($cat->unit_id))
                                                                 <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                                             @endif
                                                         @endforeach
