@@ -333,17 +333,6 @@
             <div class="card-body p-3">
                 <form method="GET" action="{{ route('sarpras.inventory.index') }}" class="row g-2 align-items-end">
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold text-secondary mb-1">Unit</label>
-                        <select name="unit_id" class="form-select form-filter-select" onchange="this.form.submit()">
-                            @if($units->count() > 1 && (Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur'))
-                                <option value="">Semua Unit</option>
-                            @endif
-                            @foreach($units as $unit)
-                                <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-secondary mb-1">Tahun Pelajaran</label>
                         <select name="academic_year_id" class="form-select form-filter-select" onchange="this.form.submit()">
                             <option value="">Semua Tahun</option>
@@ -351,6 +340,17 @@
                                <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>
                                    {{ $year->name }} {{ $year->status == 'active' ? '(Aktif)' : '' }}
                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-secondary mb-1">Unit</label>
+                        <select name="unit_id" class="form-select form-filter-select" onchange="this.form.submit()">
+                            @if($units->count() > 1 && (Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur'))
+                                <option value="">Semua Unit</option>
+                            @endif
+                            @foreach($units as $unit)
+                                <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -646,13 +646,30 @@
 
                                             <div class="row g-3 mb-4">
                                                 <div class="col-md-6">
-                                                    <label class="form-label fw-bold">Kategori</label>
-                                                    <select name="inventory_category_id" class="form-select" required>
-                                                        @foreach($categories as $cat)
-                                                            <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                                    <label class="form-label fw-bold">Lokasi / Ruangan</label>
+                                                    <select name="room_id" class="form-select" required>
+                                                        @foreach($activeRooms as $room)
+                                                            @if($room->unit_id == $item->unit_id)
+                                                                <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
+                                                                    {{ $room->name }} ({{ $room->unit->name }})
+                                                                </option>
+                                                            @endif
                                                         @endforeach
                                                     </select>
                                                 </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold">Kategori</label>
+                                                    <select name="inventory_category_id" class="form-select" required>
+                                                        @foreach($categories as $cat)
+                                                            @if($cat->unit_id == $item->unit_id || is_null($cat->unit_id))
+                                                                <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row g-3 mb-4">
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">Kondisi</label>
                                                     <select name="condition" class="form-select" required>
@@ -660,19 +677,6 @@
                                                         <option value="Repairing" {{ $item->condition == 'Repairing' ? 'selected' : '' }}>Perbaikan</option>
                                                         <option value="Damaged" {{ $item->condition == 'Damaged' ? 'selected' : '' }}>Rusak Ringan</option>
                                                         <option value="Broken" {{ $item->condition == 'Broken' ? 'selected' : '' }}>Rusak Berat</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div class="row g-3 mb-4">
-                                                <div class="col-md-6">
-                                                    <label class="form-label fw-bold">Lokasi / Ruangan</label>
-                                                    <select name="room_id" class="form-select" required>
-                                                        @foreach($activeRooms as $room)
-                                                            <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
-                                                                {{ $room->name }} ({{ $room->unit->name }})
-                                                            </option>
-                                                        @endforeach
                                                     </select>
                                                 </div>
                                                 <div class="col-md-6">
@@ -879,9 +883,9 @@
                         <table class="table table-bordered align-middle" id="inventoryTable">
                             <thead class="bg-light">
                                 <tr>
-                                    <th width="150">Kategori</th>
                                     <th width="220">Nama Barang</th>
                                     <th width="200">Lokasi / Ruangan</th>
+                                    <th width="150">Kategori</th>
                                     <th width="130">Kondisi</th>
                                     <th width="140">Harga (Rp)</th>
                                     <th width="200">Sumber / Bantuan</th>
@@ -895,14 +899,6 @@
                             <tbody id="inventoryBody">
                                 <tr class="inventory-row">
                                     <td>
-                                        <select name="items[0][inventory_category_id]" class="form-select form-select-sm category-select" required>
-                                            <option value="">Pilih...</option>
-                                            @foreach($categories as $cat)
-                                                <option value="{{ $cat->id }}" data-unit-id="{{ $cat->unit_id }}">{{ $cat->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td>
                                         <input type="text" name="items[0][name]" class="form-control form-control-sm" placeholder="Nama..." required>
                                     </td>
                                     <td>
@@ -912,6 +908,14 @@
                                                 <option value="{{ $room->id }}" data-unit-id="{{ $room->unit_id }}" data-unit="{{ $room->unit->name }}" data-pj="{{ $room->person_in_charge }}">
                                                     {{ $room->name }} ({{ $room->unit->name }})
                                                 </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select name="items[0][inventory_category_id]" class="form-select form-select-sm category-select" required>
+                                            <option value="">Pilih...</option>
+                                            @foreach($categories as $cat)
+                                                <option value="{{ $cat->id }}" data-unit-id="{{ $cat->unit_id }}">{{ $cat->name }}</option>
                                             @endforeach
                                         </select>
                                     </td>
@@ -995,41 +999,56 @@
     const roomSelects = document.querySelectorAll('.room-select');
 
     if (modalUnitFilter) {
-        modalUnitFilter.addEventListener('change', function() {
-            const unitId = this.value;
+        const triggerFilter = () => {
+            const unitId = modalUnitFilter.value;
             const rows = document.querySelectorAll('.inventory-row');
             
             rows.forEach(row => {
                 const catSelect = row.querySelector('.category-select');
                 const roomSelect = row.querySelector('.room-select');
                 
-                // Filter Categories
-                Array.from(catSelect.options).forEach(opt => {
-                    if (opt.value === "") {
-                        opt.style.display = 'block';
-                    } else {
-                        const optUnitId = opt.getAttribute('data-unit-id');
-                        opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
-                    }
-                });
-                catSelect.value = ""; // Reset value
+                if (catSelect) {
+                    Array.from(catSelect.options).forEach(opt => {
+                        if (opt.value === "") {
+                            opt.style.display = 'block';
+                        } else {
+                            const optUnitId = opt.getAttribute('data-unit-id');
+                            opt.style.display = (optUnitId == unitId || !optUnitId) ? 'block' : 'none';
+                        }
+                    });
+                }
 
-                // Filter Rooms
-                Array.from(roomSelect.options).forEach(opt => {
-                    if (opt.value === "") {
-                        opt.style.display = 'block';
-                    } else {
-                        const optUnitId = opt.getAttribute('data-unit-id');
-                        opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
-                    }
-                });
-                roomSelect.value = ""; // Reset value
-                
-                // Clear PJ if any
+                if (roomSelect) {
+                    Array.from(roomSelect.options).forEach(opt => {
+                        if (opt.value === "") {
+                            opt.style.display = 'block';
+                        } else {
+                            const optUnitId = opt.getAttribute('data-unit-id');
+                            opt.style.display = (optUnitId == unitId) ? 'block' : 'none';
+                        }
+                    });
+                }
+            });
+        };
+
+        modalUnitFilter.addEventListener('change', function() {
+            triggerFilter();
+            // Additionally reset values on change
+            const rows = document.querySelectorAll('.inventory-row');
+            rows.forEach(row => {
+                const catSelect = row.querySelector('.category-select');
+                const roomSelect = row.querySelector('.room-select');
+                if (catSelect) catSelect.value = "";
+                if (roomSelect) roomSelect.value = "";
                 const pjInput = row.querySelector('[name*="[person_in_charge]"]');
                 if (pjInput) pjInput.value = "";
             });
         });
+
+        // Trigger on load if unit is pre-selected
+        if (modalUnitFilter.value) {
+            triggerFilter();
+        }
     }
 
     // Attach listener for price inputs
@@ -1264,16 +1283,16 @@
             row.innerHTML = `
                 <input type="hidden" name="items[${index}][id]" value="${item.id}">
                 <td>
-                    <select name="items[${index}][inventory_category_id]" class="form-select form-select-sm" required>
-                        ${categoriesHtml}
-                    </select>
-                </td>
-                <td>
                     <input type="text" name="items[${index}][name]" class="form-control form-control-sm" value="${item.name}" required>
                 </td>
                 <td>
-                    <select name="items[${index}][room_id]" class="form-select form-select-sm" required>
+                    <select name="items[${index}][room_id]" class="form-select form-select-sm bulk-room-select" required>
                         ${roomsHtml}
+                    </select>
+                </td>
+                <td>
+                    <select name="items[${index}][inventory_category_id]" class="form-select form-select-sm bulk-category-select" required>
+                        ${categoriesHtml}
                     </select>
                 </td>
                 <td>
@@ -1312,11 +1331,36 @@
                 </td>
             `;
             
-            // Set values for selects
-            row.querySelector(`select[name="items[${index}][inventory_category_id]"]`).value = item.inventory_category_id;
-            row.querySelector(`select[name="items[${index}][room_id]"]`).value = item.room_id;
-            
             bulkEditBody.appendChild(row);
+
+            // Filter room/category specific to this item's unit
+            const catSelect = row.querySelector('.bulk-category-select');
+            const roomSelect = row.querySelector('.bulk-room-select');
+            const itemUnitId = item.unit_id;
+
+            if (catSelect) {
+                Array.from(catSelect.options).forEach(opt => {
+                    if (opt.value === "") {
+                        opt.style.display = 'block';
+                    } else {
+                        const optUnitId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (optUnitId == itemUnitId || optUnitId === "" || optUnitId === "null" || !optUnitId) ? 'block' : 'none';
+                    }
+                });
+                catSelect.value = item.inventory_category_id;
+            }
+
+            if (roomSelect) {
+                Array.from(roomSelect.options).forEach(opt => {
+                    if (opt.value === "") {
+                        opt.style.display = 'block';
+                    } else {
+                        const optUnitId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (optUnitId == itemUnitId) ? 'block' : 'none';
+                    }
+                });
+                roomSelect.value = item.room_id;
+            }
         });
     }
 
@@ -1518,9 +1562,9 @@
                         <table class="table table-bordered align-middle" id="bulkEditTable">
                             <thead class="bg-light">
                                 <tr>
-                                    <th width="150">Kategori</th>
                                     <th width="220">Nama Barang</th>
                                     <th width="200">Lokasi / Ruangan</th>
+                                    <th width="150">Kategori</th>
                                     <th width="130">Kondisi</th>
                                     <th width="140">Harga (Rp)</th>
                                     <th width="200">Sumber / Bantuan</th>

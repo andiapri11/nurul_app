@@ -760,7 +760,22 @@ class SarprasController extends Controller
     if (!in_array($view, ['table', 'grid'])) $view = 'table';
 
     $inventories = $query->paginate($perPage);
-    $categories = InventoryCategory::all();
+
+    // Filter categories based on selected unit and academic year
+    $categoriesQuery = InventoryCategory::query();
+    if ($request->filled('unit_id')) {
+        $categoriesQuery->where(function($q) use ($request) {
+            $q->where('unit_id', $request->unit_id)->orWhereNull('unit_id');
+        });
+    } else {
+        $categoriesQuery->whereIn('unit_id', $allowedUnitIds)->orWhereNull('unit_id');
+    }
+    
+    if ($request->filled('academic_year_id')) {
+        $categoriesQuery->where('academic_year_id', $request->academic_year_id);
+    }
+    
+    $categories = $categoriesQuery->orderBy('name')->get();
     
     // Filter rooms dropdown for the main filter (flexible)
     $roomsQuery = Room::whereIn('unit_id', $allowedUnitIds); // Apply allowed units filter
