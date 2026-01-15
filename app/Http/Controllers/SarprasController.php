@@ -791,6 +791,16 @@ class SarprasController extends Controller
     ));
 }
 
+public function getMultipleInventories(Request $request)
+{
+    $ids = explode(',', $request->ids);
+    $inventories = Inventory::whereIn('id', $ids)->get();
+    return response()->json([
+        'success' => true,
+        'data' => $inventories
+    ]);
+}
+
     public function printInventory(Request $request)
     {
         $query = Inventory::with(['category', 'room.unit', 'room.academicYear']);
@@ -990,22 +1000,23 @@ class SarprasController extends Controller
         }
 
         $request->validate([
+            'inventory_category_id' => 'required|exists:inventory_categories,id',
+            'room_id' => 'required|exists:rooms,id',
+            'condition' => 'required|string',
             'name' => 'required|string|max:255',
             'price' => 'nullable|numeric',
             'source' => 'nullable|string|max:255',
             'person_in_charge' => 'nullable|string|max:255',
             'is_grant' => 'nullable|boolean',
             'photo' => 'nullable|image|max:2048',
+            'purchase_date' => 'nullable|date',
         ]);
 
         $data = $request->except('photo');
         $data['is_grant'] = $request->has('is_grant');
 
         if (empty($data['person_in_charge'])) {
-            $room = \App\Models\Room::with('unit')->find($inventory->room_id); // Using existing room if not changed
-            if ($request->filled('room_id')) {
-                $room = \App\Models\Room::with('unit')->find($request->room_id); // Use new room if changing
-            }
+            $room = \App\Models\Room::with('unit')->find($request->room_id);
             if ($room) {
                 $data['person_in_charge'] = $room->person_in_charge ?: $room->unit->getSarprasOfficerName();
             }
@@ -1035,6 +1046,81 @@ class SarprasController extends Controller
         }
 
         return back()->with('success', 'Data barang berhasil diperbarui.');
+    }
+
+    public function bulkUpdateInventory(Request $request)
+    {
+        if ($request->has('items') && is_array($request->items)) {
+            $items = $request->items;
+            foreach ($items as $key => $item) {
+                if (isset($item['price'])) {
+                    $cleanedPrice = str_replace('.', '', $item['price']);
+                    $items[$key]['price'] = ($cleanedPrice === '') ? null : $cleanedPrice;
+                }
+                if (isset($item['purchase_date']) && empty($item['purchase_date'])) {
+                    $items[$key]['purchase_date'] = null;
+                }
+            }
+            $request->merge(['items' => $items]);
+
+            $request->validate([
+                'items.*.id' => 'required|exists:inventories,id',
+                'items.*.inventory_category_id' => 'required|exists:inventory_categories,id',
+                'items.*.name' => 'required|string|max:255',
+                'items.*.room_id' => 'nullable|exists:rooms,id',
+                'items.*.condition' => 'required|string',
+                'items.*.purchase_date' => 'nullable|date',
+                'items.*.price' => 'nullable|numeric',
+                'items.*.source' => 'nullable|string|max:255',
+                'items.*.person_in_charge' => 'nullable|string|max:255',
+                'items.*.is_grant' => 'nullable',
+                'items.*.photo' => 'nullable|image|max:2048',
+            ]);
+
+            DB::transaction(function() use ($items, $request) {
+                foreach ($items as $key => $itemData) {
+                    $inventory = Inventory::findOrFail($itemData['id']);
+                    
+                    $updateData = $itemData;
+                    unset($updateData['id']);
+                    
+                    $updateData['is_grant'] = isset($itemData['is_grant']) && $itemData['is_grant'] == '1';
+
+                    if (empty($updateData['person_in_charge'])) {
+                        $room = \App\Models\Room::with('unit')->find($updateData['room_id'] ?? null);
+                        if ($room) {
+                            $updateData['person_in_charge'] = $room->person_in_charge ?: $room->unit->getSarprasOfficerName();
+                        }
+                    }
+
+                    if ($request->hasFile("items.$key.photo")) {
+                        if ($inventory->photo && \Illuminate\Support\Facades\Storage::disk('public')->exists($inventory->photo)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($inventory->photo);
+                        }
+                        $updateData['photo'] = $this->compressImage($request->file("items.$key.photo"), 'inventory-photos');
+                    }
+
+                    $changes = [];
+                    if (isset($updateData['room_id']) && $inventory->room_id != $updateData['room_id']) {
+                        $oldRoom = $inventory->room->name ?? 'None';
+                        $newRoom = \App\Models\Room::find($updateData['room_id'])->name ?? 'None';
+                        $changes[] = "Pindah Ruangan: {$oldRoom} -> {$newRoom}";
+                    }
+
+                    $inventory->update($updateData);
+
+                    if (!empty($changes)) {
+                        $this->logAction($inventory->id, 'Updated', implode(', ', $changes) . ' (Bulk Edit)');
+                    } else {
+                        $this->logAction($inventory->id, 'Updated', 'Informasi barang diperbarui (Bulk Edit).');
+                    }
+                }
+            });
+
+            return back()->with('success', count($items) . ' barang inventaris berhasil diperbarui.');
+        }
+
+        return back()->with('error', 'Tidak ada data untuk diperbarui.');
     }
 
     public function destroyInventory(Inventory $inventory)

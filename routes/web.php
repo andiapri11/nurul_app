@@ -208,6 +208,7 @@ Route::middleware(['auth'])->group(function () {
         
         // Inventory
         Route::get('/inventory', [\App\Http\Controllers\SarprasController::class, 'inventory'])->name('inventory.index');
+        Route::get('/inventory/get-multiple', [\App\Http\Controllers\SarprasController::class, 'getMultipleInventories']);
         Route::get('/inventory/print', [\App\Http\Controllers\SarprasController::class, 'printInventory'])->name('inventory.print');
         Route::get('/inventory/disposed', [\App\Http\Controllers\SarprasController::class, 'disposedInventory'])->name('inventory.disposed'); // Archive list
         Route::get('/inventory/{id}/disposal-proof', [\App\Http\Controllers\SarprasController::class, 'printDisposalProof'])->name('inventory.disposal-proof'); // Print proof
@@ -220,6 +221,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/inventory/print-barcodes', [\App\Http\Controllers\SarprasController::class, 'printBarcodes'])->name('inventory.print-barcodes');
         Route::get('/inventory/template', [\App\Http\Controllers\SarprasController::class, 'downloadInventoryTemplate'])->name('inventory.template');
         Route::post('/inventory/import', [\App\Http\Controllers\SarprasController::class, 'importInventory'])->name('inventory.import');
+        Route::post('/inventory/bulk-update', [\App\Http\Controllers\SarprasController::class, 'bulkUpdateInventory'])->name('inventory.bulk-update');
         Route::post('/inventory', [\App\Http\Controllers\SarprasController::class, 'storeInventory'])->name('inventory.store');
         Route::put('/inventory/{inventory}', [\App\Http\Controllers\SarprasController::class, 'updateInventory'])->name('inventory.update');
         Route::delete('/inventory/{inventory}', [\App\Http\Controllers\SarprasController::class, 'destroyInventory'])->name('inventory.destroy');

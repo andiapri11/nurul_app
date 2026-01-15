@@ -218,6 +218,9 @@
                 <i class="bi bi-qr-code"></i> Barcode
             </button>
             @if(empty(request('academic_year_id')) || ($activeYear && request('academic_year_id') == $activeYear->id))
+            <button type="button" class="btn btn-warning btn-sm shadow-sm px-3 d-none" id="btnBulkEdit">
+                <i class="bi bi-pencil-square"></i> Edit Masal
+            </button>
             <button type="button" class="btn btn-success btn-sm shadow-sm px-3" data-bs-toggle="modal" data-bs-target="#importExcelModal">
                 <i class="bi bi-file-earmark-excel"></i> Import
             </button>
@@ -613,10 +616,43 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body text-start">
-                                            <div class="mb-3">
-                                                <label class="form-label font-weight-bold">Nama Barang</label>
-                                                <input type="text" name="name" class="form-control" value="{{ $item->name }}" required>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label font-weight-bold">Nama Barang</label>
+                                                    <input type="text" name="name" class="form-control" value="{{ $item->name }}" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label font-weight-bold">Kategori</label>
+                                                    <select name="inventory_category_id" class="form-select" required>
+                                                        @foreach($categories as $cat)
+                                                            <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                             </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label font-weight-bold">Lokasi / Ruangan</label>
+                                                    <select name="room_id" class="form-select" required>
+                                                        @foreach($activeRooms as $room)
+                                                            <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
+                                                                {{ $room->name }} ({{ $room->unit->name }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label font-weight-bold">Kondisi</label>
+                                                    <select name="condition" class="form-select" required>
+                                                        <option value="Good" {{ $item->condition == 'Good' ? 'selected' : '' }}>Baik</option>
+                                                        <option value="Repairing" {{ $item->condition == 'Repairing' ? 'selected' : '' }}>Perbaikan</option>
+                                                        <option value="Damaged" {{ $item->condition == 'Damaged' ? 'selected' : '' }}>Rusak Ringan</option>
+                                                        <option value="Broken" {{ $item->condition == 'Broken' ? 'selected' : '' }}>Rusak Berat</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
                                             <div class="mb-3">
                                                 <label class="form-label font-weight-bold">Foto Barang</label>
                                                 @if($item->photo)
@@ -1050,6 +1086,122 @@
         window.open(url, '_blank');
     });
 
+    // Bulk Edit Selection Logic
+    const btnBulkEdit = document.getElementById('btnBulkEdit');
+    const bulkEditModal = new bootstrap.Modal(document.getElementById('bulkEditModal'));
+    const bulkEditBody = document.getElementById('bulkEditBody');
+
+    function toggleBulkEditBtn() {
+        const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+        if (selectedCount > 0) {
+            btnBulkEdit.classList.remove('d-none');
+        } else {
+            btnBulkEdit.classList.add('d-none');
+        }
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('item-checkbox') || e.target.id === 'checkAll') {
+            toggleBulkEditBtn();
+        }
+    });
+
+    btnBulkEdit.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
+        if (selectedIds.length === 0) return;
+
+        Swal.fire({
+            title: 'Memuat Data...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch(`/sarpras/inventory/get-multiple?ids=${selectedIds.join(',')}`)
+            .then(res => res.json())
+            .then(response => {
+                Swal.close();
+                if (response.success) {
+                    populateBulkEditModal(response.data);
+                    bulkEditModal.show();
+                } else {
+                    Swal.fire('Error', 'Gagal memuat data inventaris.', 'error');
+                }
+            })
+            .catch(err => {
+                Swal.close();
+                console.error(err);
+                Swal.fire('Error', 'Terjadi kesalahan sistem.', 'error');
+            });
+    });
+
+    function populateBulkEditModal(items) {
+        bulkEditBody.innerHTML = '';
+        const categoriesHtml = document.querySelector('select[name="items[0][inventory_category_id]"]').innerHTML;
+        const roomsHtml = document.querySelector('select[name="items[0][room_id]"]').innerHTML;
+
+        items.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <input type="hidden" name="items[${index}][id]" value="${item.id}">
+                <td>
+                    <select name="items[${index}][inventory_category_id]" class="form-select form-select-sm" required>
+                        ${categoriesHtml}
+                    </select>
+                </td>
+                <td>
+                    <input type="text" name="items[${index}][name]" class="form-control form-control-sm" value="${item.name}" required>
+                </td>
+                <td>
+                    <select name="items[${index}][room_id]" class="form-select form-select-sm" required>
+                        ${roomsHtml}
+                    </select>
+                </td>
+                <td>
+                    <select name="items[${index}][condition]" class="form-select form-select-sm" required>
+                        <option value="Good" ${item.condition === 'Good' ? 'selected' : ''}>Baik</option>
+                        <option value="Repairing" ${item.condition === 'Repairing' ? 'selected' : ''}>Perbaikan</option>
+                        <option value="Damaged" ${item.condition === 'Damaged' ? 'selected' : ''}>Rusak Ringan</option>
+                        <option value="Broken" ${item.condition === 'Broken' ? 'selected' : ''}>Rusak Berat</option>
+                    </select>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">Rp</span>
+                        <input type="text" name="items[${index}][price]" class="form-control currency-input" value="${formatInputRupiah(String(item.price))}">
+                    </div>
+                </td>
+                <td>
+                    <input type="text" name="items[${index}][source]" class="form-control form-control-sm mb-1" value="${item.source || ''}" placeholder="Sumber...">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="items[${index}][is_grant]" value="1" id="bulk_is_grant_${index}" ${item.is_grant ? 'checked' : ''}>
+                        <label class="form-check-label small" for="bulk_is_grant_${index}">Bantuan</label>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" name="items[${index}][person_in_charge]" class="form-control form-control-sm" value="${item.person_in_charge || ''}" placeholder="Nama PJ...">
+                </td>
+                <td>
+                    <input type="date" name="items[${index}][purchase_date]" class="form-control form-control-sm" value="${item.purchase_date ? item.purchase_date.split('T')[0] : ''}">
+                </td>
+                <td>
+                    <input type="file" name="items[${index}][photo]" class="form-control form-control-sm" accept="image/*">
+                    ${item.photo ? `<div class="mt-1 small text-success"><i class="bi bi-check-circle"></i> Ada Foto</div>` : ''}
+                </td>
+                <td class="small fw-bold text-primary">
+                    ${item.code}
+                </td>
+            `;
+            
+            // Set values for selects
+            row.querySelector(`select[name="items[${index}][inventory_category_id]"]`).value = item.inventory_category_id;
+            row.querySelector(`select[name="items[${index}][room_id]"]`).value = item.room_id;
+            
+            bulkEditBody.appendChild(row);
+        });
+    }
+
     function confirmDelete(url) {
         Swal.fire({
             title: 'Apakah Anda yakin?',
@@ -1230,6 +1382,48 @@
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Bulk Edit Inventory Modal -->
+<div class="modal fade" id="bulkEditModal" tabindex="-1">
+    <div class="modal-dialog modal-vw-95">
+        <form action="{{ route('sarpras.inventory.bulk-update') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="modal-content text-start text-dark">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square"></i> Edit Inventaris (Massal)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle" id="bulkEditTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th width="150">Kategori</th>
+                                    <th width="220">Nama Barang</th>
+                                    <th width="200">Lokasi / Ruangan</th>
+                                    <th width="130">Kondisi</th>
+                                    <th width="140">Harga (Rp)</th>
+                                    <th width="200">Sumber / Bantuan</th>
+                                    <th width="180">Penanggung Jawab</th>
+                                    <th width="140">Tanggal Beli</th>
+                                    <th width="140">Foto</th>
+                                    <th width="120">Kode Item</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkEditBody">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning fw-bold px-4 shadow">Update Semua Terpilih</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
