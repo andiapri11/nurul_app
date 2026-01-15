@@ -789,20 +789,26 @@ class SarprasController extends Controller
     $rooms = $roomsQuery->with('unit')->get();
 
     // For the modal "Tambah Barang", strictly show ONLY rooms from the ACTIVE year
-    // $activeYear is already fetched at the start of the function
-    $activeRoomsQuery = Room::whereIn('unit_id', $allowedUnitIds); // Apply allowed units filter
-    
+    $activeRoomsQuery = Room::whereIn('unit_id', $allowedUnitIds); 
     if ($activeYear) {
         $activeRoomsQuery->where('academic_year_id', $activeYear->id);
     } else {
         $activeRoomsQuery->whereRaw('0 = 1'); 
     }
-    
-    // Also filter active rooms by unit if selected, for convenience
     if ($request->filled('unit_id')) {
         $activeRoomsQuery->where('unit_id', $request->unit_id);
     }
     $activeRooms = $activeRoomsQuery->with('unit')->get();
+
+    // Broader categories and rooms for Edit Modals (not filtered by current year)
+    $modalCategories = InventoryCategory::whereIn('unit_id', $allowedUnitIds)
+        ->orWhereNull('unit_id')
+        ->orderBy('name')
+        ->get();
+    $modalRooms = Room::whereIn('unit_id', $allowedUnitIds)
+        ->with('unit')
+        ->orderBy('name')
+        ->get();
 
     $units = Auth::user()->getSarprasUnits();
     $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
@@ -813,7 +819,7 @@ class SarprasController extends Controller
     return view('sarpras.inventory.index', compact(
         'inventories', 'categories', 'rooms', 'nextCode', 'units', 
         'academicYears', 'activeRooms', 'activeYear', 'stats', 'totalValue', 'needsAttention',
-        'perPage', 'view'
+        'perPage', 'view', 'modalCategories', 'modalRooms'
     ));
 }
 

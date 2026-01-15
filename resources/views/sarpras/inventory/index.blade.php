@@ -648,7 +648,7 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">Lokasi / Ruangan</label>
                                                     <select name="room_id" class="form-select" required>
-                                                        @foreach($activeRooms as $room)
+                                                        @foreach($modalRooms as $room)
                                                             @if($room->unit_id == $item->unit_id)
                                                                 <option value="{{ $room->id }}" {{ $item->room_id == $room->id ? 'selected' : '' }}>
                                                                     {{ $room->name }} ({{ $room->unit->name }})
@@ -660,7 +660,7 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label fw-bold">Kategori</label>
                                                     <select name="inventory_category_id" class="form-select" required>
-                                                        @foreach($categories as $cat)
+                                                        @foreach($modalCategories as $cat)
                                                             @if($cat->unit_id == $item->unit_id || is_null($cat->unit_id))
                                                                 <option value="{{ $cat->id }}" {{ $item->inventory_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                                             @endif
@@ -904,7 +904,7 @@
                                     <td>
                                         <select name="items[0][room_id]" class="form-select form-select-sm room-select">
                                             <option value="" data-unit="GUDANG" data-pj="">Pilih Lokasi...</option>
-                                            @foreach($activeRooms as $room)
+                                            @foreach($modalRooms as $room)
                                                 <option value="{{ $room->id }}" data-unit-id="{{ $room->unit_id }}" data-unit="{{ $room->unit->name }}" data-pj="{{ $room->person_in_charge }}">
                                                     {{ $room->name }} ({{ $room->unit->name }})
                                                 </option>
@@ -914,7 +914,7 @@
                                     <td>
                                         <select name="items[0][inventory_category_id]" class="form-select form-select-sm category-select" required>
                                             <option value="">Pilih...</option>
-                                            @foreach($categories as $cat)
+                                            @foreach($modalCategories as $cat)
                                                 <option value="{{ $cat->id }}" data-unit-id="{{ $cat->unit_id }}">{{ $cat->name }}</option>
                                             @endforeach
                                         </select>
