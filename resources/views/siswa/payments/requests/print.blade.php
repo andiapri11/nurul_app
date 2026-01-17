@@ -192,10 +192,10 @@
             <tr>
                 <td class="school-info">
                     @php
-                        $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+                        $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
                         $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? 'Jl. Palembang - Betung No.KM.18 No.73, RT.09/RW.02, Sukamoro, Kec. Talang Klp., Kab. Banyuasin, Sumatera Selatan 30961';
                     @endphp
-                    <h1>{{ $appName }}</h1>
+                    <h1>{{ $schoolName }}</h1>
                     <p>{{ $appAddress }}</p>
                 </td>
                 <td class="invoice-meta">

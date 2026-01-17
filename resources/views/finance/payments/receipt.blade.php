@@ -263,10 +263,10 @@
         <div class="header">
             <div class="school-brand">
                 @php
-                    $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+                    $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
                     $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? 'Jl. Raya Utama No. 123, Kel. Bekasi Jaya, Kec. Bekasi Timur, Kota Bekasi, Jawa Barat 17112';
                 @endphp
-                <h1>{{ $appName }}</h1>
+                <h1>{{ $schoolName }}</h1>
                 <p>{{ $appAddress }}</p>
             </div>
             <div class="invoice-meta">

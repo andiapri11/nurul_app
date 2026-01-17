@@ -32,11 +32,11 @@
 <body onload="window.print()">
     <div class="header">
         @php
-            $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'Lembaga Pendidikan Tahfidz Nurul Ilmi';
+            $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'Lembaga Pendidikan Tahfidz Nurul Ilmi';
             $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
         @endphp
         <h2>REKAPITULASI TAGIHAN SISWA</h2>
-        <p>{{ $appName }}</p>
+        <p>{{ $schoolName }}</p>
         @if($appAddress) <p style="font-size: 9pt; margin-top: 2px;">{{ $appAddress }}</p> @endif
     </div>
 

@@ -153,10 +153,10 @@
     <div class="container">
         <div class="header">
             @php
-                $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+                $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
                 $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
             @endphp
-            <h1>{{ $appName }}</h1>
+            <h1>{{ $schoolName }}</h1>
             @if($appAddress) <p style="font-weight: normal; margin-bottom: 5px;">{{ $appAddress }}</p> @endif
             <h2 style="font-size: 12pt; margin: 5px 0 0; text-transform: uppercase;">Jadwal Pelajaran Mingguan</h2>
             <p>Unit: {{ $class->unit->name }} • Kelas: {{ $class->name }}</p>

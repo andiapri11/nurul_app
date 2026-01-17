@@ -200,10 +200,10 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-12">
+                        <div class="row g-4">
+                            <div class="col-md-6">
                                 <div class="form-group mb-0">
-                                    <label for="app_name" class="form-label">Nama Aplikasi / Sekolah</label>
+                                    <label for="app_name" class="form-label">Nama Aplikasi (System Title)</label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0;">
                                             <i class="bi bi-display text-primary"></i>
@@ -217,7 +217,26 @@
                                     @error('app_name')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
-                                    <div class="form-text mt-2">Nama ini akan muncul di judul halaman, sidebar, dan laporan PDF.</div>
+                                    <div class="form-text mt-2">Nama ini muncul di judul browser dan sidebar.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-0">
+                                    <label for="school_name" class="form-label">Nama Sekolah / Instansi (Hanya untuk KOP)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0" style="border-radius: 12px 0 0 12px; border: 2px solid #e2e8f0;">
+                                            <i class="bi bi-building text-success"></i>
+                                        </span>
+                                        <input type="text" name="school_name" id="school_name" 
+                                               class="form-control form-control-premium border-start-0 @error('school_name') is-invalid @enderror" 
+                                               value="{{ $settings['school_name'] ?? ($appSettings['school_name'] ?? 'LPT Nurul Ilmi') }}" 
+                                               placeholder="Contoh: LPT Nurul Ilmi"
+                                               style="border-radius: 0 12px 12px 0;">
+                                    </div>
+                                    @error('school_name')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text mt-2">Nama ini khusus digunakan pada KOP surat & laporan PDF.</div>
                                 </div>
                             </div>
                         </div>

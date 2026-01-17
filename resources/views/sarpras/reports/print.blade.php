@@ -26,10 +26,10 @@
 <body onload="window.print()">
     <div class="header">
         @php
-            $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+            $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
             $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
         @endphp
-        <h2>{{ $appName }}</h2>
+        <h2>{{ $schoolName }}</h2>
         @if($appAddress) <p>{{ $appAddress }}</p> @endif
         <p>LAPORAN KERUSAKAN DAN KEHILANGAN BARANG INVENTARIS</p>
         <p style="font-size: 10px; color: #666;">Dicetak pada: {{ now()->format('d/m/Y H:i') }}</p>

@@ -35,10 +35,10 @@
 
     <div class="header">
         @php
-            $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+            $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
             $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
         @endphp
-        <h3>{{ $appName }}</h3>
+        <h3>{{ $schoolName }}</h3>
         @if($appAddress) <p style="font-size: 10px; margin-top: -5px;">{{ $appAddress }}</p> @endif
         <h2>Laporan Absensi Siswa</h2>
         <p>{{ $myClass->unit->name }} - {{ $myClass->academicYear ? $myClass->academicYear->name : '' }}</p>

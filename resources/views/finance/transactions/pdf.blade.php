@@ -24,11 +24,11 @@
 
         <div class="header">
             @php
-                $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'Nurul Ilmi School System';
+                $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'Nurul Ilmi School System';
                 $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
             @endphp
             <h4 class="mb-0 fw-bold">LAPORAN TRANSAKSI PEMBAYARAN</h4>
-            <h5 class="mb-0">{{ $appName }}</h5>
+            <h5 class="mb-0">{{ $schoolName }}</h5>
             @if($appAddress) <p class="mb-0 small" style="font-size: 10px;">{{ $appAddress }}</p> @endif
             <p class="mb-0">Periode: {{ $date }}</p>
         </div>

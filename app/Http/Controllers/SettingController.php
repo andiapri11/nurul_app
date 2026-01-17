@@ -18,6 +18,7 @@ class SettingController extends Controller
     {
         $request->validate([
             'app_name' => 'nullable|string|max:255',
+            'school_name' => 'nullable|string|max:255',
             'app_address' => 'nullable|string|max:500',
             'app_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'app_favicon' => 'nullable|image|mimes:ico,png,jpg|max:512',
@@ -26,6 +27,10 @@ class SettingController extends Controller
 
         if ($request->has('app_name')) {
             Setting::updateOrCreate(['key' => 'app_name'], ['value' => $request->app_name]);
+        }
+
+        if ($request->has('school_name')) {
+            Setting::updateOrCreate(['key' => 'school_name'], ['value' => $request->school_name]);
         }
 
         if ($request->has('app_address')) {

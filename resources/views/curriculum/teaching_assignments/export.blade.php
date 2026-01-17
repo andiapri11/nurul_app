@@ -94,7 +94,8 @@
     <div class="container">
         <div class="header">
             @php
-                $headerTitle = $selectedUnit ? $selectedUnit->name : (\App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI');
+                $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+                $headerTitle = $selectedUnit ? $selectedUnit->name : $schoolName;
             @endphp
             <h1>REKAPITULASI PEMBAGIAN TUGAS MENGAJAR</h1>
             <p style="font-weight: bold; font-size: 14px; text-transform: uppercase;">{{ $headerTitle }}</p>

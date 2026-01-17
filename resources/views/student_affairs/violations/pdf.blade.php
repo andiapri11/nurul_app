@@ -57,11 +57,11 @@
 
     <div class="header">
         @php
-            $appName = \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
+            $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
             $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? '';
         @endphp
         <h2>REKAPITULASI PELANGGARAN SISWA</h2>
-        <h3>{{ $appName }}</h3>
+        <h3>{{ $schoolName }}</h3>
         @if($appAddress) <p style="font-size: 10px; margin-top: -5px; margin-bottom: 2px;">{{ $appAddress }}</p> @endif
         <p style="margin-top: 10px; font-size: 12px;">
             Unit: <strong>{{ $filterSummary['unit'] }}</strong> | 
