@@ -1143,13 +1143,12 @@
       <!--begin::Footer-->
       <footer class="app-footer">
         <!--begin::To the end-->
-        <div class="float-end d-none d-sm-inline">V1.0.0</div>
+        <div class="float-end"><b>V.1.1.40</b></div>
         <!--end::To the end-->
         <!--begin::Copyright-->
         <strong>
-          Copyright &copy; ommad 2025,&nbsp;
+          Copyright &copy; ommad {{ date('Y') }}, All rights reserved.
         </strong>
-        All rights reserved.
         <!--end::Copyright-->
       </footer>
       <!--end::Footer-->
