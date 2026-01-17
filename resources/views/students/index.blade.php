@@ -198,7 +198,7 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 @if($student->user->photo)
-                                                    <img src="{{ asset('photos/' . $student->user->photo) }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 1rem;">
+                                                    <img src="{{ file_exists(public_path('photos/thumb/' . $student->user->photo)) ? asset('photos/thumb/' . $student->user->photo) : asset('photos/' . $student->user->photo) }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover; margin-right: 1rem;">
                                                 @else
                                                      <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary" style="width: 40px; height: 40px; margin-right: 1rem;">
                                                          <i class="bi bi-person-fill text-white" style="font-size: 1.2rem;"></i>

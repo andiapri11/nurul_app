@@ -7,6 +7,8 @@ use App\Models\Jabatan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class GuruKaryawanController extends Controller
 {
@@ -322,7 +324,16 @@ class GuruKaryawanController extends Controller
 
         if ($request->hasFile('photo')) {
             $imageName = time().'.'.$request->photo->extension();
-            $request->photo->move(public_path('photos'), $imageName);
+            
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($request->photo);
+            $image->cover(354, 472);
+            $image->save(public_path('photos/' . $imageName));
+            
+            $thumbPath = public_path('photos/thumb');
+            if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+            $image->save($thumbPath . '/' . $imageName);
+
             $data['photo'] = $imageName;
         }
 
@@ -422,9 +433,26 @@ class GuruKaryawanController extends Controller
         }
         
         // Photo handling
+        // Photo handling
         if ($request->hasFile('photo')) {
+            if ($gurukaryawan->photo && file_exists(public_path('photos/' . $gurukaryawan->photo))) {
+                unlink(public_path('photos/' . $gurukaryawan->photo));
+            }
+            if ($gurukaryawan->photo && file_exists(public_path('photos/thumb/' . $gurukaryawan->photo))) {
+                unlink(public_path('photos/thumb/' . $gurukaryawan->photo));
+            }
+
             $imageName = time().'.'.$request->photo->extension();
-            $request->photo->move(public_path('photos'), $imageName);
+            
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($request->photo);
+            $image->cover(354, 472);
+            $image->save(public_path('photos/' . $imageName));
+
+            $thumbPath = public_path('photos/thumb');
+            if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+            $image->save($thumbPath . '/' . $imageName);
+
             $gurukaryawan->photo = $imageName;
         }
 
@@ -593,8 +621,13 @@ class GuruKaryawanController extends Controller
             abort(404);
         }
 
-        if ($gurukaryawan->photo && file_exists(public_path('photos/' . $gurukaryawan->photo))) {
-            unlink(public_path('photos/' . $gurukaryawan->photo));
+        if ($gurukaryawan->photo) {
+            if (file_exists(public_path('photos/' . $gurukaryawan->photo))) {
+                unlink(public_path('photos/' . $gurukaryawan->photo));
+            }
+            if (file_exists(public_path('photos/thumb/' . $gurukaryawan->photo))) {
+                unlink(public_path('photos/thumb/' . $gurukaryawan->photo));
+            }
         }
 
         $gurukaryawan->delete();

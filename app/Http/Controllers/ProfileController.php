@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class ProfileController extends Controller
 {
@@ -46,12 +48,25 @@ class ProfileController extends Controller
 
         if ($request->hasFile('photo')) {
             // Delete old photo if exists
-            if ($user->photo && file_exists(public_path('photos/' . $user->photo))) {
-                unlink(public_path('photos/' . $user->photo));
+            if ($user->photo) {
+                if (file_exists(public_path('photos/' . $user->photo))) {
+                    unlink(public_path('photos/' . $user->photo));
+                }
+                if (file_exists(public_path('photos/thumb/' . $user->photo))) {
+                    unlink(public_path('photos/thumb/' . $user->photo));
+                }
             }
 
             $imageName = time() . '.' . $request->photo->extension();
-            $request->photo->move(public_path('photos'), $imageName);
+            
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($request->photo);
+            $image->cover(354, 472);
+            $image->save(public_path('photos/' . $imageName));
+            
+            $thumbPath = public_path('photos/thumb');
+            if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+            $image->save($thumbPath . '/' . $imageName);
             
             $user->update(['photo' => $imageName]);
 

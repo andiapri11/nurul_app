@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class StudentController extends Controller
 {
@@ -309,7 +311,17 @@ class StudentController extends Controller
 
             if ($request->hasFile('photo')) {
                 $imageName = time().'.'.$request->photo->extension();
-                $request->photo->move(public_path('photos'), $imageName);
+                
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read($request->photo);
+                $image->cover(354, 472);
+                $image->save(public_path('photos/' . $imageName));
+                
+                // Save identical thumb
+                $thumbPath = public_path('photos/thumb');
+                if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+                $image->save($thumbPath . '/' . $imageName);
+
                 $userData['photo'] = $imageName;
             }
 
@@ -459,9 +471,21 @@ class StudentController extends Controller
                 if ($user->photo && file_exists(public_path('photos/' . $user->photo))) {
                     unlink(public_path('photos/' . $user->photo));
                 }
+                if ($user->photo && file_exists(public_path('photos/thumb/' . $user->photo))) {
+                    unlink(public_path('photos/thumb/' . $user->photo));
+                }
 
                 $imageName = time().'.'.$request->photo->extension();
-                $request->photo->move(public_path('photos'), $imageName);
+                
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read($request->photo);
+                $image->cover(354, 472);
+                $image->save(public_path('photos/' . $imageName));
+
+                $thumbPath = public_path('photos/thumb');
+                if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+                $image->save($thumbPath . '/' . $imageName);
+
                 $user->photo = $imageName;
             }
 

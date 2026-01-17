@@ -76,23 +76,49 @@ trait MonitoringTrait
             return $item->schoolClass ? $item->schoolClass->name : 'Lainnya';
         })->sortKeys();
 
-        // 7. Day Status for specific unit if requested
+        // 7. Day Status Calculation
         $dayStatus = 'effective';
         $dayDescription = '';
-        if ($unitId && $unitId !== 'all') {
-            $cal = $calendarEntries[$unitId] ?? $calendarEntries[''] ?? null;
-            if ($cal) {
-                if ($cal->is_holiday) {
-                    $dayStatus = 'holiday';
-                    $dayDescription = $cal->description ?? 'Hari Libur';
-                } else {
-                    $dayStatus = 'activity';
-                    $dayDescription = $cal->description;
-                }
-            } elseif ($now->isSunday() || $now->isSaturday()) {
+
+        // Check for Global Calendar Event (Null/Empty unit_id)
+        $globalCal = $calendarEntries[''] ?? null;
+        
+        if ($globalCal) {
+            if ($globalCal->is_holiday) {
                 $dayStatus = 'holiday';
-                $dayDescription = 'Libur Akhir Pekan';
+                $dayDescription = $globalCal->description ?? 'Libur Nasional/Cuti Bersama';
+            } else {
+                $dayStatus = 'activity';
+                $dayDescription = $globalCal->description;
             }
+        }
+
+        // Check for Specific Unit Event (Overrides Global if exists, or adds to it? 
+        // For now, let's say Unit Holiday overrides Global Activity, but Global Holiday overrides Unit Activity generally.
+        // Simple logic: If we are viewing specific unit, prioritize that unit's calendar.)
+        if ($unitId && $unitId !== 'all') {
+            $unitCal = $calendarEntries[$unitId] ?? null;
+            if ($unitCal) {
+                if ($unitCal->is_holiday) {
+                    $dayStatus = 'holiday';
+                    $dayDescription = $unitCal->description ?? 'Libur Unit';
+                } else {
+                    // If it's not a holiday, it's an activity. 
+                    // Only overwrite global status if global was NOT a holiday.
+                    if ($dayStatus !== 'holiday') {
+                        $dayStatus = 'activity';
+                        $dayDescription = $unitCal->description;
+                    }
+                }
+            }
+        }
+
+        // Weekend Check (Saturday/Sunday)
+        // Only applies if status is NOT ALREADY a holiday or activity from calendar.
+        // (Or should weekend override activity? Usually Calendar overrides Weekend).
+        if ($dayStatus === 'effective' && ($now->isSunday() || $now->isSaturday())) {
+            $dayStatus = 'holiday';
+            $dayDescription = 'Libur Akhir Pekan';
         }
 
         return [

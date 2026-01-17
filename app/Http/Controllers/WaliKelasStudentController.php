@@ -6,8 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\SchoolClass;
 use App\Models\UserSiswa;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class WaliKelasStudentController extends Controller
 {
@@ -197,16 +198,31 @@ class WaliKelasStudentController extends Controller
                     
                     if ($request->hasFile('photo')) {
                         // Delete old photo if it exists
-                        if ($userSiswa->photo && file_exists(public_path('photos/' . $userSiswa->photo))) {
-                            unlink(public_path('photos/' . $userSiswa->photo));
+                        if ($userSiswa->photo) {
+                            if (file_exists(public_path('photos/' . $userSiswa->photo))) {
+                                unlink(public_path('photos/' . $userSiswa->photo));
+                            }
+                            if (file_exists(public_path('photos/thumb/' . $userSiswa->photo))) {
+                                unlink(public_path('photos/thumb/' . $userSiswa->photo));
+                            }
                         }
                         
-                        // Store directly to public/photos to match Admin logic (based on view 'asset(photos/...)')
-                        $file = $request->file('photo');
-                        $filename = time() . '_' . $file->getClientOriginalName();
-                        $file->move(public_path('photos'), $filename);
+                        // Store directly to public/photos with resizing
+                        $imageName = time() . '.' . $request->file('photo')->extension();
                         
-                        $userSiswa->photo = $filename;
+                        $manager = new ImageManager(new Driver());
+                        $image = $manager->read($request->file('photo'));
+                        $image->cover(354, 472);
+                        
+                        // Save main photo
+                        $image->save(public_path('photos/' . $imageName));
+                        
+                        // Save thumbnail
+                        $thumbPath = public_path('photos/thumb');
+                        if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+                        $image->save($thumbPath . '/' . $imageName);
+                        
+                        $userSiswa->photo = $imageName;
                     }
                     $userSiswa->save();
                 }
