@@ -97,23 +97,47 @@ class GuruDashboardController extends Controller
         $dateStr = Carbon::now()->format('Y-m-d');
         
         // Fetch all calendar entries for today
-        $calendars = \App\Models\AcademicCalendar::where('date', $dateStr)->get()->keyBy('unit_id');
-        $globalCal = \App\Models\AcademicCalendar::whereNull('unit_id')->where('date', $dateStr)->first();
+        // 6. Fetch Calendar Activities for Today
+        $dateStr = Carbon::now()->toDateString();
+        $calendars = \App\Models\AcademicCalendar::where('date', $dateStr)->get()->groupBy('unit_id');
+        $globalCals = \App\Models\AcademicCalendar::whereNull('unit_id')->where('date', $dateStr)->get();
+
+        // Helper to find the best matching calendar entry for a class
+        $findBestCal = function($unitId, $classId) use ($calendars, $globalCals) {
+            $unitCals = $calendars->get($unitId, collect())->merge($globalCals);
+            
+            // Priority 1: Specific Holiday
+            $specHol = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if ($specHol) return $specHol;
+            
+            // Priority 2: Specific Activity
+            $specAct = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if ($specAct) return $specAct;
+            
+            // Priority 3: Global Holiday
+            $globHol = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+            if ($globHol) return $globHol;
+            
+            // Priority 4: Global Activity
+            $globAct = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+            if ($globAct) return $globAct;
+            
+            return null;
+        };
 
         // Filter Query Schedules
-        // Note: $schedules collection is already fetched. We filter it now.
-        $filteredSchedules = $schedules->filter(function($schedule) use ($calendars, $globalCal) {
+        $filteredSchedules = $schedules->filter(function($schedule) use ($findBestCal) {
             $unitId = $schedule->schoolClass->unit_id;
-            // Robust lookup (int vs string)
-            $cal = $calendars[$unitId] ?? $calendars[strval($unitId)] ?? $globalCal;
+            $classId = $schedule->class_id;
+            
+            $cal = $findBestCal($unitId, $classId);
             
             if ($cal) {
                 // Remove if Holiday
                 if ($cal->is_holiday) return false;
                 
-                // Remove if Activity (User requested checkin non-active for activity too)
-                // Hiding the schedule effectively prevents check-in and cleans the dashboard.
-                return false; 
+                // If Activity, keep but flag description
+                $schedule->calendar_activity = $cal->description;
             }
             return true;
         });
@@ -169,18 +193,30 @@ class GuruDashboardController extends Controller
             
             foreach ($teacherUnitIds as $uid) {
                 $unitName = $units[$uid]->name ?? 'Unit ' . $uid;
-                $cal = $calendars[$uid] ?? $globalCal;
                 
+                // For Unit overview, try to find Unit-wide holiday/activity first
+                $unitCals = $calendars->get($uid, collect())->merge($globalCals);
+                
+                // Check if there is any unit-wide holiday first, then unit-wide activity
+                $unitWideHol = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+                $unitWideAct = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+                
+                // If no unit-wide, check if there's any holiday at all for this unit (partial)
+                $anyHol = $unitCals->first(fn($c) => $c->is_holiday);
+                $anyAct = $unitCals->first(fn($c) => !$c->is_holiday);
+
                 $status = 'effective';
                 $desc = 'Hari Efektif';
                 
-                if ($cal) {
-                    if ($cal->is_holiday) {
+                $targetCal = $unitWideHol ?? $unitWideAct ?? $anyHol ?? $anyAct;
+
+                if ($targetCal) {
+                    if ($targetCal->is_holiday) {
                         $status = 'holiday';
-                        $desc = $cal->description;
+                        $desc = $targetCal->description;
                     } else {
                         $status = 'activity';
-                        $desc = $cal->description;
+                        $desc = $targetCal->description;
                     }
                 } elseif (Carbon::now()->isWeekend()) {
                      $status = 'holiday';
@@ -284,17 +320,16 @@ class GuruDashboardController extends Controller
         // Fix Attendance Missing Alert based on Holiday Status
         if ($attendanceMissing && $waliKelas) {
              $wkUnitId = $waliKelas->unit_id;
-             $cal = $calendars[$wkUnitId] ?? $globalCal;
+             $wkClassId = $waliKelas->id;
+             $cal = $findBestCal($wkUnitId, $wkClassId);
              
-             // If Holiday -> No attendance needed
-             if ($cal && $cal->is_holiday) {
-                 $attendanceMissing = false;
-             } elseif (!$cal && Carbon::now()->isWeekend()) {
-                 $attendanceMissing = false;
-             }
-             
-             // If Activity -> No attendance needed (based on user request "non aktif jika holiday dan kegiatan")
-             if ($cal && !$cal->is_holiday) { // isActivity
+             if ($cal) {
+                 // If Holiday -> No attendance needed
+                 if ($cal->is_holiday) {
+                     $attendanceMissing = false;
+                 } 
+                 // If Activity -> User said "tetap wajib", so we do NOT set $attendanceMissing to false.
+             } elseif (Carbon::now()->isWeekend()) {
                   $attendanceMissing = false;
              }
         }

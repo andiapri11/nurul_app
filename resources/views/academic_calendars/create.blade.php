@@ -59,6 +59,50 @@
                             <div class="form-text">Jika dicentang, tanggal ini TIDAK akan dihitung sebagai hari efektif belajar.</div>
                         </div>
 
+                        <div class="mb-3" id="target_class_container">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="affected_classes" class="form-label fw-bold mb-0">Target Kelas <small class="text-muted">(Opsional)</small></label>
+                                <div class="form-check form-check-inline mb-0">
+                                    <input class="form-check-input" type="checkbox" id="selectAllClasses" style="cursor: pointer;">
+                                    <label class="form-check-label small fw-bold text-primary" for="selectAllClasses" style="cursor: pointer;">Pilih Semua Kelas</label>
+                                </div>
+                            </div>
+                            <select class="form-select select2" id="affected_classes" name="affected_classes[]" multiple data-placeholder="Cari dan pilih kelas...">
+                                @foreach($classes as $class)
+                                    <option value="{{ $class->id }}" {{ is_array(old('affected_classes')) && in_array($class->id, old('affected_classes')) ? 'selected' : '' }}>
+                                        {{ $class->name }} ({{ $class->unit->name }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text text-primary">
+                                <i class="bi bi-info-circle"></i> Biarkan kosong jika agenda berlaku untuk <strong>SELURUH UNIT</strong>. 
+                                <br>Jika dipilih, maka kelas yang TIDAK dipilih tetap masuk/efektif seperti biasa.
+                            </div>
+                        </div>
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const selectAll = document.getElementById('selectAllClasses');
+                                const selectEl = $('#affected_classes');
+
+                                selectAll.addEventListener('change', function() {
+                                    if (this.checked) {
+                                        selectEl.find('option').prop('selected', true);
+                                    } else {
+                                        selectEl.find('option').prop('selected', false);
+                                    }
+                                    selectEl.trigger('change');
+                                });
+
+                                // Sync checkbox if user manually deselects something
+                                selectEl.on('change', function() {
+                                    const total = selectEl.find('option').length;
+                                    const selected = selectEl.find('option:selected').length;
+                                    selectAll.checked = (total === selected && total > 0);
+                                });
+                            });
+                        </script>
+
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ route('academic-calendars.index') }}" class="btn btn-secondary">Batal</a>
                             <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-1"></i> Simpan Agenda</button>

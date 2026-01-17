@@ -235,22 +235,27 @@ class WaliKelasController extends Controller
     // 2. Check Academic Calendar (Only if not already blocked by AY check)
     if (!$isOutsideAcademicYear) {
         $unitId = $myClass->unit_id;
-        // Priority: Unit Specific -> Global
-        $cal = \App\Models\AcademicCalendar::where('date', $date)
+        $classId = $myClass->id;
+        // Fetch all candidates
+        $cals = \App\Models\AcademicCalendar::where('date', $date)
                     ->where(function($q) use ($unitId) {
                         $q->where('unit_id', $unitId)
                           ->orWhereNull('unit_id');
-                    })
-                    ->orderByDesc('unit_id') // Unit specific (ID presence) comes first
-                    ->first();
+                    })->get();
         
-        if ($cal) {
-            if ($cal->is_holiday) {
+        // Priority Match for this specific class
+        $targetCal = $cals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+        if (!$targetCal) $targetCal = $cals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+        if (!$targetCal) $targetCal = $cals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+        if (!$targetCal) $targetCal = $cals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+
+        if ($targetCal) {
+            if ($targetCal->is_holiday) {
                 $isHoliday = true;
-                $calendarDescription = $cal->description;
+                $calendarDescription = $targetCal->description;
             } else {
                 // Effective Day with Description (e.g., "Hari Pertama Sekolah", "Ujian")
-                $effectiveDayDescription = $cal->description;
+                $effectiveDayDescription = $targetCal->description;
             }
         } elseif (\Carbon\Carbon::parse($date)->isWeekend()) {
             // Only mark as weekend holiday if NO calendar entry exists
@@ -472,26 +477,26 @@ class WaliKelasController extends Controller
 
             // --- Enable Effective Days Calculation for Monthly ---
             $calendarEvents = \App\Models\AcademicCalendar::whereBetween('date', [$startOfMonth, $endOfMonth])
-                            ->where('unit_id', $myClass->unit_id)
+                            ->where(function($q) use ($myClass) {
+                                $q->where('unit_id', $myClass->unit_id)->orWhereNull('unit_id');
+                            })
                             ->get()
-                            ->keyBy(fn($item) => $item->date->format('Y-m-d'));
+                            ->groupBy(fn($item) => $item->date->format('Y-m-d'));
 
             $totalEffectiveDays = 0;
             $period = \Carbon\CarbonPeriod::create($startOfMonth, $endOfMonth);
             
             foreach ($period as $dt) {
                 $dateStr = $dt->format('Y-m-d');
-                $event = $calendarEvents[$dateStr] ?? null;
-                // Assuming Sat & Sun are weekends. If school is 6 days, remove SATURDAY check. 
-                // Usually schools are 5 or 6 days. Let's assume SUNDAY is definitely off.
-                // Re-reading previous logic: "isWeekend" checked SUNDAY || SATURDAY.
-                // Let's stick to what was there: SUNDAY AND SATURDAY are off unless overridden?
-                // Actually typical Indo schools are Mon-Fri or Mon-Sat. 
-                // Let's assume Mon-Fri for now effectively, or check if user has config.
-                // Existing logic at line 401 (Semester) checks SUNDAY or SATURDAY. I will copy that.
-                
+                $dayEvents = $calendarEvents->get($dateStr, collect());
                 $isWeekend = ($dt->dayOfWeek === \Carbon\Carbon::SUNDAY || $dt->dayOfWeek === \Carbon\Carbon::SATURDAY);
                 
+                // Priority Match for this class
+                $event = $dayEvents->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($myClass->id, $c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($myClass->id, $c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+
                 if ($event) {
                     if (!$event->is_holiday) {
                         $totalEffectiveDays++;
@@ -552,34 +557,33 @@ class WaliKelasController extends Controller
             $data['semester_type'] = $semester;
             
             // --- Helper to Calculate Effective Days ---
-            // Range: $startDate to $endDate
-            // Rule: Exclude Sundays (assuming 6 day school week) and Holidays defined in AcademicCalendar
-            
-            // 1. Get all events in range for this class's unit (both holidays and activities)
             $calendarEvents = \App\Models\AcademicCalendar::whereBetween('date', [$startDate, $endDate])
-                            ->where('unit_id', $myClass->unit_id)
+                            ->where(function($q) use ($myClass) {
+                                $q->where('unit_id', $myClass->unit_id)->orWhereNull('unit_id');
+                            })
                             ->get()
-                            ->keyBy(fn($item) => $item->date->format('Y-m-d'));
+                            ->groupBy(fn($item) => $item->date->format('Y-m-d'));
 
-            // 2. Count effective days (Effective + Activity)
             $totalEffectiveDays = 0;
             $period = \Carbon\CarbonPeriod::create($startDate, $endDate);
             
             foreach ($period as $dt) {
                 $dateStr = $dt->format('Y-m-d');
-                $event = $calendarEvents[$dateStr] ?? null;
+                $dayEvents = $calendarEvents->get($dateStr, collect());
                 $isWeekend = ($dt->dayOfWeek === \Carbon\Carbon::SUNDAY || $dt->dayOfWeek === \Carbon\Carbon::SATURDAY);
                 
+                // Priority Match for this class
+                $event = $dayEvents->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($myClass->id, $c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($myClass->id, $c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+                if (!$event) $event = $dayEvents->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+
                 if ($event) {
                     if (!$event->is_holiday) {
-                        // Activity -> Count it
                         $totalEffectiveDays++;
                     }
-                    // If is_holiday -> Skip
                 } else {
-                    // No event -> Check weekend
                     if (!$isWeekend) {
-                        // Regular Effective Day -> Count it
                         $totalEffectiveDays++;
                     }
                 }

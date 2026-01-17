@@ -182,8 +182,31 @@ class ClassCheckinController extends Controller
         $dateStr = now()->format('Y-m-d');
         
         // Fetch all calendar entries for today
-        $calendars = \App\Models\AcademicCalendar::where('date', $dateStr)->get()->keyBy('unit_id');
-        $globalCal = \App\Models\AcademicCalendar::whereNull('unit_id')->where('date', $dateStr)->first();
+        $calendars = \App\Models\AcademicCalendar::where('date', $dateStr)->get()->groupBy('unit_id');
+        $globalCals = \App\Models\AcademicCalendar::whereNull('unit_id')->where('date', $dateStr)->get();
+
+        // Helper to find the best matching calendar entry for a class
+        $findBestCal = function($unitId, $classId) use ($calendars, $globalCals) {
+            $unitCals = $calendars->get($unitId, collect())->merge($globalCals);
+            
+            // Priority 1: Specific Holiday
+            $specHol = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if ($specHol) return $specHol;
+            
+            // Priority 2: Specific Activity
+            $specAct = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if ($specAct) return $specAct;
+            
+            // Priority 3: Global Holiday
+            $globHol = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+            if ($globHol) return $globHol;
+            
+            // Priority 4: Global Activity
+            $globAct = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+            if ($globAct) return $globAct;
+            
+            return null;
+        };
 
         // Calculate Multi-Unit Statuses for Feedback
         $teacherUnitIds = collect();
@@ -201,19 +224,19 @@ class ClassCheckinController extends Controller
         if ($teacherUnitIds->isNotEmpty()) {
             $units = \App\Models\Unit::whereIn('id', $teacherUnitIds)->get()->keyBy('id');
             foreach ($teacherUnitIds as $uid) {
-                // Determine status for this unit
-                $cal = $calendars[$uid] ?? $globalCal;
+                // For Unit Status (General), we look for global OR unit-wide records first
+                $unitWide = $calendars->get($uid, collect())->merge($globalCals)->first(fn($c) => is_null($c->affected_classes));
                 
                 $status = 'effective';
                 $desc = 'Hari Efektif';
                 
-                if ($cal) {
-                    if ($cal->is_holiday) {
+                if ($unitWide) {
+                    if ($unitWide->is_holiday) {
                         $status = 'holiday';
-                        $desc = $cal->description;
+                        $desc = $unitWide->description;
                     } else {
                         $status = 'activity';
-                        $desc = $cal->description;
+                        $desc = $unitWide->description;
                     }
                 } elseif (now()->isWeekend()) {
                      $status = 'holiday';
@@ -230,14 +253,17 @@ class ClassCheckinController extends Controller
 
 
         // Filter Query Schedules to REMOVE non-active ones
-        $activeSchedules = $schedules->filter(function($schedule) use ($calendars, $globalCal) {
+        $activeSchedules = $schedules->filter(function($schedule) use ($findBestCal) {
             $unitId = $schedule->schoolClass->unit_id;
-            // Robust lookup
-            $cal = $calendars[$unitId] ?? $calendars[strval($unitId)] ?? $globalCal;
+            $classId = $schedule->class_id;
+            $cal = $findBestCal($unitId, $classId);
             
-            // If Holiday OR Activity, remove
-            if ($cal) { 
-                return false;
+            if ($cal) {
+                // Remove if Holiday
+                if ($cal->is_holiday) return false;
+                
+                // If Activity, keep it so teacher can check in
+                $schedule->calendar_activity = $cal->description;
             }
             return true;
         });
@@ -308,20 +334,25 @@ class ClassCheckinController extends Controller
 
         // Check against Academic Calendar
         $unitId = $schedule->schoolClass->unit_id;
+        $classId = $schedule->class_id;
         $dateStr = now()->format('Y-m-d');
-        
-        $calendarEntry = \App\Models\AcademicCalendar::where('unit_id', $unitId)
-                            ->where('date', $dateStr)
-                            ->first();
+
+        $unitCals = \App\Models\AcademicCalendar::where('date', $dateStr)
+                        ->where(function($q) use ($unitId) {
+                            $q->where('unit_id', $unitId)->orWhereNull('unit_id');
+                        })->get();
+
+        // Priority matching
+        $cal = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+        if (!$cal) $cal = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+        if (!$cal) $cal = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+        if (!$cal) $cal = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
 
         // Determine if it is a holiday
         $isHoliday = false;
-        
-        if ($calendarEntry) {
-            if ($calendarEntry->is_holiday) {
-                $isHoliday = true;
-            }
-            // If exists and !is_holiday, it is Activity -> Attendance REQUIRED (Allowed)
+
+        if ($cal) {
+            if ($cal->is_holiday) $isHoliday = true;
         } else {
             // No entry -> Check Weekend
             $dayOfWeek = now()->dayOfWeek;

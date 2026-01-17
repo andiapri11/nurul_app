@@ -295,9 +295,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/teaching-assignments/{user}/edit', [\App\Http\Controllers\CurriculumController::class, 'editTeachingAssignments'])->name('teaching-assignments.edit');
         Route::put('/teaching-assignments/{user}', [\App\Http\Controllers\CurriculumController::class, 'updateTeachingAssignments'])->name('teaching-assignments.update');
 
-        Route::get('/calendar', [\App\Http\Controllers\KurikulumCalendarController::class, 'index'])->name('calendar.index');
-        Route::get('/calendar/manage', [\App\Http\Controllers\KurikulumCalendarController::class, 'manage'])->name('calendar.manage');
-        Route::post('/calendar', [\App\Http\Controllers\KurikulumCalendarController::class, 'store'])->name('calendar.store');
+        Route::get('/calendar', [\App\Http\Controllers\AcademicCalendarController::class, 'index'])->name('calendar.index');
+        Route::get('/calendar/manage', [\App\Http\Controllers\AcademicCalendarController::class, 'manage'])->name('calendar.manage');
+        Route::post('/calendar', [\App\Http\Controllers\AcademicCalendarController::class, 'updateMonth'])->name('calendar.store');
         Route::get('/{id}', [\App\Http\Controllers\CurriculumController::class, 'show'])->name('show');
         Route::get('/{id}/edit', [\App\Http\Controllers\CurriculumController::class, 'edit'])->name('edit');
         Route::put('/{id}', [\App\Http\Controllers\CurriculumController::class, 'update'])->name('update');

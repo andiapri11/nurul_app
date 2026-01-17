@@ -158,7 +158,14 @@
                                     </div>
                                     <div class="flex-grow-1">
                                         <h6 class="mb-0 fw-bold">{{ $sch->subject->name }}</h6>
-                                        <small class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i> Kelas {{ $sch->schoolClass->name }}</small>
+                                        <div class="d-flex flex-wrap gap-1 align-items-center mt-1">
+                                            <small class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i> Kelas {{ $sch->schoolClass->name }}</small>
+                                            @if(isset($sch->calendar_activity))
+                                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 fw-normal" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-flag-fill me-1"></i> {{ $sch->calendar_activity }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div>
                                         @if($isNow)

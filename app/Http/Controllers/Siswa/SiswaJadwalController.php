@@ -45,14 +45,25 @@ class SiswaJadwalController extends Controller
                 $startOfWeek = now()->startOfWeek(\Carbon\Carbon::MONDAY);
                 $endOfWeek = now()->endOfWeek(\Carbon\Carbon::FRIDAY);
 
-                $events = \App\Models\AcademicCalendar::where('unit_id', $unitId)
+                $events = \App\Models\AcademicCalendar::where(function($q) use ($unitId) {
+                        $q->where('unit_id', $unitId)->orWhereNull('unit_id');
+                    })
                     ->whereBetween('date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
-                    ->get();
+                    ->get()
+                    ->groupBy(fn($e) => $e->date->translatedFormat('l'));
 
-                foreach ($events as $event) {
-                    $dayName = $event->date->translatedFormat('l');
-                    // Map English to Indonesian if necessary (though translatedFormat should handle it)
-                    $calendarEvents->put($dayName, $event);
+                foreach ($events as $dayName => $dayEvents) {
+                    // Priority: Class-Specific Holiday > Global Holiday > Activity
+                    $holiday = $dayEvents->first(fn($e) => $e->is_holiday && is_array($e->affected_classes) && in_array($classId, $e->affected_classes));
+                    if (!$holiday) $holiday = $dayEvents->first(fn($e) => $e->is_holiday && is_null($e->affected_classes));
+                    
+                    $activity = $dayEvents->first(fn($e) => !$e->is_holiday && is_array($e->affected_classes) && in_array($classId, $e->affected_classes));
+                    if (!$activity) $activity = $dayEvents->first(fn($e) => !$e->is_holiday && is_null($e->affected_classes));
+                    
+                    $targetEvent = $holiday ?: $activity;
+                    if ($targetEvent) {
+                        $calendarEvents->put($dayName, $targetEvent);
+                    }
                 }
                 }
             }

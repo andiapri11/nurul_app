@@ -239,10 +239,16 @@
                                             <i class="bi bi-door-closed me-1"></i> Kelas {{ $schedule->schoolClass->name }}
                                         </div>
                                         
+                                        @if(isset($schedule->calendar_activity))
+                                            <div class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mb-2 fw-normal" style="font-size: 0.75rem;">
+                                                <i class="bi bi-flag-fill me-1"></i> Agenda: {{ $schedule->calendar_activity }}
+                                            </div>
+                                        @endif
+                                        
                                         @if(!$schedule->hasCheckedIn)
                                             @if($isNow || $isPast || true) {{-- Allow checking in even if past/future for flexibility if needed, or stick to robust logic. User wants clarity. --}}
                                                 <button class="btn btn-primary btn-sm btn-checkin-action" 
-                                                    onclick="initCheckin('{{ $schedule->id }}', '{{ addslashes($schedule->subject->name) }}', '{{ addslashes($schedule->schoolClass->name) }}')">
+                                                    onclick="initCheckin('{{ $schedule->id }}', '{{ addslashes($schedule->subject->name) }}', '{{ addslashes($schedule->schoolClass->name) }}', '{{ addslashes($schedule->calendar_activity ?? '') }}')">
                                                     <i class="bi bi-camera-fill me-2"></i> Mulai Absensi
                                                 </button>
                                             @else
@@ -431,10 +437,17 @@
         });
     });
 
-    function initCheckin(id, subject, cls) {
+    function initCheckin(id, subject, cls, activity = '') {
         document.getElementById('inpScheduleId').value = id;
         document.getElementById('txtSubject').innerText = subject;
         document.getElementById('txtClass').innerText = cls;
+
+        const notesEl = document.querySelector('textarea[name="notes"]');
+        if (activity && notesEl) {
+            notesEl.value = 'KEGIATAN: ' + activity;
+        } else if (notesEl) {
+            notesEl.value = '';
+        }
         
         // Auto start camera for convenience
         document.getElementById('btnStartCamera').click();

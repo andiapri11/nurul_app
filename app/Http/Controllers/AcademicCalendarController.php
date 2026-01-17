@@ -108,7 +108,7 @@ class AcademicCalendarController extends Controller
         $semEvents = AcademicCalendar::where('unit_id', $unit_id)
                         ->whereBetween('date', [$semStartDate, $semEndDate])
                         ->get()
-                        ->keyBy(fn($item) => $item->date->format('Y-m-d'));
+                        ->groupBy(fn($item) => $item->date->format('Y-m-d'));
         
         $semesterStats = [
             'effective' => 0,
@@ -120,11 +120,12 @@ class AcademicCalendarController extends Controller
         $period = \Carbon\CarbonPeriod::create($semStartDate, $semEndDate);
         foreach ($period as $dt) {
             $dStr = $dt->format('Y-m-d');
-            $evt = $semEvents[$dStr] ?? null;
+            $evts = $semEvents[$dStr] ?? collect();
             $isWeekend = ($dt->dayOfWeek === \Carbon\Carbon::SUNDAY || $dt->dayOfWeek === \Carbon\Carbon::SATURDAY);
             
-            if ($evt) {
-                if ($evt->is_holiday) $semesterStats['holiday']++;
+            if ($evts->isNotEmpty()) {
+                $hasHoliday = $evts->contains('is_holiday', true);
+                if ($hasHoliday) $semesterStats['holiday']++;
                 else $semesterStats['activity']++;
             } elseif ($isWeekend) {
                 $semesterStats['holiday']++;
@@ -133,17 +134,11 @@ class AcademicCalendarController extends Controller
             }
         }
         
-        // Also calculate Monthly Stats (for the view title or small info if needed, but existing view uses 'stats' variable)
-        // The user asked for RECAP. Usually Semantic recap implies the broader scope.
-        // But the View currently looks at `$stats` which was Monthly. 
-        // Let's pass `$semesterStats` as the main `stats` to the view? 
-        // "BUAT REKAP ... MENGETAHUI JUMLAH ... HARI EFEKTIF" often implies Semester count for rapport.
-        // Let's overwrite `stats` with `semesterStats` AND pass `monthStats` separately if needed.
-        // Actually, clearer to label it.
+        $currentUnit = $units->firstWhere('id', $unit_id);
         
         return view('academic_calendars.index', compact(
             'events', 'units', 'academicYears', 'academic_year_id', 'semester', 
-            'unit_id', 'month', 'year', 'semesterStats', 'semStartDate', 'semEvents', 'isGuruReadOnly'
+            'unit_id', 'month', 'year', 'semesterStats', 'semStartDate', 'semEvents', 'isGuruReadOnly', 'currentUnit'
         ));
     }
 
@@ -163,13 +158,11 @@ class AcademicCalendarController extends Controller
              
              // Get units where user is Kurikulum + Own Unit
              $units = $user->getLearningManagementUnits();
-             // Fallback if needed
-             if ($units->isEmpty() && $user->unit_id) {
-                 // Maybe check if they are Head of Unit? Or just fail. 
-                 // Strict: fail or show empty.
-             }
         }
-        return view('academic_calendars.create', compact('units'));
+
+        $classes = \App\Models\SchoolClass::whereIn('unit_id', $units->pluck('id'))->get();
+
+        return view('academic_calendars.create', compact('units', 'classes'));
     }
 
     public function store(Request $request)
@@ -183,6 +176,8 @@ class AcademicCalendarController extends Controller
             'date_end' => 'nullable|date|after_or_equal:date_start',
             'description' => 'required|string|max:255',
             'is_holiday' => 'boolean',
+            'affected_classes' => 'nullable|array',
+            'affected_classes.*' => 'exists:classes,id'
         ]);
 
         if (!$user->isDirektur()) {
@@ -201,22 +196,20 @@ class AcademicCalendarController extends Controller
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             $currentDateStr = $date->format('Y-m-d');
             
-            // Check existence
-            $exists = AcademicCalendar::where('unit_id', $request->unit_id)
-                        ->where('date', $currentDateStr)
-                        ->exists();
-            
-            if (!$exists) {
-                AcademicCalendar::create([
+            $isHoliday = $request->boolean('is_holiday', true);
+
+            AcademicCalendar::updateOrCreate(
+                [
                     'unit_id' => $request->unit_id,
                     'date' => $currentDateStr,
+                    'is_holiday' => $isHoliday
+                ],
+                [
                     'description' => $request->description,
-                    'is_holiday' => $request->boolean('is_holiday', true), // Default to true if not present, but checkbox usually sends 0/1
-                ]);
-                $insertedCount++;
-            } else {
-                $skippedCount++;
-            }
+                    'affected_classes' => $request->input('affected_classes'),
+                ]
+            );
+            $insertedCount++;
         }
 
         $message = "Berhasil menambahkan $insertedCount agenda.";
@@ -291,9 +284,10 @@ class AcademicCalendarController extends Controller
                                 return $item->date->format('Y-m-d');
                             });
 
-        $calendarData = $existingRecords;
+        $calendarData = $existingRecords->groupBy(fn($item) => $item->date->format('Y-m-d'));
+        $unitClasses = \App\Models\SchoolClass::where('unit_id', $unit_id)->get();
 
-        return view('academic_calendars.manage', compact('units', 'currentUnit', 'month', 'year', 'dates', 'calendarData'));
+        return view('academic_calendars.manage', compact('units', 'currentUnit', 'month', 'year', 'dates', 'calendarData', 'unitClasses'));
     }
 
     public function updateMonth(Request $request)
@@ -318,28 +312,32 @@ class AcademicCalendarController extends Controller
         }
         
         foreach ($request->days as $dateStr => $data) {
-            $status = $data['status'] ?? 'effective'; // effective, holiday, activity
-            $description = $data['description'] ?? null;
-            
-            // Check if record exists
-            $record = AcademicCalendar::where('unit_id', $unit_id)->where('date', $dateStr)->first();
-            
-            if ($status === 'effective') {
-                if ($record) {
-                    $record->delete();
-                }
-            } else {
-                // Holiday or Activity
-                $isHoliday = ($status === 'holiday');
-                
-                // If description is empty for holiday, maybe set default
-                if ($status === 'holiday' && empty($description)) $description = 'Libur';
-                if ($status === 'activity' && empty($description)) $description = 'Kegiatan Sekolah';
-                
+            // 1. Process Activity (is_holiday = false)
+            $actData = $data['activity'] ?? null;
+            if ($actData && !empty($actData['active'])) {
                 AcademicCalendar::updateOrCreate(
-                    ['unit_id' => $unit_id, 'date' => $dateStr],
-                    ['is_holiday' => $isHoliday, 'description' => $description]
+                    ['unit_id' => $unit_id, 'date' => $dateStr, 'is_holiday' => false],
+                    [
+                        'description' => $actData['description'] ?? 'Kegiatan Sekolah',
+                        'affected_classes' => $actData['classes'] ?? null
+                    ]
                 );
+            } else {
+                AcademicCalendar::where('unit_id', $unit_id)->where('date', $dateStr)->where('is_holiday', false)->delete();
+            }
+
+            // 2. Process Holiday (is_holiday = true)
+            $holData = $data['holiday'] ?? null;
+            if ($holData && !empty($holData['active'])) {
+                AcademicCalendar::updateOrCreate(
+                    ['unit_id' => $unit_id, 'date' => $dateStr, 'is_holiday' => true],
+                    [
+                        'description' => $holData['description'] ?? 'Libur',
+                        'affected_classes' => $holData['classes'] ?? null
+                    ]
+                );
+            } else {
+                AcademicCalendar::where('unit_id', $unit_id)->where('date', $dateStr)->where('is_holiday', true)->delete();
             }
         }
         

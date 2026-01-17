@@ -4,254 +4,270 @@
 
 @section('content')
 <style>
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 10px;
+    body { background-color: #f8f9fa !important; }
+    .content-wrapper { background-color: #f8f9fa !important; }
+
+    .calendar-container {
+        max-width: 1400px;
+        margin: 0 auto;
     }
-    .calendar-day-header {
-        text-align: center;
-        font-weight: bold;
-        padding: 10px;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-    }
-    .calendar-day {
-        min-height: 120px;
-        background-color: #fff;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        padding: 10px;
+    
+    .mini-cal-day {
+        width: 14.28%;
+        height: 42px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 4px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        cursor: default;
         position: relative;
-        transition: transform 0.2s;
     }
-    .calendar-day:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15);
-        z-index: 10;
+    
+    .mini-cal-day:hover:not(.empty) {
+        transform: scale(1.1);
+        z-index: 5;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .day-number {
+
+    .day-eff { background-color: #fff; color: #444; border: 1px solid #eee; }
+    .day-hol { background-color: #fee2e2; color: #dc2626; font-weight: bold; border: 1px solid #fecaca; }
+    .day-act { background-color: #e0f2fe; color: #0284c7; font-weight: bold; border: 1px solid #bae6fd; }
+    .day-mix { background-color: #f3e8ff; color: #7c3aed; font-weight: bold; border: 1px solid #e9d5ff; }
+    .day-weekend { color: #dc2626; font-weight: bold; }
+    
+    .status-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 4px;
+    }
+    .dot-hol { background-color: #dc2626; }
+    .dot-act { background-color: #2563eb; }
+
+    .popover {
+        border: none;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+    }
+    .popover-header {
+        background-color: #fff;
+        border-bottom: 1px solid #f3f4f6;
         font-weight: bold;
-        font-size: 1.2rem;
-        margin-bottom: 5px;
-        display: block;
+        padding: 12px 16px;
+        border-radius: 12px 12px 0 0;
     }
-    .day-event {
-        font-size: 0.75rem;
-        padding: 4px 6px;
-        border-radius: 4px;
-        margin-top: 4px;
-        color: white;
-        display: block;
-        line-height: 1.2;
+    .popover-body {
+        padding: 12px 16px;
     }
-    
-    /* Specific Colors */
-    .bg-holiday { background-color: #ffe6e6; border-color: #ffcccc; color: #cc0000; }
-    .bg-activity { background-color: #e6f3ff; border-color: #b8daff; color: #004085; }
-    .bg-effective { background-color: #ffffff; }
-    
-    .event-holiday { background-color: #dc3545; }
-    .event-activity { background-color: #0d6efd; }
-    .event-weekend { color: #dc3545; } /* Red text for weekend numbers */
-    
-    .text-weekend { color: #dc3545; }
 </style>
 
-<div class="container-fluid">
-    <div class="row mb-3">
-        <div class="col-md-12">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="mb-0 fw-bold"><i class="bi bi-calendar-week me-2"></i>Kalender Akademik</h3>
-                <div class="d-flex gap-2">
-                    @if(!$isGuruReadOnly)
-                        <a href="{{ route('academic-calendars.manage') }}" class="btn btn-info text-white shadow-sm">
-                            <i class="bi bi-calendar-range me-1"></i> Kelola Bulanan
-                        </a>
-                        <a href="{{ route('academic-calendars.create') }}" class="btn btn-primary shadow-sm">
-                            <i class="bi bi-plus-lg me-1"></i> Tambah Agenda
-                        </a>
-                    @endif
-                </div>
-            </div>
-            
-            <!-- Filter Bar -->
-            <div class="card shadow-sm border-0 mb-3">
-                <div class="card-body bg-light rounded">
-                    <form action="{{ route('academic-calendars.index') }}" method="GET" class="row g-2 align-items-center">
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-muted mb-1">Unit</label>
-                            <select name="unit_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                                @foreach($units as $unit)
-                                    <option value="{{ $unit->id }}" {{ $unit_id == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-muted mb-1">Tahun Pelajaran</label>
-                            <select name="academic_year_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                                @foreach($academicYears as $ay)
-                                    <option value="{{ $ay->id }}" {{ $academic_year_id == $ay->id ? 'selected' : '' }}>
-                                        {{ $ay->start_year }}/{{ $ay->end_year }} {{ $ay->status == 'active' ? '(Aktif)' : '(Tidak Aktif)' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-muted mb-1">Semester</label>
-                            <select name="semester" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="ganjil" {{ $semester == 'ganjil' ? 'selected' : '' }}>Semester Ganjil (Juli - Des)</option>
-                                <option value="genap" {{ $semester == 'genap' ? 'selected' : '' }}>Semester Genap (Jan - Juni)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <a href="{{ route('academic-calendars.index') }}" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-arrow-clockwise"></i> Reset Default</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Stats Recap (Semester Level) -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <h5 class="fw-bold text-secondary border-bottom pb-2">
-                        Rekap Semester {{ ucfirst($semester) }}
-                    </h5>
-                </div>
-                <!-- Stats Cards (Simplified for space) -->
-                <div class="col-md-4">
-                     <div class="d-flex align-items-center p-3 bg-white border rounded shadow-sm h-100">
-                         <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success">
-                             <i class="bi bi-check-circle-fill fs-4"></i>
-                         </div>
-                         <div>
-                             <h3 class="fw-bold mb-0">{{ $semesterStats['effective'] ?? 0 }}</h3>
-                             <div class="small text-muted">Hari Efektif KBM</div>
-                         </div>
-                     </div>
-                </div>
-                <div class="col-md-4">
-                     <div class="d-flex align-items-center p-3 bg-white border rounded shadow-sm h-100">
-                         <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3 text-danger">
-                             <i class="bi bi-calendar-x-fill fs-4"></i>
-                         </div>
-                         <div>
-                             <h3 class="fw-bold mb-0">{{ $semesterStats['holiday'] ?? 0 }}</h3>
-                             <div class="small text-muted">Hari Libur</div>
-                         </div>
-                     </div>
-                </div>
-                <div class="col-md-4">
-                     <div class="d-flex align-items-center p-3 bg-white border rounded shadow-sm h-100">
-                         <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary">
-                             <i class="bi bi-flag-fill fs-4"></i>
-                         </div>
-                         <div>
-                             <h3 class="fw-bold mb-0">{{ $semesterStats['activity'] ?? 0 }}</h3>
-                             <div class="small text-muted">Kegiatan Sekolah</div>
-                         </div>
-                     </div>
-                </div>
-            </div>
-
-            <!-- 6 Month Grid -->
-            <div class="row g-4">
-                @for($m = 0; $m < 6; $m++)
-                    @php
-                        $currMonthDate = $semStartDate->copy()->addMonths($m);
-                        $currMonth = $currMonthDate->month;
-                        $currYear = $currMonthDate->year;
-                        
-                        // Fetch days for this specific month
-                        $daysInMonth = $currMonthDate->daysInMonth;
-                        $firstDayOfWeek = $currMonthDate->copy()->startOfMonth()->dayOfWeek;
-                    @endphp
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card shadow-sm border-0 h-100">
-                            <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
-                                <h6 class="fw-bold mb-0 text-uppercase">{{ $currMonthDate->translatedFormat('F Y') }}</h6>
-                                @if(!$isGuruReadOnly)
-                                <a href="{{ route('academic-calendars.manage', ['unit_id' => $unit_id, 'month' => $currMonth, 'year' => $currYear]) }}" class="btn btn-xs btn-outline-secondary" title="Edit Bulan Ini">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                @endif
-                            </div>
-                            <div class="card-body p-2">
-                                <!-- Mini Calendar Header -->
-                                <div class="d-flex text-center mb-1 small fw-bold text-muted">
-                                    <div style="width: 14.28%">M</div>
-                                    <div style="width: 14.28%">S</div>
-                                    <div style="width: 14.28%">S</div>
-                                    <div style="width: 14.28%">R</div>
-                                    <div style="width: 14.28%">K</div>
-                                    <div style="width: 14.28%">J</div>
-                                    <div style="width: 14.28%">S</div>
-                                </div>
-                                
-                                <!-- Mini Calendar Grid -->
-                                <div class="d-flex flex-wrap">
-                                    <!-- Empty slots -->
-                                    @for($k = 0; $k < $firstDayOfWeek; $k++)
-                                        <div style="width: 14.28%; height: 35px;"></div>
-                                    @endfor
-
-                                    <!-- Days -->
-                                    @for($day = 1; $day <= $daysInMonth; $day++)
-                                        @php
-                                            $dt = \Carbon\Carbon::createFromDate($currYear, $currMonth, $day);
-                                            $dStr = $dt->format('Y-m-d');
-                                            $evt = $semEvents[$dStr] ?? null;
-                                            $isWeekend = ($dt->dayOfWeek == 0 || $dt->dayOfWeek == 6);
-                                            
-                                            $bgClass = '';
-                                            $textClass = 'text-dark';
-                                            $tooltip = '';
-
-                                            if ($evt) {
-                                                $tooltip = $evt->description;
-                                                // If event is explicitly NOT a holiday, it overrides weekend
-                                                if ($evt->is_holiday) {
-                                                    $bgClass = 'bg-danger text-white';
-                                                    $textClass = 'text-white';
-                                                } else {
-                                                    // Effective day event (even on weekend)
-                                                    $bgClass = 'bg-primary text-white';
-                                                    $textClass = 'text-white';
-                                                }
-                                            } elseif ($isWeekend) {
-                                                $textClass = 'text-danger fw-bold';
-                                            }
-                                        @endphp
-                                        <div style="width: 14.28%; height: 35px; border-radius: 4px;" 
-                                             class="d-flex align-items-center justify-content-center p-1 {{ $bgClass }} position-relative"
-                                             title="{{ $tooltip }}">
-                                            <span class="small {{ $textClass }}">{{ $day }}</span>
-                                        </div>
-                                    @endfor
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endfor
-            </div>
-            
-            <div class="mt-4 text-center text-muted small">
-                <i class="bi bi-square-fill text-danger me-1"></i> Libur / Akhir Pekan &nbsp;&nbsp;
-                <i class="bi bi-square-fill text-primary me-1"></i> Kegiatan Sekolah &nbsp;&nbsp;
-                <span class="text-dark">Angka Biasa</span> : Hari Efektif
-            </div>
-            
+<div class="calendar-container px-3 py-4">
+    {{-- HEADER --}}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold text-dark mb-1">Kalender Akademik</h3>
+            <p class="text-muted mb-0">Unit {{ $currentUnit->name }} • Semester {{ ucfirst($semester) }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            @if(!$isGuruReadOnly)
+                <a href="{{ route('academic-calendars.manage', ['unit_id' => $unit_id]) }}" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-calendar-range me-2"></i> KELOLA KALENDER
+                </a>
+            @endif
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {{-- FILTER CARD --}}
+    <div class="card border-0 shadow-sm mb-4" style="border-radius: 15px;">
+        <div class="card-body p-3">
+            <form action="{{ route('academic-calendars.index') }}" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="small fw-bold text-uppercase text-muted mb-1 ls-1">Unit Sekolah</label>
+                    <select name="unit_id" class="form-select border-0 bg-light" onchange="this.form.submit()">
+                        @foreach($units as $unit)
+                            <option value="{{ $unit->id }}" {{ $unit_id == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-uppercase text-muted mb-1 ls-1">Tahun Pelajaran</label>
+                    <select name="academic_year_id" class="form-select border-0 bg-light" onchange="this.form.submit()">
+                        @foreach($academicYears as $ay)
+                            <option value="{{ $ay->id }}" {{ $academic_year_id == $ay->id ? 'selected' : '' }}>
+                                {{ $ay->start_year }}/{{ $ay->end_year }} {{ $ay->status == 'active' ? '(Aktif)' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="small fw-bold text-uppercase text-muted mb-1 ls-1">Periode Semester</label>
+                    <select name="semester" class="form-select border-0 bg-light" onchange="this.form.submit()">
+                        <option value="ganjil" {{ $semester == 'ganjil' ? 'selected' : '' }}>Semester Ganjil (Juli - Desember)</option>
+                        <option value="genap" {{ $semester == 'genap' ? 'selected' : '' }}>Semester Genap (Januari - Juni)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ route('academic-calendars.index') }}" class="btn btn-light w-100 fw-bold border">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </a>
+                </div>
+            </form>
         </div>
-    @endif
-</div>
-@endsection
+    </div>
 
+    {{-- REKAP SEMESTER --}}
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 text-success">
+                        <i class="bi bi-journal-check fs-3"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0">{{ $semesterStats['effective'] }}</h2>
+                        <div class="text-muted small fw-bold text-uppercase">Hari Efektif KBM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 text-primary">
+                        <i class="bi bi-flag fs-3"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0">{{ $semesterStats['activity'] }}</h2>
+                        <div class="text-muted small fw-bold text-uppercase">Kegiatan Sekolah</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-radius: 15px;">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3 text-danger">
+                        <i class="bi bi-emoji-sunglasses fs-3"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0">{{ $semesterStats['holiday'] }}</h2>
+                        <div class="text-muted small fw-bold text-uppercase">Total Hari Libur</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 6 MONTH CALENDAR GRID --}}
+    <div class="row g-4">
+        @for($m = 0; $m < 6; $m++)
+            @php
+                $currMonthDate = $semStartDate->copy()->addMonths($m);
+                $currMonth = $currMonthDate->month;
+                $currYear = $currMonthDate->year;
+                $daysInMonth = $currMonthDate->daysInMonth;
+                $firstDayOfWeek = $currMonthDate->copy()->startOfMonth()->dayOfWeek;
+            @endphp
+            <div class="col-lg-4 col-md-6">
+                <div class="card border-0 shadow-sm h-100" style="border-radius: 20px;">
+                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-dark">{{ $currMonthDate->translatedFormat('F Y') }}</h5>
+                        @if(!$isGuruReadOnly)
+                            <a href="{{ route('academic-calendars.manage', ['unit_id' => $unit_id, 'month' => $currMonth, 'year' => $currYear]) }}" class="btn btn-sm btn-light rounded-circle shadow-sm" title="Edit Bulan Ini">
+                                <i class="bi bi-pencil-fill text-muted" style="font-size: 0.7rem;"></i>
+                            </a>
+                        @endif
+                    </div>
+                    <div class="card-body p-4 pt-1">
+                        <div class="d-flex text-center mb-2 small fw-bold text-muted opacity-50 text-uppercase">
+                            <div style="width: 14.28%">Mg</div>
+                            <div style="width: 14.28%">Sn</div>
+                            <div style="width: 14.28%">Sl</div>
+                            <div style="width: 14.28%">Rb</div>
+                            <div style="width: 14.28%">Km</div>
+                            <div style="width: 14.28%">Jm</div>
+                            <div style="width: 14.28%">Sb</div>
+                        </div>
+                        
+                        <div class="d-flex flex-wrap">
+                            @for($k = 0; $k < $firstDayOfWeek; $k++)
+                                <div class="mini-cal-day empty"></div>
+                            @endfor
+
+                            @for($day = 1; $day <= $daysInMonth; $day++)
+                                @php
+                                    $dt = \Carbon\Carbon::createFromDate($currYear, $currMonth, $day);
+                                    $dStr = $dt->format('Y-m-d');
+                                    $evts = $semEvents[$dStr] ?? collect();
+                                    $isWeekend = ($dt->dayOfWeek == 0 || $dt->dayOfWeek == 6);
+                                    
+                                    $bgClass = 'day-eff';
+                                    if ($isWeekend) $bgClass .= ' day-weekend';
+                                    
+                                    $hasHol = $evts->contains('is_holiday', true);
+                                    $hasAct = $evts->contains('is_holiday', false);
+                                    
+                                    if ($hasHol && $hasAct) $bgClass = 'day-mix';
+                                    elseif ($hasHol) $bgClass = 'day-hol';
+                                    elseif ($hasAct) $bgClass = 'day-act';
+
+                                    // Build Popover Content
+                                    $popTitle = $dt->translatedFormat('d F Y');
+                                    $popContent = '';
+                                    if ($evts->isNotEmpty()) {
+                                        foreach ($evts as $e) {
+                                            $icon = $e->is_holiday ? '🔴' : '🔵';
+                                            $type = $e->is_holiday ? 'Libur' : 'Kegiatan';
+                                            $popContent .= "<div class='mb-2 pb-2 border-bottom last-border-0'>";
+                                            $popContent .= "<div class='fw-bold small'>$icon $type: $e->description</div>";
+                                            if (!empty($e->affected_classes)) {
+                                                $classNames = \App\Models\SchoolClass::whereIn('id', $e->affected_classes)->pluck('name')->implode(', ');
+                                                $popContent .= "<div class='text-muted' style='font-size:0.7rem;'>Target: $classNames</div>";
+                                            } else {
+                                                $popContent .= "<div class='text-muted' style='font-size:0.7rem;'>Target: Seluruh Unit</div>";
+                                            }
+                                            $popContent .= "</div>";
+                                        }
+                                    } elseif ($isWeekend) {
+                                        $popContent = "<div class='small'>🔴 Libur Akhir Pekan</div>";
+                                    } else {
+                                        $popContent = "<div class='small text-success'>🟢 Hari Efektif Belajar</div>";
+                                    }
+                                @endphp
+                                <div class="mini-cal-day {{ $bgClass }}" 
+                                     data-bs-toggle="popover" 
+                                     data-bs-trigger="hover" 
+                                     data-bs-html="true"
+                                     title="{{ $popTitle }}"
+                                     data-bs-content="{{ $popContent }}">
+                                    {{ $day }}
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endfor
+    </div>
+
+    <div class="mt-5 d-flex justify-content-center gap-4 text-muted small fw-bold">
+        <div class="d-flex align-items-center"><span class="mini-cal-day day-eff me-2" style="width:20px; height:20px;"></span> Efektif</div>
+        <div class="d-flex align-items-center"><span class="mini-cal-day day-hol me-2" style="width:20px; height:20px;"></span> Libur</div>
+        <div class="d-flex align-items-center"><span class="mini-cal-day day-act me-2" style="width:20px; height:20px;"></span> Kegiatan</div>
+        <div class="d-flex align-items-center"><span class="mini-cal-day day-mix me-2" style="width:20px; height:20px;"></span> Mixed</div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+        var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+          return new bootstrap.Popover(popoverTriggerEl)
+        })
+    });
+</script>
+@endsection

@@ -79,10 +79,8 @@ class PrincipalController extends Controller
 
         // Fetch calendar entries for today to check for holidays/activities
         $todayStr = now()->toDateString();
-        // Fixed: Use 'date' column as per Model, not start_date/end_date ranges
-        $calendars = \App\Models\AcademicCalendar::whereDate('date', $todayStr)
-                                                 ->get()
-                                                 ->keyBy('unit_id');
+        $calendars = \App\Models\AcademicCalendar::whereDate('date', $todayStr)->get();
+        $globalCals = $calendars->whereNull('unit_id');
 
         $activeSchedules = Schedule::whereHas('schoolClass', function($q) use ($scopeUnitIds, $activeYear) {
                 $q->whereIn('unit_id', $scopeUnitIds);
@@ -96,24 +94,22 @@ class PrincipalController extends Controller
             ->with(['schoolClass', 'subject', 'teacher'])
             ->get();
             
-        // Filter out schedules if the unit is on holiday or activity
-        $activeSchedules = $activeSchedules->filter(function($schedule) use ($calendars) {
+        // Filter out schedules if the class/unit is on holiday
+        $activeSchedules = $activeSchedules->filter(function($schedule) use ($calendars, $globalCals) {
             $unitId = $schedule->schoolClass->unit_id;
+            $classId = $schedule->class_id;
             
-            // 1. Check for Global Holiday/Activity (key might be empty string or null)
-            if (isset($calendars[''])) {
-                 if ($calendars['']->is_holiday) {
-                     return false; 
-                 }
-                 // Optional: Check description for 'Activity' if implies non-effective?
-                 // For now, strictly use is_holiday as requested "seting libur"
-            }
-
-            // 2. Check for Specific Unit entry
-            if (isset($calendars[$unitId])) {
-                if ($calendars[$unitId]->is_holiday) {
-                    return false; // Skip this schedule
-                }
+            $unitCals = $calendars->where('unit_id', $unitId)->merge($globalCals);
+            
+            // Priority Check for this specific class
+            $cal = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if (!$cal) $cal = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if (!$cal) $cal = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+            // Note: If it's just a school activity (non-holiday), we still show it in live monitor 
+            // because teachers might still check in for activities.
+            
+            if ($cal && $cal->is_holiday) {
+                return false; // Skip if holiday
             }
             
             return true;

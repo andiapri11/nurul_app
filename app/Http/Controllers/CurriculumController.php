@@ -117,26 +117,43 @@ class CurriculumController extends Controller
         
         $classes = $classesQuery->orderBy('name')->get();
 
-        // Check for Holiday (Only if a specific unit is selected)
-        $holiday = null;
-        if ($unitId) {
-            $holiday = \App\Models\AcademicCalendar::where('date', $date)
-                ->where('unit_id', $unitId)
-                ->where('is_holiday', true)
-                ->first();
+        // Check for Holiday/Activity from Academic Calendar
+        $calendarEvent = null;
+        $isHoliday = false;
+        
+        $unitCals = \App\Models\AcademicCalendar::where('date', $date)
+            ->where(function($q) use ($unitId, $allowedUnits) {
+                if ($unitId) $q->where('unit_id', $unitId);
+                else $q->whereIn('unit_id', $allowedUnits->pluck('id'));
+            })->get();
+
+        if ($classId && $unitCals->isNotEmpty()) {
+            // Priority Match for specific class
+            $calendarEvent = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            // Fallback to unit-wide
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+        } elseif ($unitId) {
+            // Unit-wide only
+            $calendarEvent = $unitCals->where('unit_id', $unitId)->first(fn($c) => is_null($c->affected_classes));
+        }
+
+        if ($calendarEvent && $calendarEvent->is_holiday) {
+            $isHoliday = true;
         }
 
         // Prepare data for the view
         $journalEntries = collect();
         
-        if ($holiday) {
+        if ($isHoliday) {
             // If holiday, push a virtual holiday entry
             $journalEntries->push((object)[
                 'is_holiday' => true,
-                'holiday_name' => $holiday->description ?? 'Hari Libur',
+                'holiday_name' => $calendarEvent->description ?? 'Hari Libur',
                 'status' => 'holiday',
                 'checkin_time' => null,
-                'notes' => $holiday->description
+                'notes' => $calendarEvent->description
             ]);
         } else {
             $dayMap = [
@@ -270,25 +287,39 @@ class CurriculumController extends Controller
         $classId = $request->get('class_id');
         $date = $request->get('date', now()->toDateString());
 
-        // Check for Holiday (Only if a specific unit is selected)
-        $holiday = null;
-        if ($unitId) {
-            $holiday = \App\Models\AcademicCalendar::where('date', $date)
-                ->where('unit_id', $unitId)
-                ->where('is_holiday', true)
-                ->first();
+        // Check for Holiday/Activity (Synchronized with jurnalKelas)
+        $calendarEvent = null;
+        $isHoliday = false;
+        
+        $unitCals = \App\Models\AcademicCalendar::where('date', $date)
+            ->where(function($q) use ($unitId, $allowedUnits) {
+                if ($unitId) $q->where('unit_id', $unitId);
+                else $q->whereIn('unit_id', $allowedUnits->pluck('id'));
+            })->get();
+
+        if ($classId && $unitCals->isNotEmpty()) {
+            $calendarEvent = $unitCals->first(fn($c) => $c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => !$c->is_holiday && is_array($c->affected_classes) && in_array($classId, $c->affected_classes));
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => $c->is_holiday && is_null($c->affected_classes));
+            if (!$calendarEvent) $calendarEvent = $unitCals->first(fn($c) => !$c->is_holiday && is_null($c->affected_classes));
+        } elseif ($unitId) {
+            $calendarEvent = $unitCals->where('unit_id', $unitId)->first(fn($c) => is_null($c->affected_classes));
         }
 
-        // Prepare data (Synchronized with jurnalKelas logic)
+        if ($calendarEvent && $calendarEvent->is_holiday) {
+            $isHoliday = true;
+        }
+
+        // Prepare data
         $journalEntries = collect();
 
-        if ($holiday) {
+        if ($isHoliday) {
             $journalEntries->push((object)[
                 'is_holiday' => true,
-                'holiday_name' => $holiday->description ?? 'Hari Libur',
+                'holiday_name' => $calendarEvent->description ?? 'Hari Libur',
                 'status' => 'holiday',
                 'checkin_time' => null,
-                'notes' => $holiday->description
+                'notes' => $calendarEvent->description
             ]);
         } else {
             $dayMap = [
