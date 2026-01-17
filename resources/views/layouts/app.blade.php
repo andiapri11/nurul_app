@@ -232,6 +232,14 @@
         opacity: 1;
         background-color: transparent; /* Ensure no white box if not desired, though color-scheme light usually implies white bg for control */
       }
+
+      /* Responsive Footer Text */
+      @media (max-width: 576px) {
+          .app-footer {
+              font-size: 0.65rem !important;
+              padding: 0.5rem 1rem !important;
+          }
+      }
     </style>
     @stack('styles')
   </head>
@@ -1141,15 +1149,11 @@
       </main>
       <!--end::App Main-->
       <!--begin::Footer-->
-      <footer class="app-footer">
-        <!--begin::To the end-->
-        <div class="float-end"><b>V.1.1.40</b></div>
-        <!--end::To the end-->
-        <!--begin::Copyright-->
-        <strong>
-          Copyright &copy; ommad {{ date('Y') }}, All rights reserved.
-        </strong>
-        <!--end::Copyright-->
+<footer class="app-footer">
+        <div class="d-flex flex-row justify-content-between align-items-center w-100">
+            <strong>Copyright &copy; ommad {{ date('Y') }}, All rights reserved.</strong>
+            <div class="fw-bold ms-2">V.1.1.40</div>
+        </div>
       </footer>
       <!--end::Footer-->
     </div>
