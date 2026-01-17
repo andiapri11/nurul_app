@@ -1,0 +1,21 @@
+{
+    "name": "Nurul Ilmi Management",
+    "short_name": "NIM",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#111c43",
+    "description": "Sistem Informasi Manajemen Sekolah Terpadu Nurul Ilmi",
+    "icons": [
+        {
+            "src": "/template/dist/assets/img/AdminLTELogo.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/template/dist/assets/img/AdminLTELogo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -18,6 +18,12 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
+    <!-- PWA Setup -->
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Nurul Ilmi">
+    <link rel="apple-touch-icon" href="{{ asset('template/dist/assets/img/AdminLTELogo.png') }}">
     <!--end::Accessibility Meta Tags-->
     <!--begin::Primary Meta Tags-->
     <meta name="title" content="{{ $appSettings['app_name'] ?? 'Nurul Ilmi Management' }} | Dashboard" />
@@ -1365,6 +1371,15 @@
     </script>
 
     @stack('scripts')
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('Service Worker registered', reg))
+                    .catch(err => console.error('Service Worker registration failed', err));
+            });
+        }
+    </script>
     <!--end::Script-->
   </body>
   <!--end::Body-->
