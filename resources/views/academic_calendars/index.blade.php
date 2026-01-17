@@ -228,7 +228,7 @@
                                                 $classNames = \App\Models\SchoolClass::whereIn('id', $e->affected_classes)->pluck('name')->implode(', ');
                                                 $popContent .= "<div class='text-muted' style='font-size:0.7rem;'>Target: $classNames</div>";
                                             } else {
-                                                $popContent .= "<div class='text-muted' style='font-size:0.7rem;'>Target: Seluruh Unit</div>";
+                                                $popContent .= "<div class='text-muted' style='font-size:0.7rem;'>Target: Seluruh Kelas</div>";
                                             }
                                             $popContent .= "</div>";
                                         }

@@ -75,7 +75,7 @@
                                 @endforeach
                             </select>
                             <div class="form-text text-primary">
-                                <i class="bi bi-info-circle"></i> Biarkan kosong jika agenda berlaku untuk <strong>SELURUH UNIT</strong>. 
+                                <i class="bi bi-info-circle"></i> Biarkan kosong jika agenda berlaku untuk <strong>SELURUH KELAS</strong>. 
                                 <br>Jika dipilih, maka kelas yang TIDAK dipilih tetap masuk/efektif seperti biasa.
                             </div>
                         </div>
