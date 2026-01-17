@@ -65,6 +65,11 @@ class CurriculumController extends Controller
         }
 
         $requests = $query->withCount('submissions')->paginate(10)->withQueryString();
+
+        // Calculate assigned teachers count for each request
+        foreach ($requests as $req) {
+            $req->assigned_count = $this->countAssignedTeachers($req);
+        }
         
         // Data for Filters
         $academicYears = AcademicYear::orderBy('status', 'asc')->orderBy('start_year', 'desc')->get();
@@ -696,7 +701,7 @@ class CurriculumController extends Controller
     public function upload(Request $request, $id)
     {
         $request->validate([
-            'file' => 'required|file|mimes:pdf,doc,docx,xls,xlsx,zip,rar|max:10240',
+            'file' => 'required|file|mimes:pdf|max:5120',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -1035,5 +1040,54 @@ class CurriculumController extends Controller
 
         return redirect()->route('curriculum.teaching-assignments.index')
             ->with('success', "Tugas mengajar untuk {$user->name} berhasil diperbarui.");
+    }
+
+    private function countAssignedTeachers($request)
+    {
+        $targets = [
+            'units' => $request->target_units,
+            'subjects' => $request->target_subjects,
+            'grades' => $request->target_grades,
+            'users' => $request->target_users,
+        ];
+        
+        $hasSpecificTargets = !empty($targets['units']) || !empty($targets['subjects']) || !empty($targets['grades']) || !empty($targets['users']);
+
+        if ($hasSpecificTargets) {
+             // Scenario 1: User explicitly selected teachers
+             if (!empty($targets['users'])) {
+                 return count($targets['users']);
+             }
+             
+             // Scenario 2: Criteria based
+             $criteriaQuery = \App\Models\TeachingAssignment::query();
+             $hasCriteria = false;
+
+             if (!empty($targets['subjects'])) {
+                $criteriaQuery->whereIn('subject_id', $targets['subjects']);
+                $hasCriteria = true;
+             }
+             
+             if (!empty($targets['units']) || !empty($targets['grades'])) {
+                $criteriaQuery->whereHas('schoolClass', function($q) use ($targets) {
+                    if (!empty($targets['units'])) $q->whereIn('unit_id', $targets['units']);
+                    if (!empty($targets['grades'])) $q->whereIn('grade_code', $targets['grades']);
+                });
+                 $hasCriteria = true;
+             }
+             
+             if ($hasCriteria) {
+                 // For approximation, we count unique users matching criteria
+                 return $criteriaQuery->distinct('user_id')->count('user_id');
+             }
+        }
+        
+        // Global / Fallback (All Active Teachers)
+        return User::where('role', 'guru')
+                ->orWhereHas('jabatans', function($q){
+                    $q->where('nama_jabatan', 'like', '%Guru%');
+                })
+                ->where('status', 'aktif')
+                ->count();
     }
 }

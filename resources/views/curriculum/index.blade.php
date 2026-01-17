@@ -95,9 +95,16 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-info text-dark me-2 fs-6">{{ $req->submissions_count }}</span>
-                                    <span class="small text-muted">Guru</span>
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex justify-content-between text-muted small mb-1">
+                                        <span>{{ $req->submissions_count }} / {{ $req->assigned_count }}</span>
+                                        <span>{{ $req->assigned_count > 0 ? round(($req->submissions_count / $req->assigned_count) * 100) : 0 }}%</span>
+                                    </div>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                            style="width: {{ $req->assigned_count > 0 ? ($req->submissions_count / $req->assigned_count) * 100 : 0 }}%">
+                                        </div>
+                                    </div>
                                 </div>
                             </td>
                             <td>
