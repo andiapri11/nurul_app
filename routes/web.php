@@ -1046,3 +1046,7 @@ Route::get('/delete-target-invoice', function() {
     }
 });
 */
+
+Route::fallback(function () {
+    return redirect()->route('dashboard');
+});
