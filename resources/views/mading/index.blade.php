@@ -603,8 +603,8 @@
                                                              <span class="teacher-name-tiny text-truncate">{{ $schedule->teacher->name ?? '-' }}</span>
                                                              
                                                              @if($schedule->todayCheckin)
-                                                                <span class="status-label ms-auto {{ $schedule->todayCheckin->status == 'late' || $schedule->todayCheckin->status == 'absent' ? 'status-red' : ($schedule->todayCheckin->status == 'substitute' ? 'status-purple' : 'status-green') }}">
-                                                                    {{ $schedule->todayCheckin->status == 'late' ? 'TERLAMBAT' : ($schedule->todayCheckin->status == 'substitute' ? 'BADAL' : ($schedule->todayCheckin->status == 'absent' ? 'ABSEN' : 'HADIR')) }}
+                                                                <span class="status-label ms-auto {{ $schedule->todayCheckin->status == 'substitute' ? 'status-purple' : 'status-green' }}">
+                                                                    {{ $schedule->todayCheckin->status == 'substitute' ? 'BADAL' : ($schedule->todayCheckin->status == 'absent' ? 'ABSEN' : 'HADIR') }}
                                                                 </span>
                                                              @elseif($isActive)
                                                                 <span class="status-label ms-auto status-gray">BELUM MASUK</span>

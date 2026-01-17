@@ -11,7 +11,7 @@ class MadingAdminController extends Controller
 {
     public function index()
     {
-        $announcements = Announcement::with('unit')->latest()->get();
+        $announcements = Announcement::with('unit')->latest()->paginate(10);
         return view('mading_admin.index', compact('announcements'));
     }
 
