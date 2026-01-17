@@ -426,6 +426,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('gurukaryawans', \App\Http\Controllers\GuruKaryawanController::class);
     
     // Manajemen Mading
+    Route::post('/mading-admin/bulk-destroy', [\App\Http\Controllers\MadingAdminController::class, 'bulkDestroy'])->name('mading-admin.bulk-destroy');
+    Route::post('/mading-admin/bulk-update', [\App\Http\Controllers\MadingAdminController::class, 'bulkUpdate'])->name('mading-admin.bulk-update');
     Route::resource('mading-admin', \App\Http\Controllers\MadingAdminController::class);
     
     // User Manajemen - Pimpinan (Direktur)

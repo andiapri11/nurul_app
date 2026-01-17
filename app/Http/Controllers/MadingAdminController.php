@@ -9,10 +9,22 @@ use Illuminate\Support\Facades\Storage;
 
 class MadingAdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $announcements = Announcement::with('unit')->latest()->paginate(10);
-        return view('mading_admin.index', compact('announcements'));
+        $query = Announcement::with('unit')->latest();
+
+        if ($request->has('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('unit_id') && $request->unit_id != '') {
+            $query->where('unit_id', $request->unit_id);
+        }
+
+        $announcements = $query->paginate(10);
+        $units = Unit::all();
+        
+        return view('mading_admin.index', compact('announcements', 'units'));
     }
 
     public function create()
@@ -86,5 +98,36 @@ class MadingAdminController extends Controller
         }
         $mading_admin->delete();
         return redirect()->route('mading-admin.index')->with('success', 'Konten Mading berhasil dihapus');
+    }
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+        if (!$ids || !is_array($ids)) {
+            return redirect()->back()->with('error', 'Pilih konten yang ingin dihapus');
+        }
+
+        $announcements = Announcement::whereIn('id', $ids)->get();
+        foreach ($announcements as $announcement) {
+            if ($announcement->image) {
+                Storage::disk('public')->delete($announcement->image);
+            }
+            $announcement->delete();
+        }
+
+        return redirect()->route('mading-admin.index')->with('success', count($ids) . ' Konten Mading berhasil dihapus');
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $ids = $request->input('ids');
+        $status = $request->input('status');
+
+        if (!$ids || !is_array($ids)) {
+            return redirect()->back()->with('error', 'Pilih konten yang ingin diubah');
+        }
+
+        Announcement::whereIn('id', $ids)->update(['is_active' => $status == 'active']);
+
+        return redirect()->route('mading-admin.index')->with('success', count($ids) . ' Konten Mading berhasil diperbarui');
     }
 }
