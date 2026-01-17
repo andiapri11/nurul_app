@@ -96,12 +96,14 @@
                             </td>
                             <td>
                                 <div class="d-flex flex-column">
-                                    <div class="d-flex justify-content-between text-muted small mb-1">
-                                        <span>{{ $req->submissions_count }} / {{ $req->assigned_count }}</span>
-                                        <span>{{ $req->assigned_count > 0 ? round(($req->submissions_count / $req->assigned_count) * 100) : 0 }}%</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold text-dark">{{ $req->assigned_count > 0 ? round(($req->submissions_count / $req->assigned_count) * 100) : 0 }}%</span>
+                                        <span class="text-muted small" style="font-size: 0.8rem;">
+                                            {{ $req->submissions_count }} <span class="mx-1 text-secondary">/</span> {{ $req->assigned_count }}
+                                        </span>
                                     </div>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-info" role="progressbar" 
+                                    <div class="progress bg-light" style="height: 8px; border-radius: 4px;">
+                                        <div class="progress-bar {{ ($req->submissions_count == $req->assigned_count && $req->assigned_count > 0) ? 'bg-success' : 'bg-primary' }} rounded-pill" role="progressbar" 
                                             style="width: {{ $req->assigned_count > 0 ? ($req->submissions_count / $req->assigned_count) * 100 : 0 }}%">
                                         </div>
                                     </div>

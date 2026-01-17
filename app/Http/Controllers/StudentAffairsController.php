@@ -947,21 +947,56 @@ class StudentAffairsController extends Controller
         $academicYearId = $request->input('academic_year_id', $activeYear ? $activeYear->id : null);
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
-        $membersQuery = ExtracurricularMember::with(['student.schoolClass'])
-            ->where('extracurricular_id', $extracurricular->id);
+        // Members Query with Filters
+        $membersQuery = ExtracurricularMember::with(['student.schoolClass' => function($q) use ($academicYearId) {
+            $q->where('class_student.academic_year_id', $academicYearId);
+        }])
+        ->where('extracurricular_id', $extracurricular->id);
         
         if ($academicYearId) {
             $membersQuery->where('academic_year_id', $academicYearId);
         }
 
-        $members = $membersQuery->get();
+        // Filter: Unit (Member's Class Unit)
+        if ($request->filled('filter_unit_id')) {
+            $membersQuery->whereHas('student.schoolClass', function($q) use ($request, $academicYearId) {
+                $q->where('unit_id', $request->filter_unit_id)
+                  ->where('classes.academic_year_id', $academicYearId);
+            });
+        }
+
+        // Filter: Class
+        if ($request->filled('filter_class_id')) {
+            $membersQuery->whereHas('student.schoolClass', function($q) use ($request, $academicYearId) {
+                $q->where('class_id', $request->filter_class_id)
+                  ->where('classes.academic_year_id', $academicYearId);
+            });
+        }
+
+        // Search by Name/NIS
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $membersQuery->whereHas('student', function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = $request->input('per_page', 10);
+        $members = $membersQuery->paginate($perPage)->appends($request->all());
 
         // Allowed units for cross-unit enrollment
         $allowedUnits = Auth::user()->getKesiswaanUnits();
         $selectedUnitId = $request->input('unit_id', $extracurricular->unit_id);
 
-        // Classes for filtering students based on selected unit
+        // Classes for "Add Member" form (Filtered by Unit)
         $classes = \App\Models\SchoolClass::where('unit_id', $selectedUnitId)
+            ->where('academic_year_id', $academicYearId)
+            ->orderBy('name')
+            ->get();
+            
+        // Classes for "Member List" filter (All classes in active year for allowed units)
+        $filterClasses = \App\Models\SchoolClass::whereIn('unit_id', $allowedUnits->pluck('id'))
             ->where('academic_year_id', $academicYearId)
             ->orderBy('name')
             ->get();
@@ -969,20 +1004,25 @@ class StudentAffairsController extends Controller
         $selectedClassId = $request->input('class_id');
 
         // Students available to join (Filtered by Unit and optionally Class)
-        $memberStudentIds = $members->pluck('student_id')->toArray();
+        // Note: We need to exclude ALL current members of this extracurricular for this year, regardless of pagination
+        $allMemberIds = ExtracurricularMember::where('extracurricular_id', $extracurricular->id)
+            ->where('academic_year_id', $academicYearId)
+            ->pluck('student_id')
+            ->toArray();
+
         $studentsQuery = Student::where('status', 'aktif')
             ->whereHas('schoolClass', function($q) use ($selectedUnitId, $academicYearId, $selectedClassId) {
-                $q->where('unit_id', $selectedUnitId);
+                $q->where('classes.unit_id', $selectedUnitId);
                 if ($academicYearId) $q->where('classes.academic_year_id', $academicYearId);
-                if ($selectedClassId) $q->where('id', $selectedClassId);
+                if ($selectedClassId) $q->where('classes.id', $selectedClassId);
             })
-            ->whereNotIn('id', $memberStudentIds);
+            ->whereNotIn('id', $allMemberIds);
         
         $students = $studentsQuery->orderBy('nama_lengkap')->get();
 
         $isViewingActiveYear = $activeYear && ($academicYearId == $activeYear->id);
 
-        return view('student_affairs.extracurriculars.members', compact('extracurricular', 'members', 'students', 'academicYears', 'academicYearId', 'isViewingActiveYear', 'classes', 'selectedClassId', 'allowedUnits', 'selectedUnitId'));
+        return view('student_affairs.extracurriculars.members', compact('extracurricular', 'members', 'students', 'academicYears', 'academicYearId', 'isViewingActiveYear', 'classes', 'selectedClassId', 'allowedUnits', 'selectedUnitId', 'filterClasses'));
     }
 
     public function addExtracurricularMember(Request $request, Extracurricular $extracurricular)
@@ -992,12 +1032,11 @@ class StudentAffairsController extends Controller
             abort(403);
         }
 
+        // Allow 'ALL' value by removing strict exists check on every item
         $request->validate([
-            'student_ids' => 'required_without:add_all|array',
-            'student_ids.*' => 'exists:students,id',
+            'student_ids' => 'required|array',
             'academic_year_id' => 'required|exists:academic_years,id',
             'role' => 'required|string|max:255',
-            'add_all' => 'nullable|boolean'
         ]);
 
         $academicYear = \App\Models\AcademicYear::find($request->academic_year_id);
@@ -1005,29 +1044,35 @@ class StudentAffairsController extends Controller
             return back()->with('error', 'Anggota hanya dapat ditambahkan pada Tahun Pelajaran Aktif.');
         }
 
-        if ($request->input('add_all') == '1') {
+        $inputStudentIds = $request->input('student_ids', []);
+        $isAddAll = in_array('ALL', $inputStudentIds);
+
+        if ($isAddAll) {
             $selectedUnitId = $request->input('unit_id', $extracurricular->unit_id);
             $selectedClassId = $request->input('class_id');
             $activeYearId = $academicYear->id;
 
-            // Find students matching filters who are NOT yet members
-            $studentIds = Student::where('status', 'aktif')
-                ->whereHas('schoolClass', function($q) use ($selectedUnitId, $activeYearId, $selectedClassId) {
-                    $q->where('unit_id', $selectedUnitId);
-                    $q->where('classes.academic_year_id', $activeYearId);
-                    if ($selectedClassId) $q->where('id', $selectedClassId);
-                })
-            ->whereDoesntHave('extracurriculars', function($q) use ($extracurricular, $activeYearId) {
-                $q->where('extracurricular_id', $extracurricular->id)
-                  ->where('academic_year_id', $activeYearId);
-            })
-                ->pluck('id')
+            // Find already enrolled members to exclude
+            $existingMemberIds = ExtracurricularMember::where('extracurricular_id', $extracurricular->id)
+                ->where('academic_year_id', $activeYearId)
+                ->pluck('student_id')
                 ->toArray();
+
+            // Simplified Logic: Fetch Active Students directly from the selected Class
+            if ($selectedClassId) {
+                $studentIds = \Illuminate\Support\Facades\DB::table('students')
+                    ->join('class_student', 'students.id', '=', 'class_student.student_id')
+                    ->where('class_student.class_id', $selectedClassId)
+                    ->where('students.status', 'aktif')
+                    ->whereNotIn('students.id', $existingMemberIds)
+                    ->pluck('students.id')
+                    ->toArray();
+            } else {
+                return back()->with('error', 'Filter Kelas harus dipilih untuk menggunakan fitur "Pilih Semua".');
+            }
         } else {
             // Single Addition Mode
-            $studentIds = $request->student_ids;
-            if (is_string($studentIds)) $studentIds = explode(',', $studentIds);
-            if (!is_array($studentIds)) $studentIds = (array)$studentIds;
+            $studentIds = $inputStudentIds;
         }
 
         if (empty($studentIds)) {
@@ -1084,11 +1129,49 @@ class StudentAffairsController extends Controller
         $academicYearId = $request->input('academic_year_id', $activeYear ? $activeYear->id : null);
 
         // Members for this specific academic year
-        $members = ExtracurricularMember::with('student.schoolClass')
-            ->where('extracurricular_id', $extracurricular->id)
-            ->where('academic_year_id', $academicYearId)
-            ->get()
-            ->sortBy('student.nama_lengkap');
+        $membersQuery = ExtracurricularMember::with(['student.schoolClass' => function($q) use ($academicYearId) {
+            $q->where('class_student.academic_year_id', $academicYearId);
+        }])
+        ->where('extracurricular_id', $extracurricular->id)
+        ->where('academic_year_id', $academicYearId);
+
+        // Filter: Unit (Member's Class Unit)
+        if ($request->filled('filter_unit_id')) {
+            $membersQuery->whereHas('student.schoolClass', function($q) use ($request, $academicYearId) {
+                $q->where('classes.unit_id', $request->filter_unit_id)
+                  ->where('classes.academic_year_id', $academicYearId);
+            });
+        }
+
+        // Filter: Class
+        if ($request->filled('filter_class_id')) {
+            $membersQuery->whereHas('student.schoolClass', function($q) use ($request, $academicYearId) {
+                $q->where('classes.id', $request->filter_class_id)
+                  ->where('classes.academic_year_id', $academicYearId);
+            });
+        }
+
+        // Search by Name/NIS
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $membersQuery->whereHas('student', function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply Sorting
+        // Since we are using pagination, standard sortBy won't work easily on collection.
+        // Usually we join students table to sort by name. For now let's just paginate results.
+        // Or if we want to sort strictly by student name, we need a join. 
+        // Let's use simple retrieval first or join if needed. 
+        // To sort by student name efficiently with pagination:
+        $membersQuery->join('students', 'extracurricular_members.student_id', '=', 'students.id')
+                     ->select('extracurricular_members.*') // Avoid column collision
+                     ->orderBy('students.nama_lengkap', 'asc');
+
+        $perPage = $request->input('per_page', 10);
+        $members = $membersQuery->paginate($perPage)->appends($request->all());
 
         // Reports for this extracurricular and academic year
         $reports = ExtracurricularReport::where('extracurricular_id', $extracurricular->id)
@@ -1096,10 +1179,18 @@ class StudentAffairsController extends Controller
             ->latest()
             ->get();
 
+        $allowedUnits = Auth::user()->getKesiswaanUnits();
+        
+        // Classes for "Member List" filter (All classes in active year for allowed units)
+        $filterClasses = \App\Models\SchoolClass::whereIn('unit_id', $allowedUnits->pluck('id'))
+            ->where('academic_year_id', $academicYearId)
+            ->orderBy('name')
+            ->get();
+
         $isViewingActiveYear = $activeYear && ($academicYearId == $activeYear->id);
 
         return view('student_affairs.extracurriculars.achievements', compact(
-            'extracurricular', 'members', 'reports', 'academicYears', 'academicYearId', 'isViewingActiveYear'
+            'extracurricular', 'members', 'reports', 'academicYears', 'academicYearId', 'isViewingActiveYear', 'allowedUnits', 'filterClasses'
         ));
     }
 

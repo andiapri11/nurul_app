@@ -125,35 +125,91 @@
                         <form action="{{ route('student-affairs.extracurriculars.update-achievements', $extracurricular->id) }}" method="POST">
                             @csrf
                             @method('PUT')
-                            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0 h6 fw-bold">Daftar Nilai Siswa</h5>
-                                <div class="d-flex gap-2">
-                                    @if($members->count() > 0)
-                                    <div class="dropdown">
-                                        <button class="btn btn-outline-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'ganjil', 'academic_year_id' => $academicYearId]) }}" target="_blank">
-                                                    Semester Ganjil
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'genap', 'academic_year_id' => $academicYearId]) }}" target="_blank">
-                                                    Semester Genap
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                    @endif
+                            <div class="card-header bg-white border-bottom py-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="card-title mb-0 h6 fw-bold">Daftar Nilai Siswa</h5>
+                                    <div class="d-flex gap-2">
+                                        @if($members->count() > 0)
+                                        <div class="dropdown">
+                                            <button class="btn btn-outline-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'ganjil', 'academic_year_id' => $academicYearId]) }}" target="_blank">
+                                                        Semester Ganjil
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'genap', 'academic_year_id' => $academicYearId]) }}" target="_blank">
+                                                        Semester Genap
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        @endif
 
-                                    @if($isViewingActiveYear && $members->count() > 0)
-                                        <button type="submit" class="btn btn-success btn-sm">
-                                            <i class="bi bi-save me-1"></i> Simpan Semuanya
-                                        </button>
-                                    @endif
+                                        @if($isViewingActiveYear && $members->count() > 0)
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="bi bi-save me-1"></i> Simpan Semuanya
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
+
+                                {{-- Filters Row --}}
+                                <div class="row g-2">
+                                    {{-- Unit Filter --}}
+                                    <div class="col-md-3">
+                                        <select name="filter_unit_id" class="form-select form-select-sm" onchange="window.location.href='{{ route('student-affairs.extracurriculars.achievements', $extracurricular->id) }}?academic_year_id={{ $academicYearId }}&filter_unit_id=' + this.value">
+                                            <option value="">- Semua Unit -</option>
+                                            @foreach($allowedUnits as $unit)
+                                                <option value="{{ $unit->id }}" {{ request('filter_unit_id') == $unit->id ? 'selected' : '' }}>
+                                                    {{ $unit->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    
+                                    {{-- Class Filter --}}
+                                    <div class="col-md-3">
+                                        <select name="filter_class_id" class="form-select form-select-sm" onchange="window.location.href='{{ route('student-affairs.extracurriculars.achievements', $extracurricular->id) }}?academic_year_id={{ $academicYearId }}&filter_unit_id={{ request('filter_unit_id') }}&filter_class_id=' + this.value">
+                                            <option value="">- Semua Kelas -</option>
+                                            @foreach($filterClasses as $class)
+                                                @if(!request('filter_unit_id') || $class->unit_id == request('filter_unit_id'))
+                                                <option value="{{ $class->id }}" {{ request('filter_class_id') == $class->id ? 'selected' : '' }}>
+                                                    {{ $class->name }}
+                                                </option>
+                                                @endif
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    {{-- Search --}}
+                                    <div class="col-md-4">
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" id="searchInput" class="form-control" placeholder="Cari Nama/NIS..." value="{{ request('search') }}">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="applySearch()"><i class="bi bi-search"></i></button>
+                                        </div>
+                                    </div>
+
+                                     {{-- Per Page --}}
+                                     <div class="col-md-2">
+                                        <select name="per_page" class="form-select form-select-sm" onchange="window.location.href='{{ route('student-affairs.extracurriculars.achievements', $extracurricular->id) }}?academic_year_id={{ $academicYearId }}&filter_unit_id={{ request('filter_unit_id') }}&filter_class_id={{ request('filter_class_id') }}&search={{ request('search') }}&per_page=' + this.value">
+                                            <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 Data</option>
+                                            <option value="20" {{ request('per_page') == '20' ? 'selected' : '' }}>20 Data</option>
+                                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 Data</option>
+                                            <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 Data</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                @if(request()->anyFilled(['filter_unit_id', 'filter_class_id', 'search']))
+                                <div class="mt-2">
+                                     <a href="{{ route('student-affairs.extracurriculars.achievements', ['extracurricular' => $extracurricular->id, 'academic_year_id' => $academicYearId]) }}" class="text-decoration-none small text-danger">
+                                        <i class="bi bi-x-circle"></i> Reset Filter
+                                     </a>
+                                </div>
+                                @endif
                             </div>
                             <div class="card-body p-0">
                                 @if($members->count() > 0)
@@ -214,6 +270,9 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <div class="card-footer bg-white py-3">
+                                    {{ $members->links() }}
+                                </div>
                                 @else
                                 <div class="text-center py-5 text-muted">
                                     <i class="bi bi-people fs-1 d-block mb-3"></i>
@@ -228,58 +287,59 @@
                 <!-- Tab: Laporan Kegiatan -->
                 <div class="tab-pane fade" id="pills-reports" role="tabpanel" aria-labelledby="pills-reports-tab">
                     <div class="card border-0 shadow-sm" style="border-radius: 12px;">
+                        <span id="reports-content-marker"></span>
                         <div class="card-header bg-white border-bottom py-3">
-                            <h5 class="card-title mb-0 h6 fw-bold">Arsip Laporan Kegiatan</h5>
+                             <h5 class="card-title mb-0 h6 fw-bold">Arsip Laporan Kegiatan</h5>
                         </div>
                         <div class="card-body p-0">
-                            @if($reports->count() > 0)
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="50" class="text-center">No</th>
-                                            <th>Judul Laporan</th>
-                                            <th>Tanggal Unggah</th>
-                                            <th>Keterangan</th>
-                                            <th width="120" class="text-center">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($reports as $report)
-                                        <tr>
-                                            <td class="text-center">{{ $loop->iteration }}</td>
-                                            <td>
-                                                <div class="fw-bold text-dark">{{ $report->title }}</div>
-                                            </td>
-                                            <td>{{ $report->created_at->translatedFormat('d F Y') }}</td>
-                                            <td>{{ $report->description ?: '-' }}</td>
-                                            <td class="text-center">
-                                                <div class="btn-group">
-                                                    <a href="{{ asset('storage/' . $report->file_path) }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Lihat/Download">
-                                                        <i class="bi bi-eye"></i>
-                                                    </a>
-                                                    @if($isViewingActiveYear)
-                                                    <form action="{{ route('student-affairs.extracurriculars.delete-report', $report->id) }}" method="POST" onsubmit="return confirm('Hapus laporan ini?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                            @else
-                            <div class="text-center py-5 text-muted">
-                                <i class="bi bi-file-earmark-x fs-1 d-block mb-3"></i>
-                                Belum ada laporan yang diunggah.
-                            </div>
-                            @endif
+                             @if($reports->count() > 0)
+                             <div class="table-responsive">
+                                 <table class="table table-hover align-middle mb-0">
+                                     <thead class="table-light">
+                                         <tr>
+                                             <th width="50" class="text-center">No</th>
+                                             <th>Judul Laporan</th>
+                                             <th>Tanggal Unggah</th>
+                                             <th>Keterangan</th>
+                                             <th width="120" class="text-center">Aksi</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody>
+                                         @foreach($reports as $report)
+                                         <tr>
+                                             <td class="text-center">{{ $loop->iteration }}</td>
+                                             <td>
+                                                 <div class="fw-bold text-dark">{{ $report->title }}</div>
+                                             </td>
+                                             <td>{{ $report->created_at->translatedFormat('d F Y') }}</td>
+                                             <td>{{ $report->description ?: '-' }}</td>
+                                             <td class="text-center">
+                                                 <div class="btn-group">
+                                                     <a href="{{ asset('storage/' . $report->file_path) }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Lihat/Download">
+                                                         <i class="bi bi-eye"></i>
+                                                     </a>
+                                                     @if($isViewingActiveYear)
+                                                     <form action="{{ route('student-affairs.extracurriculars.delete-report', $report->id) }}" method="POST" onsubmit="return confirm('Hapus laporan ini?')">
+                                                         @csrf
+                                                         @method('DELETE')
+                                                         <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus">
+                                                             <i class="bi bi-trash"></i>
+                                                         </button>
+                                                     </form>
+                                                     @endif
+                                                 </div>
+                                             </td>
+                                         </tr>
+                                         @endforeach
+                                     </tbody>
+                                 </table>
+                             </div>
+                             @else
+                             <div class="text-center py-5 text-muted">
+                                 <i class="bi bi-file-earmark-x fs-1 d-block mb-3"></i>
+                                 Belum ada laporan yang diunggah.
+                             </div>
+                             @endif
                         </div>
                     </div>
                 </div>
@@ -287,6 +347,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    function applySearch() {
+        const query = document.getElementById('searchInput').value;
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('search', query);
+        window.location.search = urlParams.toString();
+    }
+
+    // Allow Enter key in search input
+    document.getElementById('searchInput')?.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            applySearch();
+        }
+    });
+</script>
 
 <style>
     .nav-pills .nav-link {

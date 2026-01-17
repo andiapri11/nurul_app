@@ -91,13 +91,16 @@
                             <label class="form-label small fw-bold">Pilih Siswa <span class="text-danger">*</span></label>
                             <select name="student_ids[]" id="student_select" class="form-select select2" required>
                                 <option value=""></option>
+                                @if($selectedClassId && count($students) > 0)
+                                    <option value="ALL" class="fw-bold bg-light text-primary">-- MASUKAN SEMUA SISWA DI KELAS INI ({{ count($students) }}) --</option>
+                                @endif
                                 @foreach($students as $student)
                                     <option value="{{ $student->id }}">
                                         {{ $student->nama_lengkap }} ({{ optional($student->schoolClass->first())->name ?? '-' }})
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-success small mt-1 d-block"><i class="bi bi-info-circle"></i> Pilih siswa untuk langsung menambahkan.</small>
+                            <small class="text-success small mt-1 d-block"><i class="bi bi-info-circle"></i> Pilih siswa atau pilih opsi "SEMUA SISWA" untuk menambahkan satu kelas sekaligus.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Jabatan/Peran</label>
@@ -108,13 +111,6 @@
                             <button type="submit" id="submit_btn" class="btn btn-success btn-sm d-none">
                                 <i class="bi bi-plus-circle"></i> Tambahkan
                             </button>
-
-                            @if(count($students) > 0)
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addAllStudents()">
-                                <i class="bi bi-person-plus-fill"></i> Masukan Semua Siswa ({{ count($students) }})
-                            </button>
-                            <input type="hidden" name="add_all" id="add_all_field" value="0">
-                            @endif
                         </div>
                     </form>
                 </div>
@@ -129,16 +125,70 @@
 
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0 h6 fw-bold">Daftar Anggota</h3>
-                    <form action="{{ route('student-affairs.extracurriculars.members', $extracurricular->id) }}" method="GET" class="d-flex gap-2">
-                        <select name="academic_year_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                            @foreach($academicYears as $ay)
-                                <option value="{{ $ay->id }}" {{ $academicYearId == $ay->id ? 'selected' : '' }}>
-                                    TP {{ $ay->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="card-title mb-0 h6 fw-bold">Daftar Anggota</h3>
+                        <form id="filterForm" action="{{ route('student-affairs.extracurriculars.members', $extracurricular->id) }}" method="GET" class="d-flex gap-2">
+                             {{-- Hidden Filters Preserved --}}
+                             <input type="hidden" name="academic_year_id" value="{{ $academicYearId }}">
+                        </form>
+                    </div>
+
+                    {{-- Filters Row --}}
+                    <form action="{{ route('student-affairs.extracurriculars.members', $extracurricular->id) }}" method="GET">
+                        <input type="hidden" name="academic_year_id" value="{{ $academicYearId }}">
+                        <div class="row g-2">
+                            {{-- Unit Filter --}}
+                            <div class="col-md-3">
+                                <select name="filter_unit_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">- Semua Unit -</option>
+                                    @foreach($allowedUnits as $unit)
+                                        <option value="{{ $unit->id }}" {{ request('filter_unit_id') == $unit->id ? 'selected' : '' }}>
+                                            {{ $unit->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            {{-- Class Filter --}}
+                            <div class="col-md-3">
+                                <select name="filter_class_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">- Semua Kelas -</option>
+                                    @foreach($filterClasses as $class)
+                                        @if(!request('filter_unit_id') || $class->unit_id == request('filter_unit_id'))
+                                        <option value="{{ $class->id }}" {{ request('filter_class_id') == $class->id ? 'selected' : '' }}>
+                                            {{ $class->name }}
+                                        </option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- Search --}}
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="search" class="form-control" placeholder="Cari Nama/NIS..." value="{{ request('search') }}">
+                                    <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                                </div>
+                            </div>
+
+                             {{-- Per Page --}}
+                             <div class="col-md-2">
+                                <select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10 Data</option>
+                                    <option value="20" {{ request('per_page') == '20' ? 'selected' : '' }}>20 Data</option>
+                                    <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 Data</option>
+                                    <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 Data</option>
+                                </select>
+                            </div>
+                        </div>
+                        @if(request()->anyFilled(['filter_unit_id', 'filter_class_id', 'search']))
+                        <div class="mt-2">
+                             <a href="{{ route('student-affairs.extracurriculars.members', ['extracurricular' => $extracurricular->id, 'academic_year_id' => $academicYearId]) }}" class="text-decoration-none small text-danger">
+                                <i class="bi bi-x-circle"></i> Reset Filter
+                             </a>
+                        </div>
+                        @endif
                     </form>
                 </div>
                 <div class="card-body p-0">
@@ -188,6 +238,9 @@
                         </table>
                     </div>
                 </div>
+                <div class="card-footer bg-white py-3">
+                    {{ $members->links() }}
+                </div>
             </div>
             <div class="mt-3">
                 <a href="{{ route('student-affairs.extracurriculars.index') }}" class="btn btn-secondary">
@@ -225,21 +278,7 @@
         }
     });
 
-    function addAllStudents() {
-        const count = "{{ count($students) }}";
-        if (confirm('Apakah Anda yakin ingin memasukkan semua siswa (' + count + ') yang ada di filter ini?')) {
-            $('#add_all_field').val('1');
-            $('#student_select').prop('required', false);
-            
-            // Show loading state on the actual "Add All" button
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menambahkan...';
-            btn.disabled = true;
 
-            $('#student_enrollment_form').submit();
-        }
-    }
 </script>
 @endpush
 @endsection
