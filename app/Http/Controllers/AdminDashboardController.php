@@ -29,7 +29,14 @@ class AdminDashboardController extends Controller
         $scopeUnitId = ($selectedUnitId === 'all') ? null : $selectedUnitId;
 
         // 1. STATISTIK UTAMA (Big Numbers) - Filtered by Unit if selected
-        $totalStudents = Student::when($scopeUnitId, function($q) use ($scopeUnitId) {
+        // Requirement: Only active students for the active academic year
+        $totalStudents = Student::where('status', 'aktif')
+            ->when($activeYear, function($q) use ($activeYear) {
+                $q->whereHas('classes', function($sq) use ($activeYear) {
+                    $sq->where('class_student.academic_year_id', $activeYear->id);
+                });
+            })
+            ->when($scopeUnitId, function($q) use ($scopeUnitId) {
                 $q->where('unit_id', $scopeUnitId);
             })->count();
             
@@ -57,8 +64,16 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
  
-        // 3. STATISTIK PER UNIT
-        $studentsPerUnit = Unit::withCount('students')
+        // 3. STATISTIK PER UNIT (Distribution)
+        // Requirement: Active students who have a class in the active year
+        $studentsPerUnit = Unit::withCount(['students' => function($q) use ($activeYear) {
+                $q->where('status', 'aktif')
+                  ->whereHas('classes', function($sq) use ($activeYear) {
+                      if ($activeYear) {
+                          $sq->where('class_student.academic_year_id', $activeYear->id);
+                      }
+                  });
+            }])
             ->when($scopeUnitId, function($q) use ($scopeUnitId) {
                 $q->where('id', $scopeUnitId);
             })->get(); 

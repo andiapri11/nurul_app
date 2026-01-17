@@ -6,6 +6,35 @@ use Illuminate\Support\Facades\Schema;
 
 Route::get('/', [\App\Http\Controllers\AuthController::class, 'home']);
 
+// Dynamic PWA Manifest
+Route::get('/manifest.json', function() {
+    $settings = \App\Models\Setting::pluck('value', 'key');
+    $logo = isset($settings['app_logo']) ? asset('storage/' . $settings['app_logo']) : asset('template/dist/assets/img/AdminLTELogo.png');
+    $appName = $settings['app_name'] ?? 'Nurul Ilmi Management';
+    
+    return response()->json([
+        "name" => $appName,
+        "short_name" => $settings['app_short_name'] ?? "Nurul Ilmi",
+        "start_url" => "/dashboard",
+        "display" => "standalone",
+        "background_color" => "#ffffff",
+        "theme_color" => "#111c43",
+        "description" => $settings['app_description'] ?? "Sistem Informasi Manajemen Sekolah Terpadu $appName",
+        "icons" => [
+            [
+                "src" => $logo,
+                "sizes" => "192x192",
+                "type" => "image/png"
+            ],
+            [
+                "src" => $logo,
+                "sizes" => "512x512",
+                "type" => "image/png"
+            ]
+        ]
+    ]);
+});
+
 
 
 /*

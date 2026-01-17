@@ -22,8 +22,8 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Nurul Ilmi">
-    <link rel="apple-touch-icon" href="{{ asset('template/dist/assets/img/AdminLTELogo.png') }}">
+    <meta name="apple-mobile-web-app-title" content="{{ $appSettings['app_short_name'] ?? 'Nurul Ilmi' }}">
+    <link rel="apple-touch-icon" href="{{ isset($appSettings['app_logo']) ? asset('storage/' . $appSettings['app_logo']) : asset('template/dist/assets/img/AdminLTELogo.png') }}">
     <!--end::Accessibility Meta Tags-->
     <!--begin::Primary Meta Tags-->
     <meta name="title" content="{{ $appSettings['app_name'] ?? 'Nurul Ilmi Management' }} | Dashboard" />
