@@ -95,17 +95,15 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span class="fw-bold text-dark">{{ $req->assigned_count > 0 ? round(($req->submissions_count / $req->assigned_count) * 100) : 0 }}%</span>
-                                        <span class="text-muted small" style="font-size: 0.8rem;">
-                                            {{ $req->submissions_count }} <span class="mx-1 text-secondary">/</span> {{ $req->assigned_count }}
-                                        </span>
-                                    </div>
-                                    <div class="progress bg-light" style="height: 8px; border-radius: 4px;">
+                                <div class="d-flex flex-column gap-1">
+                                    <div class="fw-bold text-dark">{{ $req->assigned_count > 0 ? round(($req->submissions_count / $req->assigned_count) * 100) : 0 }}%</div>
+                                    <div class="progress bg-light" style="height: 6px; border-radius: 3px;">
                                         <div class="progress-bar {{ ($req->submissions_count == $req->assigned_count && $req->assigned_count > 0) ? 'bg-success' : 'bg-primary' }} rounded-pill" role="progressbar" 
                                             style="width: {{ $req->assigned_count > 0 ? ($req->submissions_count / $req->assigned_count) * 100 : 0 }}%">
                                         </div>
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        {{ $req->submissions_count }} dari {{ $req->assigned_count }} Guru
                                     </div>
                                 </div>
                             </td>
