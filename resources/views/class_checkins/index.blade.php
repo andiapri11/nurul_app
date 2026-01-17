@@ -378,6 +378,12 @@
         font-size: 0.875rem;
         color: var(--text-main);
         transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box; /* Critical for padding */
+        min-width: 0; /* Flexbox safety */
+        -webkit-appearance: none; /* iOS reset */
+        appearance: none;
     }
 
     .form-select-custom:focus, .form-control-custom:focus {
