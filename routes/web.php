@@ -368,6 +368,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Achievements & Reports
         Route::get('extracurriculars/{extracurricular}/achievements', [\App\Http\Controllers\StudentAffairsController::class, 'extracurricularAchievements'])->name('extracurriculars.achievements');
+        Route::get('extracurriculars/{extracurricular}/grades-export', [\App\Http\Controllers\StudentAffairsController::class, 'exportExtracurricularGradesPdf'])->name('extracurriculars.grades-export');
         Route::put('extracurriculars/{extracurricular}/achievements', [\App\Http\Controllers\StudentAffairsController::class, 'updateExtracurricularAchievements'])->name('extracurriculars.update-achievements');
         Route::post('extracurriculars/{extracurricular}/reports', [\App\Http\Controllers\StudentAffairsController::class, 'storeExtracurricularReport'])->name('extracurriculars.store-report');
         Route::delete('extracurriculars/reports/{report}', [\App\Http\Controllers\StudentAffairsController::class, 'deleteExtracurricularReport'])->name('extracurriculars.delete-report');

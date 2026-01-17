@@ -85,7 +85,7 @@
                         </div>
 
                         <h5 class="card-title fw-bold text-dark mb-2">{{ $req->title }}</h5>
-                        <p class="text-muted small flex-grow-1" style="line-height: 1.6;">{{ Str::limit($req->description, 120) ?: 'Tidak ada deskripsi tambahan.' }}</p>
+                        <p class="text-muted small flex-grow-1" style="line-height: 1.6; white-space: pre-line;">{{ $req->description ?: 'Tidak ada deskripsi tambahan.' }}</p>
 
                         <div class="border-top pt-3 mt-2">
                             <div class="d-flex align-items-center mb-3 text-sm">

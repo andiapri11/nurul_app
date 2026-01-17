@@ -81,9 +81,13 @@
                             <input type="text" name="title" class="form-control form-control-sm" placeholder="Contoh: Laporan November" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">File (PDF/Image/Doc)</label>
-                            <input type="file" name="file" class="form-control form-control-sm" required>
-                            <small class="text-muted" style="font-size: 0.75rem;">Maksimal 10MB</small>
+                            <label class="form-label small fw-bold">File PDF</label>
+                            <input type="file" name="file" class="form-control form-control-sm @error('file') is-invalid @enderror" required accept=".pdf">
+                            @error('file')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @else
+                                <small class="text-muted" style="font-size: 0.75rem;">Maksimal 5MB (PDF)</small>
+                            @enderror
                         </div>
                         <div class="mb-3">
                             <label class="form-label small fw-bold">Keterangan (Opsional)</label>
@@ -123,11 +127,33 @@
                             @method('PUT')
                             <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                                 <h5 class="card-title mb-0 h6 fw-bold">Daftar Nilai Siswa</h5>
-                                @if($isViewingActiveYear && $members->count() > 0)
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="bi bi-save me-1"></i> Simpan Pemuanya
-                                    </button>
-                                @endif
+                                <div class="d-flex gap-2">
+                                    @if($members->count() > 0)
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'ganjil', 'academic_year_id' => $academicYearId]) }}" target="_blank">
+                                                    Semester Ganjil
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('student-affairs.extracurriculars.grades-export', ['extracurricular' => $extracurricular->id, 'semester' => 'genap', 'academic_year_id' => $academicYearId]) }}" target="_blank">
+                                                    Semester Genap
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    @endif
+
+                                    @if($isViewingActiveYear && $members->count() > 0)
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-save me-1"></i> Simpan Semuanya
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
                             <div class="card-body p-0">
                                 @if($members->count() > 0)

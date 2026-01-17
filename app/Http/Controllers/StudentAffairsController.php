@@ -973,7 +973,7 @@ class StudentAffairsController extends Controller
         $studentsQuery = Student::where('status', 'aktif')
             ->whereHas('schoolClass', function($q) use ($selectedUnitId, $academicYearId, $selectedClassId) {
                 $q->where('unit_id', $selectedUnitId);
-                if ($academicYearId) $q->where('academic_year_id', $academicYearId);
+                if ($academicYearId) $q->where('classes.academic_year_id', $academicYearId);
                 if ($selectedClassId) $q->where('id', $selectedClassId);
             })
             ->whereNotIn('id', $memberStudentIds);
@@ -1014,13 +1014,13 @@ class StudentAffairsController extends Controller
             $studentIds = Student::where('status', 'aktif')
                 ->whereHas('schoolClass', function($q) use ($selectedUnitId, $activeYearId, $selectedClassId) {
                     $q->where('unit_id', $selectedUnitId);
-                    $q->where('academic_year_id', $activeYearId);
+                    $q->where('classes.academic_year_id', $activeYearId);
                     if ($selectedClassId) $q->where('id', $selectedClassId);
                 })
-                ->whereDoesntHave('extracurriculars', function($q) use ($extracurricular, $activeYearId) {
-                    $q->where('extracurricular_id', $extracurricular->id)
-                      ->where('academic_year_id', $activeYearId);
-                })
+            ->whereDoesntHave('extracurriculars', function($q) use ($extracurricular, $activeYearId) {
+                $q->where('extracurricular_id', $extracurricular->id)
+                  ->where('academic_year_id', $activeYearId);
+            })
                 ->pluck('id')
                 ->toArray();
         } else {
@@ -1148,7 +1148,7 @@ class StudentAffairsController extends Controller
         $request->validate([
             'academic_year_id' => 'required|exists:academic_years,id',
             'title' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'file' => 'required|file|mimes:pdf|max:5120',
             'description' => 'nullable|string',
         ]);
 
@@ -1286,5 +1286,40 @@ class StudentAffairsController extends Controller
         $selectedUnit = $request->filled('unit_id') ? \App\Models\Unit::find($request->unit_id) : null;
 
         return view('student_affairs.attendance.index', compact('attendances', 'units', 'academicYears', 'classes', 'academicYearId', 'date', 'notInputtedClasses', 'selectedUnit'));
+    }
+    public function exportExtracurricularGradesPdf(Request $request, Extracurricular $extracurricular)
+    {
+        $allowedUnitIds = Auth::user()->getKesiswaanUnits()->pluck('id')->toArray();
+        if (!in_array($extracurricular->unit_id, $allowedUnitIds)) {
+            abort(403);
+        }
+
+        $academicYearId = $request->input('academic_year_id');
+        $academicYear = \App\Models\AcademicYear::find($academicYearId);
+        
+        if (!$academicYear) {
+             return back()->with('error', 'Pilih tahun pelajaran terlebih dahulu.');
+        }
+
+        $semester = $request->input('semester'); // 'ganjil' or 'genap'
+
+        $members = ExtracurricularMember::with('student.schoolClass')
+            ->where('extracurricular_id', $extracurricular->id)
+            ->where('academic_year_id', $academicYearId)
+            ->get()
+            ->sortBy('student.nama_lengkap');
+
+        $data = [
+            'extracurricular' => $extracurricular,
+            'members' => $members,
+            'academicYear' => $academicYear,
+            'semester' => $semester,
+            'unit' => $extracurricular->unit // Assuming relation exists
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('student_affairs.extracurriculars.grades_pdf', $data);
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->stream('Nilai_' . $extracurricular->name . '_' . $semester . '.pdf');
     }
 }
