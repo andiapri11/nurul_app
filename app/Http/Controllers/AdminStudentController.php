@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 
 class AdminStudentController extends Controller
 {
@@ -400,7 +402,16 @@ class AdminStudentController extends Controller
 
             if ($request->hasFile('photo')) {
                 $imageName = time().'.'.$request->photo->extension();
-                $request->photo->move(public_path('photos'), $imageName);
+                
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read($request->photo);
+                $image->cover(354, 472);
+                $image->save(public_path('photos/' . $imageName));
+                
+                $thumbPath = public_path('photos/thumb');
+                if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+                $image->save($thumbPath . '/' . $imageName);
+
                 $userData['photo'] = $imageName;
             }
 
@@ -519,18 +530,27 @@ class AdminStudentController extends Controller
 
             if ($request->hasFile('photo')) {
                 // Delete old photo
-                if ($user->photo && file_exists(public_path('photos/' . $user->photo))) {
-                    try {
-                         unlink(public_path('photos/' . $user->photo));
-                    } catch (\Exception $e) {
-                         // Log error but continue
-                         \Illuminate\Support\Facades\Log::error('Failed to unlink old photo: ' . $e->getMessage());
+                if ($user->photo) {
+                    if (file_exists(public_path('photos/' . $user->photo))) {
+                        unlink(public_path('photos/' . $user->photo));
+                    }
+                    if (file_exists(public_path('photos/thumb/' . $user->photo))) {
+                        unlink(public_path('photos/thumb/' . $user->photo));
                     }
                 }
 
                 $file = $request->file('photo');
                 $imageName = time() . '_' . $file->getClientOriginalName();
-                $file->move(public_path('photos'), $imageName);
+                
+                $manager = new ImageManager(new Driver());
+                $image = $manager->read($file);
+                $image->cover(354, 472);
+                $image->save(public_path('photos/' . $imageName));
+                
+                $thumbPath = public_path('photos/thumb');
+                if (!file_exists($thumbPath)) mkdir($thumbPath, 0755, true);
+                $image->save($thumbPath . '/' . $imageName);
+
                 $user->photo = $imageName;
             }
 
@@ -587,8 +607,13 @@ class AdminStudentController extends Controller
         $student = Student::findOrFail($id);
         $user = $student->user; // UserSiswa
 
-        if ($user && $user->photo && file_exists(public_path('photos/' . $user->photo))) {
-            unlink(public_path('photos/' . $user->photo));
+        if ($user && $user->photo) {
+            if (file_exists(public_path('photos/' . $user->photo))) {
+                unlink(public_path('photos/' . $user->photo));
+            }
+            if (file_exists(public_path('photos/thumb/' . $user->photo))) {
+                unlink(public_path('photos/thumb/' . $user->photo));
+            }
         }
 
         // Deleting user_siswa will cascade delete student due to db constraints
@@ -655,6 +680,9 @@ class AdminStudentController extends Controller
         if ($user && $user->photo) {
             if (file_exists(public_path('photos/' . $user->photo))) {
                 unlink(public_path('photos/' . $user->photo));
+            }
+            if (file_exists(public_path('photos/thumb/' . $user->photo))) {
+                unlink(public_path('photos/thumb/' . $user->photo));
             }
             $user->photo = null;
             $user->save();

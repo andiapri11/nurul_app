@@ -45,7 +45,7 @@
                     <div class="card-body text-center">
                         <div class="my-3">
                             @if($student->user->photo)
-                                <img src="{{ asset('photos/' . $student->user->photo) }}" class="img-circle elevation-2 d-block mx-auto rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" id="profilePreview">
+                                <img src="{{ file_exists(public_path('photos/thumb/' . $student->user->photo)) ? asset('photos/thumb/' . $student->user->photo) : asset('photos/' . $student->user->photo) }}" class="img-circle elevation-2 d-block mx-auto rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" id="profilePreview">
                             @else
                                 <div id="profilePlaceholder" class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto elevation-2" style="width: 150px; height: 150px;">
                                     <i class="bi bi-person-fill" style="font-size: 5rem; color: white;"></i>
