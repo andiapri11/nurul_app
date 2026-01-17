@@ -1,194 +1,264 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-qr-code-scan me-2"></i> Check-in Kelas Hari Ini ({{ $today }})</h5>
+@push('styles')
+<style>
+    /* Professional Enterprise Design */
+    :root {
+        --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+        --app-bg: #f8f9fa;
+        --app-card-bg: #ffffff;
+        --app-border: #e9ecef;
+        --app-text-main: #343a40;
+        --app-text-sub: #6c757d;
+        --app-primary: #0d6efd;
+    }
+
+    body {
+        background-color: var(--app-bg);
+        color: var(--app-text-main);
+    }
+
+    .page-title-section {
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+        background: #fff;
+        border-bottom: 1px solid var(--app-border);
+    }
+
+    .main-card {
+        background: var(--app-card-bg);
+        border: 1px solid var(--app-border);
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .schedule-item {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--app-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    .schedule-item:last-child {
+        border-bottom: none;
+    }
+
+    .schedule-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--app-text-main);
+        min-width: 80px;
+        display: block;
+    }
+
+    .schedule-time-end {
+        font-size: 0.8rem;
+        color: var(--app-text-sub);
+        font-weight: 400;
+    }
+
+    .schedule-details h5 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        color: #212529;
+    }
+
+    .schedule-meta {
+        font-size: 0.85rem;
+        color: var(--app-text-sub);
+    }
+
+    .btn-checkin-action {
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    /* Status Badges */
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-active { background: #e8f5e9; color: #198754; }
+    .status-pending { background: #e9ecef; color: #495057; }
+    .status-done { background: #e7f1ff; color: #0d6efd; }
+    .status-missed { background: #fbe9e7; color: #d63384; }
+
+    /* Modal Styling */
+    .modal-content {
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .camera-viewport {
+        background: #000;
+        width: 100%;
+        max-width: 400px;
+        aspect-ratio: 1/1;
+        margin: 0 auto;
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .camera-controls {
+        display: flex;
+        justify-content: center;
+        padding-top: 1rem;
+    }
+
+    .capture-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #fff;
+        border: 4px solid #ced4da;
+        padding: 0;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+
+    .capture-btn:active {
+        transform: scale(0.95);
+        border-color: var(--app-primary);
+    }
+    
+    .empty-state-card {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+</style>
+@endpush
+
+<div class="page-title-section">
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1 fw-bold text-dark">Agenda Mengajar</h4>
+                <p class="text-muted mb-0 small">
+                    <i class="bi bi-calendar-event me-1"></i> {{ $today }}, {{ now()->format('d F Y') }}
+                </p>
+            </div>
+            <div class="text-end">
+                <a href="{{ route('class-checkins.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid px-4 pb-5">
+    
+    {{-- ALERTS --}}
+    @if(isset($isHoliday) && $isHoliday)
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center" role="alert">
+            <i class="bi bi-pause-circle-fill fs-4 me-3"></i>
+            <div>
+                <h6 class="alert-heading fw-bold mb-0">Hari Libur / Tidak Efektif</h6>
+                <div class="small">{{ $calendarDescription }}</div>
+            </div>
+        </div>
+    @endif
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            
+            @if($schedules->isEmpty() && $activeSchedules->isEmpty())
+                <div class="empty-state-card">
+                    <i class="bi bi-calendar-x fs-1 text-muted mb-3 d-block"></i>
+                    <h5 class="fw-bold text-secondary">Tidak Ada Jadwal</h5>
+                    <p class="text-muted small">Anda tidak memiliki jadwal mengajar aktif untuk hari ini.</p>
                 </div>
-                <div class="card-body">
-                    {{-- 1. GLOBAL HOLIDAY (ALL BLOCKED) --}}
-                    @if(isset($isHoliday) && $isHoliday)
-                        <div class="text-center py-5">
-                            <i class="bi bi-emoji-sunglasses fs-1 text-danger d-block mb-3"></i>
-                            <h3 class="text-danger fw-bold">HARI LIBUR</h3>
-                            <p class="fs-5 text-muted">{{ $calendarDescription ?? 'Libur' }}</p>
-                            <div class="alert alert-warning d-inline-block mt-3">
-                                <i class="bi bi-info-circle me-1"></i> Tidak perlu melakukan absensi hari ini.
-                            </div>
-                            
-                            @if(isset($unitStatuses) && count($unitStatuses) > 1)
-                                <div class="mt-4 text-start d-inline-block bg-light p-3 rounded">
-                                    <h6 class="small fw-bold text-muted mb-2">Status Unit:</h6>
-                                    @foreach($unitStatuses as $status)
-                                        <div class="badge {{ $status['status'] == 'holiday' ? 'bg-secondary' : 'bg-success' }} mb-1 me-1">
-                                            {{ $status['unit'] }}: {{ $status['description'] }}
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
+            @else
+                <div class="card bg-white border shadow-sm">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h6 class="card-title mb-0 fw-bold">Daftar Jadwal Hari Ini</h6>
+                    </div>
                     
-                    @else
-                        {{-- 2. MIXED / EFFECTIVE --}}
-                        
-                        {{-- Unit Status Banners (for Mixed Holidays/Activities) --}}
-                         @if(isset($unitStatuses) && count($unitStatuses) > 0)
-                            <div class="row g-2 mb-3">
-                                @foreach($unitStatuses as $status)
-                                    @if($status['status'] !== 'effective')
-                                         <div class="col-md-12">
-                                             <div class="alert {{ $status['status'] == 'holiday' ? 'alert-warning text-warning-emphasis' : 'alert-info text-info-emphasis' }} d-flex align-items-center py-2 px-3 mb-0 shadow-sm border-0">
-                                                 <i class="bi {{ $status['status'] == 'holiday' ? 'bi-emoji-sunglasses' : 'bi-flag-fill' }} fs-4 me-3"></i>
-                                                 <div>
-                                                     <strong class="d-block small">{{ $status['unit'] }}</strong>
-                                                     <span class="small lh-1">{{ $status['description'] }} (Absensi Non-Aktif)</span>
-                                                 </div>
-                                             </div>
-                                         </div>
-                                    @endif
-                                @endforeach
-                            </div>
-                        @endif
+                    <div class="list-group list-group-flush">
+                        @foreach($schedules as $schedule)
+                            @php
+                                $currentTime = now()->format('H:i:s');
+                                $isNow = $currentTime >= $schedule->start_time && $currentTime <= $schedule->end_time;
+                                $isPast = $currentTime > $schedule->end_time;
+                                $statusLabel = 'Menunggu';
+                                $statusClass = 'status-pending';
 
-                        {{-- 3. GLOBAL ACTIVITY (If All are Activity) --}}
-                        @if(isset($isActivity) && $isActivity)
-                            <div class="alert alert-info border-info mb-4 shadow-sm">
-                                <div class="d-flex align-items-center gap-3">
-                                    <i class="bi bi-flag-fill fs-2 text-info"></i>
-                                    <div>
-                                        <h5 class="alert-heading fw-bold mb-1">KEGIATAN SEKOLAH</h5>
-                                        <p class="mb-0">{{ $calendarDescription }}</p>
-                                        <small class="text-muted fst-italic">Jurnal Mengajar dinonaktifkan untuk kegiatan sekolah.</small>
+                                if($schedule->hasCheckedIn) {
+                                    $statusLabel = 'Selesai';
+                                    $statusClass = 'status-done';
+                                } elseif($isNow) {
+                                    $statusLabel = 'Berlangsung';
+                                    $statusClass = 'status-active';
+                                } elseif($isPast) {
+                                    $statusLabel = 'Terlewat';
+                                    $statusClass = 'status-missed';
+                                }
+                            @endphp
+
+                            <div class="list-group-item p-3 schedule-item {{ $isNow ? 'bg-light' : '' }}">
+                                <div class="d-flex align-items-start w-100">
+                                    <div class="me-3 text-center pt-1" style="min-width: 70px;">
+                                        <div class="schedule-time">{{ substr($schedule->start_time, 0, 5) }}</div>
+                                        <div class="schedule-time-end">{{ substr($schedule->end_time, 0, 5) }}</div>
                                     </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        {{-- 4. SCHEDULE LIST (Effective Only) --}}
-                        @if(count($schedules) > 0)
-                            <div class="list-group list-group-flush">
-                                @foreach($schedules as $schedule)
-                                    <div class="list-group-item p-3 d-flex justify-content-between align-items-center {{ $schedule->hasCheckedIn ? 'bg-light' : '' }}">
-                                        <div>
-                                            <h5 class="mb-1 text-primary">{{ $schedule->subject->name ?? 'Mapel' }}</h5>
-                                            <div class="d-flex align-items-center gap-3 text-muted">
-                                                <span class="badge bg-secondary"><i class="bi bi-door-open me-1"></i> {{ $schedule->schoolClass->name ?? 'Kelas' }}</span>
-                                                <small><i class="bi bi-clock me-1"></i> {{ substr($schedule->start_time, 0, 5) }} - {{ substr($schedule->end_time, 0, 5) }}</small>
-                                            </div>
-                                        </div>
-                                        <div>
+                                    
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0 fw-bold text-dark">{{ $schedule->subject->name }}</h6>
                                             @if($schedule->hasCheckedIn)
-                                                <button class="btn btn-success disabled" disabled>
-                                                    <i class="bi bi-check-circle-fill me-1"></i> Sudah Check-in
-                                                </button>
-                                            @else
-                                                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#checkinModal" 
-                                                    data-schedule-id="{{ $schedule->id }}" 
-                                                    data-subject="{{ $schedule->subject->name }}"
-                                                    data-class="{{ $schedule->schoolClass->name }}">
-                                                    <i class="bi bi-geo-alt-fill me-1"></i> Check-in
-                                                </button>
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2">
+                                                    <i class="bi bi-check-lg"></i> Terkirim
+                                                </span>
                                             @endif
                                         </div>
+                                        <div class="schedule-meta mb-2">
+                                            <i class="bi bi-door-closed me-1"></i> Kelas {{ $schedule->schoolClass->name }}
+                                        </div>
+                                        
+                                        @if(!$schedule->hasCheckedIn)
+                                            @if($isNow || $isPast || true) {{-- Allow checking in even if past/future for flexibility if needed, or stick to robust logic. User wants clarity. --}}
+                                                <button class="btn btn-primary btn-sm btn-checkin-action" 
+                                                    onclick="initCheckin('{{ $schedule->id }}', '{{ addslashes($schedule->subject->name) }}', '{{ addslashes($schedule->schoolClass->name) }}')">
+                                                    <i class="bi bi-camera-fill me-2"></i> Mulai Absensi
+                                                </button>
+                                            @else
+                                                <button class="btn btn-secondary btn-sm btn-checkin-action disabled" disabled>
+                                                    Belum Mulai
+                                                </button>
+                                            @endif
+                                        @else
+                                            <button class="btn btn-outline-secondary btn-sm btn-checkin-action btn-sm py-1" disabled>
+                                                Sudah Absen
+                                            </button>
+                                        @endif
                                     </div>
-                                @endforeach
-                            </div>
-                        @elseif(isset($isTooEarly) && $isTooEarly)
-                            {{-- Too Early State --}}
-                            <div class="text-center py-5">
-                                <i class="bi bi-clock-history fs-1 text-warning d-block mb-3"></i>
-                                <h4 class="fw-bold text-dark">BELUM WAKTUNYA</h4>
-                                <p class="text-muted">Jadwal mengajar Anda hari ini baru dimulai pada pukul <span class="badge bg-warning text-dark fs-6">{{ $nextScheduleTime }}</span>.</p>
-                                <div class="mt-4">
-                                    <a href="{{ route('dashboard') }}" class="btn btn-primary px-4 rounded-pill shadow-sm">
-                                        <i class="bi bi-house-door me-1"></i> Dashboard
-                                    </a>
                                 </div>
                             </div>
-                        @elseif(isset($isFinishedToday) && $isFinishedToday)
-                            {{-- Finished State --}}
-                            <div class="text-center py-5">
-                                <i class="bi bi-calendar-check fs-1 text-success d-block mb-3"></i>
-                                <h4 class="fw-bold text-dark">JADWAL SELESAI</h4>
-                                <p class="text-muted">Semua jadwal mengajar Anda untuk hari ini telah berakhir.</p>
-                                <div class="mt-4">
-                                    <a href="{{ route('dashboard') }}" class="btn btn-outline-primary px-4 rounded-pill shadow-sm">
-                                        <i class="bi bi-house-door me-1"></i> Kembali ke Dashboard
-                                    </a>
-                                </div>
-                            </div>
-                        @elseif(!isset($isActivity) || !$isActivity)
-                            {{-- Empty State (Not Activity, Not Holiday) - Just no schedules at all --}}
-                            <div class="text-center py-5">
-                                <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
-                                <h5 class="text-secondary">Tidak ada jadwal mengajar hari ini.</h5>
-                                <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary mt-2">Kembali ke Dashboard</a>
-                            </div>
-                        @endif
-                        
-                    @endif
-                </div>
-            </div>
-
-            {{-- 5. TODAY'S SUMMARY (HISTORY & UPCOMING) --}}
-            @if(!$isHoliday && !$isActivity && $activeSchedules->isNotEmpty())
-                <div class="card shadow-sm border-0 mt-4 overflow-hidden">
-                    <div class="card-header bg-light border-bottom-0 py-3">
-                        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-journal-text me-2"></i> Ringkasan Agenda Hari Ini</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr class="small text-uppercase ls-1">
-                                        <th class="px-4">Waktu</th>
-                                        <th>Mapel & Kelas</th>
-                                        <th class="text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($activeSchedules as $s)
-                                        @php
-                                            $checkin = $todayCheckins->where('schedule_id', $s->id)->first();
-                                            $isPast = now()->format('H:i:s') > $s->end_time;
-                                            $isOngoing = now()->format('H:i:s') >= $s->start_time && now()->format('H:i:s') <= $s->end_time;
-                                        @endphp
-                                        <tr>
-                                            <td class="px-4 py-3">
-                                                <div class="fw-bold text-dark">{{ substr($s->start_time, 0, 5) }}</div>
-                                                <div class="small text-muted">{{ substr($s->end_time, 0, 5) }}</div>
-                                            </td>
-                                            <td>
-                                                <div class="fw-bold text-primary">{{ $s->subject->name }}</div>
-                                                <div class="small text-muted">{{ $s->schoolClass->name }}</div>
-                                            </td>
-                                            <td class="text-center">
-                                                @if($checkin)
-                                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                                                        <i class="bi bi-check-circle-fill me-1"></i> Terabsen
-                                                    </span>
-                                                @elseif($isOngoing)
-                                                    <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill animate__animated animate__pulse animate__infinite">
-                                                         sedang Berjalan
-                                                    </span>
-                                                @elseif($isPast)
-                                                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">
-                                                        <i class="bi bi-x-circle-fill me-1"></i> Tidak Absen
-                                                    </span>
-                                                @else
-                                                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill">
-                                                        Belum Mulai
-                                                    </span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                        @endforeach
                     </div>
                 </div>
             @endif
@@ -196,262 +266,181 @@
     </div>
 </div>
 
-<!-- Modal Checkin -->
-<div class="modal fade" id="checkinModal" tabindex="-1">
-    <div class="modal-dialog">
-        <form action="{{ route('class-checkins.store') }}" method="POST" enctype="multipart/form-data">
+<!-- Modal Absensi -->
+<div class="modal fade" id="modalAbsensi" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <form action="{{ route('class-checkins.store') }}" method="POST" enctype="multipart/form-data" class="w-100">
             @csrf
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Konfirmasi Check-in</h5>
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Konfirmasi Kehadiran</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <input type="hidden" name="schedule_id" id="modalScheduleId">
-                    <input type="hidden" name="latitude" id="modalLat">
-                    <input type="hidden" name="longitude" id="modalLng">
+                    <input type="hidden" name="schedule_id" id="inpScheduleId">
+                    <input type="hidden" name="latitude" id="inpLat">
+                    <input type="hidden" name="longitude" id="inpLng">
+                    <input type="hidden" name="photo_base64" id="inpPhotoBase64">
 
-                    <div class="alert alert-info">
-                        <strong>Mengajar:</strong> <span id="modalSubject"></span><br>
-                        <strong>Kelas:</strong> <span id="modalClass"></span>
+                    <!-- Info Ringkas -->
+                    <div class="bg-light p-3 rounded mb-3 border">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.7rem;">MATA PELAJARAN</small>
+                                <strong class="text-dark" id="txtSubject">-</strong>
+                            </div>
+                            <div class="col-6 border-start ps-3">
+                                <small class="text-muted d-block uppercase fw-bold" style="font-size: 0.7rem;">KELAS</small>
+                                <strong class="text-dark" id="txtClass">-</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Area Kamera -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">1. Foto Bukti Kelas</label>
+                        
+                        <div id="sectionCamera">
+                            <div class="camera-viewport">
+                                <video id="vidPreview" autoplay playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+                            </div>
+                            <div class="camera-controls">
+                                <button type="button" class="capture-btn" id="btnCapture" title="Ambil Foto"></button>
+                            </div>
+                            <div class="text-center mt-2">
+                                <button type="button" id="btnStartCamera" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-camera me-1"></i> Aktifkan Kamera
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="sectionResult" style="display: none;">
+                            <div class="text-center">
+                                <img id="imgResult" src="" class="img-fluid rounded border mb-2" style="max-height: 250px;">
+                                <br>
+                                <button type="button" class="btn btn-sm btn-light border" id="btnRetake">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Foto Ulang
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Data -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">2. Status Kehadiran</label>
+                        <select name="checkin_type" class="form-select" id="selType">
+                            <option value="main">Hadir (Sesuai Jadwal)</option>
+                            <option value="substitute">Guru Pengganti (Invaler)</option>
+                            <option value="absent">Berhalangan Hadir</option>
+                        </select>
+                    </div>
+
+                    <div id="boxSubstitute" class="alert alert-info py-2 small mb-3" style="display:none;">
+                        <i class="bi bi-info-circle me-1"></i> Anda akan tercatat sebagai guru pengganti.
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Foto Bukti</label>
-                        
-                        <!-- Camera Preview (Square) -->
-                        <div id="camera_container" class="mb-2 text-center" style="display:none;">
-                            <div class="position-relative mx-auto" style="max-width: 400px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px; background: #000;">
-                                <video id="camera_preview" style="width: 100%; height: 100%; object-fit: cover;" autoplay playsinline></video>
-                            </div>
-                            <button type="button" class="btn btn-warning mt-2 w-100 py-2 fw-bold" id="take_photo_btn">
-                                <i class="bi bi-camera-fill me-2"></i> Ambil Foto
-                            </button>
-                        </div>
-
-                        <!-- Captured Result (Square) -->
-                        <div id="result_container" class="mb-2 text-center" style="display:none;">
-                            <div class="mx-auto" style="max-width: 400px; aspect-ratio: 1/1; overflow: hidden; border-radius: 12px;">
-                                <img id="saved_photo" src="" style="width: 100%; height: 100%; object-fit: cover;">
-                            </div>
-                            <button type="button" class="btn btn-secondary btn-sm" id="retake_photo_btn">
-                                <i class="bi bi-arrow-counterclockwise"></i> Foto Ulang
-                            </button>
-                        </div>
-
-                        <!-- Hidden Input for Base64 -->
-                        <input type="hidden" name="photo_base64" id="photo_base64">
-
-                        <!-- Fallback / Initial Button -->
-                        <button type="button" class="btn btn-outline-primary w-100" id="start_camera_btn">
-                            <i class="bi bi-camera"></i> Buka Kamera
-                        </button>
-                        
-                        <div class="form-text">Ambil foto suasana kelas secara langsung.</div>
+                        <label class="form-label fw-bold small">3. Catatan Pembelajaran / Jurnal</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Tuliskan materi atau catatan penting..." required></textarea>
                     </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Kondisi Check-in</label>
-                            <select name="checkin_type" class="form-select" id="checkinTypeSelect">
-                                <option value="main">Hadir (Saya Sendiri)</option>
-                                <option value="substitute">Badal / Invaler (Menggantikan Guru Lain)</option>
-                                <option value="absent">Tidak Masuk (Izin/Sakit)</option>
-                            </select>
-                        </div>
-
-                        <div id="substituteFields" style="display: none;">
-                            <div class="alert alert-warning">
-                                <small>Anda akan melakukan check-in untuk jadwal ini sebagai guru pengganti (Invaler).</small>
-                            </div>
-                        </div>
-
-                        <div id="absentFields" style="display: none;">
-                            <div class="alert alert-danger">
-                                <small>Anda menyatakan tidak masuk untuk jadwal ini. Mohon sertakan alasan/bukti.</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Catatan / Jurnal Kelas</label>
-                            <textarea name="notes" class="form-control" rows="3" placeholder="Materi yang disampaikan hari ini..."></textarea>
-                        </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success d-flex align-items-center gap-2">
-                        <i class="bi bi-send-fill"></i> Submit Check-in
-                    </button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-link text-decoration-none text-muted" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold">Simpan Absensi</button>
                 </div>
             </div>
         </form>
     </div>
 </div>
 
+@push('scripts')
 <script>
+    let modalAbsensi;
+    let stream = null;
+
     document.addEventListener('DOMContentLoaded', function() {
-        var checkinModal = document.getElementById('checkinModal');
-        
-        // Define Elements outside event listener to prevent re-declarations issues in memory
-        let stream = null;
-        const video = document.getElementById('camera_preview');
-        const startBtn = document.getElementById('start_camera_btn');
-        const takeBtn = document.getElementById('take_photo_btn');
-        const retakeBtn = document.getElementById('retake_photo_btn');
-        const cameraContainer = document.getElementById('camera_container');
-        const resultContainer = document.getElementById('result_container');
-        const savedPhoto = document.getElementById('saved_photo');
-        const photoInput = document.getElementById('photo_base64');
+        modalAbsensi = new bootstrap.Modal(document.getElementById('modalAbsensi'));
+        const vidPreview = document.getElementById('vidPreview');
 
-        // Functions defined once
-        async function startCamera() {
+        // Location
+        if(navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                p => {
+                    document.getElementById('inpLat').value = p.coords.latitude;
+                    document.getElementById('inpLng').value = p.coords.longitude;
+                },
+                e => console.warn(e)
+            );
+        }
+
+        // Camera Logic
+        document.getElementById('btnStartCamera').addEventListener('click', async () => {
             try {
-                // Constraints to prefer back camera if available
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: { ideal: "environment" } 
-                    } 
-                });
-                video.srcObject = stream;
-                
-                // Play ensuring promise handling
-                await video.play();
-
-                startBtn.style.display = 'none';
-                cameraContainer.style.display = 'block';
-                resultContainer.style.display = 'none';
-            } catch (err) {
-                console.error(err);
-                
-                // Fallback UI
-                startBtn.style.display = 'none';
-                cameraContainer.style.display = 'none';
-                
-                var errorMsg = '';
-                if(location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-                     errorMsg = 'Kamera wajib menggunakan HTTPS. ';
-                } else if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                     errorMsg = 'Browser tidak mendukung akses kamera langsung. ';
-                } else {
-                     errorMsg = 'Gagal akses kamera: ' + err.message + '. ';
-                }
-                
-                // Show fallback file input
-                var fallbackHtml = `
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> ${errorMsg}
-                        <br>Silakan upload foto manual di bawah ini.
-                    </div>
-                    <input type="file" name="photo" class="form-control" accept="image/*" capture="environment">
-                `;
-                
-                // Replace camera button/container area with fallback
-                var parent = startBtn.parentNode;
-                var div = document.createElement('div');
-                div.innerHTML = fallbackHtml;
-                parent.insertBefore(div, startBtn);
-            }
-        }
-
-        function takePhoto() {
-            if (!stream) return;
-            
-            const canvas = document.createElement('canvas');
-            const size = Math.min(video.videoWidth, video.videoHeight);
-            const targetSize = 300; // Ultra-efficient 300x300
-            
-            canvas.width = targetSize;
-            canvas.height = targetSize;
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Calculate center-crop coordinates
-            const xOffset = (video.videoWidth - size) / 2;
-            const yOffset = (video.videoHeight - size) / 2;
-            
-            // Draw cropped square to canvas
-            ctx.drawImage(video, xOffset, yOffset, size, size, 0, 0, targetSize, targetSize);
-            
-            // Convert to Base64 (WebP if possible, fallback to JPEG)
-            const type = video.canPlayType('image/webp') ? 'image/webp' : 'image/jpeg';
-            const dataUrl = canvas.toDataURL(type, 0.8);
-            
-            // Show Result
-            savedPhoto.src = dataUrl;
-            photoInput.value = dataUrl;
-            
-            // UI Toggle
-            cameraContainer.style.display = 'none';
-            resultContainer.style.display = 'block';
-        }
-
-        function retakePhoto() {
-            photoInput.value = '';
-            resultContainer.style.display = 'none';
-            cameraContainer.style.display = 'block';
-        }
-
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            startBtn.style.display = 'block';
-            cameraContainer.style.display = 'none';
-            resultContainer.style.display = 'none';
-            photoInput.value = '';
-            video.srcObject = null;
-        }
-
-        // Attach static listeners ONLY ONCE
-        startBtn.addEventListener('click', startCamera);
-        takeBtn.addEventListener('click', takePhoto);
-        retakeBtn.addEventListener('click', retakePhoto);
-
-        // Modal Events
-        checkinModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget;
-            var scheduleId = button.getAttribute('data-schedule-id');
-            var subject = button.getAttribute('data-subject');
-            var cls = button.getAttribute('data-class');
-
-            document.getElementById('modalScheduleId').value = scheduleId;
-            document.getElementById('modalSubject').textContent = subject;
-            document.getElementById('modalClass').textContent = cls;
-
-            // Geolocation
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    document.getElementById('modalLat').value = position.coords.latitude;
-                    document.getElementById('modalLng').value = position.coords.longitude;
-                }, function(error) {
-                    console.log("Geolocation error: " + error.message);
-                });
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                vidPreview.srcObject = stream;
+                document.getElementById('btnStartCamera').style.display = 'none';
+            } catch(e) {
+                alert('Gagal akses kamera: ' + e.message);
             }
         });
 
-        checkinModal.addEventListener('hidden.bs.modal', function () {
-            stopCamera();
-            document.getElementById('checkinTypeSelect').value = 'main';
-            document.getElementById('substituteFields').style.display = 'none';
-            document.getElementById('absentFields').style.display = 'none';
+        document.getElementById('btnCapture').addEventListener('click', () => {
+            if(!stream) return;
+            const canvas = document.createElement('canvas');
+            const size = Math.min(vidPreview.videoWidth, vidPreview.videoHeight);
+            canvas.width = 400; canvas.height = 400;
+            const ctx = canvas.getContext('2d');
+            
+            // Center crop
+            const sx = (vidPreview.videoWidth - size)/2;
+            const sy = (vidPreview.videoHeight - size)/2;
+            
+            ctx.drawImage(vidPreview, sx, sy, size, size, 0, 0, 400, 400);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+            document.getElementById('inpPhotoBase64').value = dataUrl;
+            document.getElementById('imgResult').src = dataUrl;
+            
+            document.getElementById('sectionCamera').style.display = 'none';
+            document.getElementById('sectionResult').style.display = 'block';
+        });
+
+        document.getElementById('btnRetake').addEventListener('click', () => {
+             document.getElementById('sectionResult').style.display = 'none';
+             document.getElementById('sectionCamera').style.display = 'block';
+             document.getElementById('inpPhotoBase64').value = '';
         });
 
         // Toggle Fields
-        const typeSelect = document.getElementById('checkinTypeSelect');
-        const subFields = document.getElementById('substituteFields');
-        const absentFields = document.getElementById('absentFields');
-        typeSelect.addEventListener('change', function() {
-            if (this.value === 'substitute') {
-                subFields.style.display = 'block';
-                absentFields.style.display = 'none';
-            } else if (this.value === 'absent') {
-                subFields.style.display = 'none';
-                absentFields.style.display = 'block';
-            } else {
-                subFields.style.display = 'none';
-                absentFields.style.display = 'none';
-            }
+        document.getElementById('selType').addEventListener('change', function() {
+            document.getElementById('boxSubstitute').style.display = (this.value === 'substitute') ? 'block' : 'none';
+        });
+
+        // Cleanup on close
+        document.getElementById('modalAbsensi').addEventListener('hidden.bs.modal', () => {
+            if(stream) stream.getTracks().forEach(t => t.stop());
+            stream = null;
+            document.getElementById('btnStartCamera').style.display = 'inline-block';
+            vidPreview.srcObject = null;
+            
+            // Reset views
+            document.getElementById('sectionCamera').style.display = 'block';
+            document.getElementById('sectionResult').style.display = 'none';
+            document.getElementById('selType').value = 'main';
         });
     });
+
+    function initCheckin(id, subject, cls) {
+        document.getElementById('inpScheduleId').value = id;
+        document.getElementById('txtSubject').innerText = subject;
+        document.getElementById('txtClass').innerText = cls;
+        
+        // Auto start camera for convenience
+        document.getElementById('btnStartCamera').click();
+        
+        modalAbsensi.show();
+    }
 </script>
+@endpush
 @endsection

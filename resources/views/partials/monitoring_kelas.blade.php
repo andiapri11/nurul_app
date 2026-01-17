@@ -18,14 +18,15 @@
                 </div>
             </div>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <div id="realtime-clock" class="badge bg-white text-primary px-4 py-2 rounded-pill font-monospace shadow-sm border border-primary border-opacity-10" style="font-size: 1.2rem; letter-spacing: 2px;">
-                00:00:00
+        <div class="d-flex align-items-center bg-white rounded-pill shadow-sm border border-primary border-opacity-10 ps-4 pe-1 py-1 gap-2">
+                <div id="realtime-clock" class="text-primary font-monospace fw-bold" style="font-size: 1.25rem; letter-spacing: 2px; min-width: 110px;">
+                    00:00:00
+                </div>
+                <div class="vr text-primary opacity-25 my-2"></div>
+                <button class="btn btn-light text-primary rounded-circle shadow-none d-flex align-items-center justify-content-center" onclick="location.reload()" title="Muat Ulang Data" style="width: 38px; height: 38px;">
+                    <i class="bi bi-arrow-clockwise fs-5"></i>
+                </button>
             </div>
-            <button class="btn btn-outline-primary btn-sm rounded-circle p-2" onclick="location.reload()" title="Refresh">
-                <i class="bi bi-arrow-clockwise fs-5"></i>
-            </button>
-        </div>
     </div>
     <div class="card-body p-0" style="background: #f1f5f9;">
         <div class="auto-scroll-container" style="max-height: 600px; overflow-y: auto; padding: 2rem;">

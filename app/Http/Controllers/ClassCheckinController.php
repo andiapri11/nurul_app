@@ -65,9 +65,12 @@ class ClassCheckinController extends Controller
         }
         
         // Filter: Tanggal (Single Date - Priority)
+        // Filter: Tanggal (Single Date - Priority)
+        // If 'date' is present, use it.
+        // If filters are empty, DEFAULT TO TODAY (User Request: "LANGSUNG PILIH TANGGAL HARI INI")
         if ($request->filled('date')) {
             $query->whereDate('checkin_time', $request->date);
-        } else {
+        } elseif ($request->filled('start_date') || $request->filled('end_date')) {
             // Filter: Date Range
             if ($request->filled('start_date')) {
                     $query->whereDate('checkin_time', '>=', $request->start_date);
@@ -75,6 +78,9 @@ class ClassCheckinController extends Controller
             if ($request->filled('end_date')) {
                     $query->whereDate('checkin_time', '<=', $request->end_date);
             }
+        } else {
+            // Default: Show TODAY'S history if no specific date filter provided
+            $query->whereDate('checkin_time', now()->toDateString());
         }
 
         $pageSize = $isTeacherOnly ? 30 : 10;

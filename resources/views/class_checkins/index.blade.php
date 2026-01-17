@@ -3,78 +3,89 @@
 @section('title', 'Riwayat Check-in Kelas')
 
 @section('content')
-<div class="container-fluid px-4 py-4">
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+
+
+<div class="container-fluid px-4 py-5" style="max-width: 1400px;">
+    <!-- Modern Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
         <div>
-            <h1 class="h3 mb-0 text-gray-800 fw-bold">Riwayat Check-in Kelas</h1>
-            <p class="text-muted small mb-0">Pantau kehadiran guru dan pelaksanaan kegiatan belajar mengajar.</p>
+            <div class="d-flex align-items-center mb-1">
+                <span class="badge bg-indigo-100 text-indigo-700 px-3 py-1 rounded-pill small fw-bold me-2" style="background-color: #e0e7ff; color: #4338ca;">Monitoring v2.0</span>
+                <span class="text-muted small">{{ now()->translatedFormat('l, d F Y') }}</span>
+            </div>
+            <h1 class="page-header h1 mb-1">Riwayat Kehadiran</h1>
+            <p class="text-muted mb-0">Pantau aktivitas KBM secara real-time dan akurat.</p>
         </div>
-        <div class="d-flex gap-2">
+        
+        <div class="d-none d-md-flex gap-2">
             @if(in_array(auth()->user()->role, ['administrator', 'staff']))
-                <a href="{{ route('class-checkins.export-pdf', request()->all()) }}" class="btn btn-white shadow-sm border-0 px-3 py-2 rounded-pill" target="_blank">
-                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i><strong>Export PDF</strong>
+                <a href="{{ route('class-checkins.export-pdf', request()->all()) }}" class="btn-custom-secondary text-decoration-none d-flex align-items-center">
+                    <i class="bi bi-download me-2"></i> Export Data
                 </a>
             @endif
-            <a href="{{ route('class-checkins.create') }}" class="btn btn-primary shadow-sm px-4 py-2 rounded-pill">
-                <i class="bi bi-qr-code-scan me-2"></i><strong>Check-in Sekarang</strong>
+            <a href="{{ route('class-checkins.create') }}" class="btn-custom-primary text-decoration-none d-flex align-items-center">
+                <i class="bi bi-plus-lg me-2"></i> Input Check-in
             </a>
         </div>
     </div>
+    
+    <!-- Mobile Action Buttons (Visible only on Mobile) -->
+    <div class="d-md-none d-flex flex-column gap-2 mb-4">
+        <a href="{{ route('class-checkins.create') }}" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm d-flex justify-content-center align-items-center">
+            <i class="bi bi-plus-lg me-2"></i> Input Check-in Baru
+        </a>
+        @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+            <a href="{{ route('class-checkins.export-pdf', request()->all()) }}" class="btn btn-outline-secondary w-100 py-2 rounded-pill d-flex justify-content-center align-items-center">
+                <i class="bi bi-download me-2"></i> Export Data (PDF)
+            </a>
+        @endif
+    </div>
 
-    <!-- Stats Section -->
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="stats-card bg-white border-0 shadow-sm h-100 p-4 rounded-4">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <div class="text-muted small fw-bold text-uppercase mb-1">Total Hari Ini</div>
-                        <div class="h3 fw-bold mb-0 text-primary">{{ $totalTodayCount }}</div>
-                    </div>
-                    <div class="stats-icon bg-soft-primary p-3 rounded-3">
-                        <i class="bi bi-calendar-check fs-4"></i>
-                    </div>
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="bg-white p-3 rounded-4 border d-flex align-items-center justify-content-between shadow-sm">
+                <div>
+                    <h6 class="text-muted small fw-bold text-uppercase mb-1">Total Hari Ini</h6>
+                    <h2 class="h3 fw-bold text-dark mb-0">{{ $totalTodayCount }}</h2>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-3" style="background-color: #eff6ff;">
+                    <i class="bi bi-calendar-check fs-4 text-primary"></i>
                 </div>
             </div>
         </div>
-        <!-- Note: We don't have exact stats from controller, but we can visually represent the active filter count -->
     </div>
 
-    <!-- Filters Section -->
-    <div class="card border-0 shadow-sm mb-4 rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h6 class="mb-0 fw-bold"><i class="bi bi-filter-left me-2 text-primary"></i>Filter Data</h6>
-        </div>
-        <div class="card-body bg-light-soft p-4">
-            <form action="{{ route('class-checkins.index') }}" method="GET" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted">Tahun Pelajaran</label>
-                    <select name="academic_year_id" class="form-select border-0 shadow-sm rounded-3" onchange="this.form.submit()">
-                        <option value="">-- Tahun Aktif --</option>
-                        <option value="all" {{ request('academic_year_id') == 'all' ? 'selected' : '' }}>-- Semua Riwayat --</option>
-                        @foreach($academicYears as $year)
-                            <option value="{{ $year->id }}" 
-                                {{ (request('academic_year_id') == $year->id || (!request('academic_year_id') && $year->id == $activeYearId)) ? 'selected' : '' }}>
-                                {{ $year->start_year }}/{{ $year->end_year }} ({{ ucfirst($year->status) }})
-                            </option>
-                        @endforeach
+    <!-- Refined Filters -->
+    <div class="filter-card shadow-sm">
+        <form action="{{ route('class-checkins.index') }}" method="GET">
+            <div class="row g-3">
+                <div class="col-6 col-md-2">
+                    <label class="form-label-custom">Tahun Ajaran</label>
+                    <select name="academic_year_id" class="form-select-custom w-100" onchange="this.form.submit()">
+                        <option value="">Semua (Aktif)</option>
+                         @foreach($academicYears as $year)
+                             <option value="{{ $year->id }}" 
+                                 {{ (request('academic_year_id') == $year->id || (!request('academic_year_id') && $year->id == $activeYearId)) ? 'selected' : '' }}>
+                                 {{ $year->start_year }}/{{ $year->end_year }}
+                             </option>
+                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted">Unit Sekolah</label>
-                    <select name="unit_id" id="unitFilter" class="form-select border-0 shadow-sm rounded-3">
-                        <option value="">-- Semua Unit --</option>
+                <div class="col-6 col-md-2">
+                    <label class="form-label-custom">Unit</label>
+                    <select name="unit_id" id="unitFilter" class="form-select-custom w-100">
+                        <option value="">Semua Unit</option>
                         @foreach($units as $unit)
-                            <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>
-                                {{ $unit->name }}
-                            </option>
+                            <option value="{{ $unit->id }}" {{ request('unit_id') == $unit->id ? 'selected' : '' }}>{{ $unit->name }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold text-muted">Kelas</label>
-                    <select name="class_id" id="classFilter" class="form-select border-0 shadow-sm rounded-3">
-                        <option value="">-- Semua Kelas --</option>
+                <!-- Break to new row on mobile for better spacing -->
+                <div class="col-12 col-md-4">
+                    <label class="form-label-custom">Kelas</label>
+                    <select name="class_id" id="classFilter" class="form-select-custom w-100">
+                        <option value="">Semua Kelas</option>
                         @foreach($classes as $cls)
                             <option value="{{ $cls->id }}" data-unit="{{ $cls->unit_id }}" {{ request('class_id') == $cls->id ? 'selected' : '' }}>
                                 {{ $cls->name }} {{ $cls->unit ? '('.$cls->unit->name.')' : '' }}
@@ -82,245 +93,442 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small fw-bold text-muted">Tanggal</label>
-                    <input type="date" name="date" class="form-control border-0 shadow-sm rounded-3" value="{{ request('date', (auth()->user()->role != 'administrator' && auth()->user()->role != 'staff' && !auth()->user()->isKurikulum()) ? now()->toDateString() : '') }}">
+                <div class="col-12 col-md-3">
+                    <label class="form-label-custom">Tanggal</label>
+                    <input type="date" name="date" class="form-control-custom w-100" value="{{ request('date', now()->toDateString()) }}">
                 </div>
-                <div class="col-md-1 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary d-flex align-items-center justify-content-center flex-grow-1 py-2 shadow-sm rounded-3">
+                <div class="col-12 col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-dark w-100 rounded-3 py-2" title="Cari Data">
                         <i class="bi bi-search"></i>
                     </button>
-                    <a href="{{ route('class-checkins.index') }}" class="btn btn-secondary d-flex align-items-center justify-content-center px-3 py-2 shadow-sm rounded-3">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                    </a>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4 rounded-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-                <div>{{ session('success') }}</div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
-
-    <!-- Data Table Card -->
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover custom-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Waktu Check-in</th>
-                            @if(in_array(auth()->user()->role, ['administrator', 'staff']))
-                                <th>Guru Pengampu</th>
-                            @endif
-                            <th>Kelas</th>
-                            <th>Mata Pelajaran</th>
-                            <th>Status Kehadiran</th>
-                            <th>Detail / Foto</th>
-                            @if(in_array(auth()->user()->role, ['administrator', 'staff']))
-                                <th class="pe-4 text-center">Aksi</th>
-                            @endif
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($checkins as $checkin)
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <div class="time-box bg-light p-2 rounded-3 text-center me-3" style="min-width: 60px;">
-                                            <div class="small fw-bold text-primary">{{ $checkin->checkin_time->format('H:i') }}</div>
-                                            <div class="tiny text-muted">{{ $checkin->checkin_time->format('M d') }}</div>
+    <!-- Desktop View: Elegant Table -->
+    <div class="desktop-table-container mb-4">
+        <table class="table custom-table mb-0 w-100">
+            <thead>
+                <tr>
+                    <th class="ps-4" style="width: 15%;">Waktu</th>
+                    @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                        <th style="width: 20%;">Pengajar</th>
+                    @endif
+                    <th style="width: 15%;">Kelas</th>
+                    <th style="width: 20%;">Mata Pelajaran</th>
+                    <th style="width: 15%;">Status</th>
+                    <th style="width: 10%;">Bukti</th>
+                    @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                        <th class="text-end pe-4" style="width: 5%;">Aksi</th>
+                    @endif
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($checkins as $checkin)
+                <tr>
+                    <td class="ps-4">
+                        <div class="fw-bold text-dark">{{ $checkin->checkin_time->format('H:i') }}</div>
+                        <div class="small text-muted">{{ $checkin->checkin_time->format('d M Y') }}</div>
+                    </td>
+                    @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="user-avatar-sm me-2">
+                                {{ substr($checkin->user->name ?? '?', 0, 1) }}
+                            </div>
+                            <span class="fw-medium">{{ $checkin->user->name ?? '-' }}</span>
+                        </div>
+                    </td>
+                    @endif
+                    <td>
+                        <span class="badge bg-light text-dark border fw-normal">
+                            {{ $checkin->schedule->schoolClass->name ?? '-' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="fw-medium text-dark">{{ $checkin->schedule->subject->name ?? '-' }}</div>
+                    </td>
+                    <td>
+                        @php
+                            $s = $checkin->status;
+                            $cls = 'status-ontime';
+                            if($s === 'late') $cls = 'status-late';
+                            if($s === 'absent') $cls = 'status-absent';
+                            if($s === 'substitute') $cls = 'status-substitute';
+                        @endphp
+                        <span class="status-badge {{ $cls }}">
+                            {{ ucfirst($checkin->status === 'ontime' ? 'Hadir' : ($checkin->status === 'late' ? 'Telat' : ucfirst($checkin->status))) }}
+                        </span>
+                    </td>
+                    <td>
+                        @if($checkin->photo)
+                            <button class="btn btn-sm btn-light border rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modal{{ $checkin->id }}">
+                                <i class="bi bi-image"></i>
+                            </button>
+                             <!-- Modal Desktop -->
+                             <div class="modal fade" id="modal{{ $checkin->id }}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content overflow-hidden rounded-4 border-0">
+                                        <div class="position-relative">
+                                            <button type="button" class="btn-close position-absolute top-0 end-0 m-3 bg-white p-2 shadow-sm opacity-100" data-bs-dismiss="modal"></button>
+                                            <img src="{{ asset('storage/' . $checkin->photo) }}" class="w-100">
                                         </div>
-                                        <div>
-                                            <div class="fw-bold text-dark">{{ $checkin->checkin_time->translatedFormat('l') }}</div>
-                                            <div class="small text-muted">{{ $checkin->checkin_time->format('Y') }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                @if(in_array(auth()->user()->role, ['administrator', 'staff']))
-                                    <td>
-                                        <div class="fw-bold">{{ $checkin->user->name ?? '-' }}</div>
-                                        <div class="small text-muted">{{ $checkin->user->email ?? '-' }}</div>
-                                    </td>
-                                @endif
-                                <td>
-                                    <span class="badge bg-soft-primary px-3 py-2 text-primary rounded-pill">
-                                        <i class="bi bi-people-fill me-1"></i> {{ $checkin->schedule->schoolClass->name ?? '-' }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="fw-bold">{{ $checkin->schedule->subject->name ?? '-' }}</div>
-                                </td>
-                                <td>
-                                    @php
-                                        $statusClass = '';
-                                        $statusLabel = '';
-                                        switch($checkin->status) {
-                                            case 'ontime': $statusClass = 'bg-soft-success text-success'; $statusLabel = 'Tepat Waktu'; break;
-                                            case 'late': $statusClass = 'bg-soft-warning text-warning'; $statusLabel = 'Terlambat'; break;
-                                            case 'substitute': $statusClass = 'bg-soft-purple text-purple'; $statusLabel = 'Badal / Invaler'; break;
-                                            case 'absent': $statusClass = 'bg-soft-danger text-danger'; $statusLabel = 'Tidak Masuk'; break;
-                                            default: $statusClass = 'bg-soft-secondary text-secondary'; $statusLabel = ucfirst($checkin->status);
-                                        }
-                                    @endphp
-                                    <span class="badge {{ $statusClass }} border px-3 py-2 rounded-3">
-                                        <i class="bi bi-dot fs-5"></i> {{ $statusLabel }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        @if($checkin->photo)
-                                            <button type="button" class="btn btn-sm btn-icon-round shadow-sm" data-bs-toggle="modal" data-bs-target="#photoModal{{ $checkin->id }}" title="Lihat Foto Bukti">
-                                                <i class="bi bi-camera-fill text-primary"></i>
-                                            </button>
-
-                                            <!-- Modal Preview -->
-                                            <div class="modal fade" id="photoModal{{ $checkin->id }}" tabindex="-1" aria-hidden="true">
-                                                <div class="modal-dialog modal-dialog-centered">
-                                                    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                                        <div class="modal-header border-0 bg-dark text-white p-3">
-                                                            <h6 class="modal-title fs-6"><i class="bi bi-image me-2"></i>Bukti Foto Check-in</h6>
-                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body p-0 bg-dark">
-                                                            <img src="{{ asset('storage/' . $checkin->photo) }}" class="img-fluid w-100" style="max-height: 80vh; object-fit: contain;">
-                                                        </div>
-                                                        @if($checkin->notes)
-                                                        <div class="modal-footer border-0 p-3 bg-white">
-                                                            <div class="small text-muted w-100">
-                                                                <i class="bi bi-info-circle me-1"></i><strong>Catatan:</strong> {{ $checkin->notes }}
-                                                            </div>
-                                                        </div>
-                                                        @endif
-                                                    </div>
-                                                </div>
+                                        @if($checkin->notes)
+                                            <div class="p-3 bg-light border-top text-muted small">
+                                                <strong>Note:</strong> {{ $checkin->notes }}
                                             </div>
                                         @endif
-                                        <div class="small text-truncate text-muted" style="max-width: 150px;" title="{{ $checkin->notes }}">
-                                            {{ $checkin->notes ?? '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <span class="text-muted small">-</span>
+                        @endif
+                    </td>
+                    @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                    <td class="text-end pe-4">
+                        <form action="{{ route('class-checkins.destroy', $checkin->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus entri ini?');">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm text-danger hover-bg-red rounded-circle" style="width: 32px; height: 32px;">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                    @endif
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox empty-icon"></i>
+                            <h6 class="text-muted fw-bold">Belum ada data check-in</h6>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobile View: Modern Cards -->
+    <div class="mobile-list-container">
+        @forelse ($checkins as $checkin)
+            <div class="checkin-card shadow-sm">
+                <div class="checkin-card-header">
+                    <div class="d-flex align-items-center">
+                        <span class="time-badge me-2">{{ $checkin->checkin_time->format('H:i') }}</span>
+                        <span class="text-muted small">{{ $checkin->checkin_time->format('d/m') }}</span>
+                    </div>
+                    
+                    @php
+                        $s = $checkin->status;
+                        $cls = 'status-ontime';
+                        if($s === 'late') $cls = 'status-late';
+                        if($s === 'absent') $cls = 'status-absent';
+                        if($s === 'substitute') $cls = 'status-substitute';
+                    @endphp
+                    <span class="status-badge {{ $cls }}">
+                        {{ ucfirst($checkin->status === 'ontime' ? 'Hadir' : ($checkin->status === 'late' ? 'Telat' : ucfirst($checkin->status))) }}
+                    </span>
+                </div>
+                
+                <h6 class="card-main-title">{{ $checkin->schedule->subject->name ?? 'Mata Pelajaran Tidak Dikenal' }}</h6>
+                
+                <div class="card-info-row">
+                    <i class="bi bi-people-fill"></i>
+                    <span>Kelas {{ $checkin->schedule->schoolClass->name ?? '-' }}</span>
+                </div>
+                
+                @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                <div class="card-info-row">
+                    <i class="bi bi-person-fill"></i>
+                    <span>{{ $checkin->user->name ?? 'Guru Tidak Dikenal' }}</span>
+                </div>
+                @endif
+                
+                <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                    @if($checkin->photo)
+                        <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold small" data-bs-toggle="modal" data-bs-target="#mobileModal{{ $checkin->id }}">
+                            <i class="bi bi-eye me-1"></i> Bukti Foto
+                        </button>
+
+                         <!-- Modal Mobile -->
+                         <div class="modal fade" id="mobileModal{{ $checkin->id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-sm">
+                                <div class="modal-content overflow-hidden rounded-4 border-0">
+                                    <div class="position-relative">
+                                        <button type="button" class="btn-close position-absolute top-0 end-0 m-3 bg-white p-2 shadow-sm opacity-100" data-bs-dismiss="modal"></button>
+                                        <img src="{{ asset('storage/' . $checkin->photo) }}" class="w-100">
+                                    </div>
+                                    @if($checkin->notes)
+                                        <div class="p-3 bg-light border-top text-muted small">
+                                            {{ $checkin->notes }}
                                         </div>
-                                    </div>
-                                </td>
-                                @if(in_array(auth()->user()->role, ['administrator', 'staff']))
-                                    <td class="pe-4 text-center">
-                                        <form action="{{ route('class-checkins.destroy', $checkin->id) }}" method="POST" onsubmit="return confirm('Yakin hapus data checkin ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-soft-danger rounded-circle p-2" title="Hapus Data">
-                                                <i class="bi bi-trash fs-6"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                @endif
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-5">
-                                    <div class="mb-3">
-                                        <i class="bi bi-calendar-x fs-1 text-muted opacity-25"></i>
-                                    </div>
-                                    <h5 class="text-muted fw-bold">Belum Ada Riwayat Check-in</h5>
-                                    <p class="text-muted small">Lakukan check-in sekarang untuk mulai mencatat kehadiran.</p>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <span class="text-muted small fst-italic">Tanpa Foto</span>
+                    @endif
+
+                    @if(in_array(auth()->user()->role, ['administrator', 'staff']))
+                        <form action="{{ route('class-checkins.destroy', $checkin->id) }}" method="POST" onsubmit="return confirm('Hapus entri ini?');">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-sm text-danger fw-bold small">HAPUS</button>
+                        </form>
+                    @endif
+                </div>
             </div>
-        </div>
+        @empty
+            <div class="empty-state">
+                <i class="bi bi-journal-x empty-icon"></i>
+                <h6 class="text-muted">Tidak ada riwayat.</h6>
+            </div>
+        @endforelse
     </div>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-center">
-        {{ $checkins->links() }}
+    <div class="d-flex justify-content-center mt-4">
+        {{ $checkins->links('pagination::bootstrap-4') }}
     </div>
+    
+
 </div>
+
+
+@endsection
 
 @push('styles')
 <style>
-    .bg-light-soft { background-color: #f9fbff; }
-    .bg-soft-primary { background-color: #eef2ff; color: #4e73df; }
-    .bg-soft-success { background-color: #ecfdf5; color: #10b981; border-color: #d1fae5; }
-    .bg-soft-warning { background-color: #fffbeb; color: #f59e0b; border-color: #fef3c7; }
-    .bg-soft-danger { background-color: #fef2f2; color: #ef4444; border-color: #fee2e2; }
-    .bg-soft-purple { background-color: #f5f3ff; color: #8b5cf6; border-color: #ede9fe; }
-    .bg-soft-secondary { background-color: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
-
-    .btn-white { background: white; color: #333; }
-    .btn-white:hover { background: #f8f9fa; }
-
-    .btn-icon-round {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: white;
-        border: 1px solid #eef2ff;
-    }
-    .btn-icon-round:hover {
-        background: #eef2ff;
-        transform: translateY(-2px);
-        transition: all 0.2s ease;
+    /* Custom refined CSS for a SaaS-like feel */
+    :root {
+        --primary-soft: #eef2ff;
+        --primary-dark: #4338ca;
+        --text-main: #1f2937;
+        --text-muted: #6b7280;
+        --border-color: #e5e7eb;
     }
 
-    .btn-soft-danger {
-        background-color: #fff2f2;
-        color: #e74a3b;
-        border: none;
-    }
-    .btn-soft-danger:hover {
-        background-color: #e74a3b;
-        color: white;
-    }
-
-    .stats-card {
-        transition: transform 0.3s ease;
-    }
-    .stats-card:hover {
-        transform: translateY(-5px);
-    }
-    .stats-icon {
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .custom-table thead th {
-        background-color: #f8f9fc;
-        border-top: none;
-        border-bottom: 2px solid #e3e6f0;
-        text-transform: uppercase;
-        font-size: 0.75rem;
+    .page-header h1 {
+        font-size: 1.5rem;
         font-weight: 700;
-        color: #4e73df;
-        padding: 15px;
+        color: var(--text-main);
+        letter-spacing: -0.025em;
     }
-    .custom-table tbody td {
-        padding: 1rem 15px;
-        border-bottom: 1px solid #f1f1f1;
+
+    .btn-custom-primary {
+        background-color: var(--primary-dark);
+        color: white;
+        border-radius: 9999px;
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        border: none;
+        box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.1), 0 2px 4px -1px rgba(67, 56, 202, 0.06);
+    }
+
+    .btn-custom-primary:hover {
+        background-color: #3730a3;
+        transform: translateY(-1px);
+        box-shadow: 10px 15px -3px rgba(67, 56, 202, 0.1), 0 4px 6px -2px rgba(67, 56, 202, 0.05);
     }
     
-    .time-box .tiny { font-size: 0.65rem; }
-    .text-purple { color: #8b5cf6; }
+    .btn-custom-secondary {
+        background-color: white;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        border-radius: 9999px;
+        padding: 0.625rem 1.25rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-custom-secondary:hover {
+        border-color: #d1d5db;
+        background-color: #f9fafb;
+    }
 
-    .rounded-4 { border-radius: 1rem !important; }
+    /* Filters specific */
+    .filter-card {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-label-custom {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-select-custom, .form-control-custom {
+        background-color: #f9fafb;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+        color: var(--text-main);
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-select-custom:focus, .form-control-custom:focus {
+        border-color: var(--primary-dark);
+        background-color: white;
+        box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1);
+        outline: 0;
+    }
+
+    /* Desktop Table */
+    .desktop-table-container {
+        display: none;
+    }
+    
+    @media (min-width: 768px) {
+        .desktop-table-container {
+            display: block;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .custom-table th {
+            background-color: #f9fafb;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .custom-table td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .custom-table tr:last-child td {
+            border-bottom: none;
+        }
+    }
+
+    /* Mobile Cards */
+    .mobile-list-container {
+        display: block;
+    }
+    
+    @media (min-width: 768px) {
+        .mobile-list-container {
+            display: none;
+        }
+    }
+
+    .checkin-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    
+    .checkin-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+    }
+    
+    .time-badge {
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-weight: 600;
+        font-size: 0.85rem;
+        background-color: var(--primary-soft);
+        color: var(--primary-dark);
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+    }
+    
+    .status-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+    }
+
+    .status-ontime { background-color: #ecfdf5; color: #059669; }
+    .status-late { background-color: #fffbeb; color: #d97706; }
+    .status-absent { background-color: #fef2f2; color: #dc2626; }
+    .status-substitute { background-color: #f5f3ff; color: #7c3aed; }
+
+    .card-info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+    
+    .card-info-row i {
+        width: 20px;
+        margin-right: 0.5rem;
+        color: #9ca3af;
+    }
+    
+    .card-main-title {
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.25rem;
+    }
+    
+    .user-avatar-sm {
+        width: 24px;
+        height: 24px;
+        border: 1px solid white;
+        border-radius: 50%;
+        background: #e0e7ff;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        font-weight: bold;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 1rem;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: #d1d5db;
+        margin-bottom: 1rem;
+    }
+
+
 </style>
 @endpush
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const unitFilter = document.getElementById('unitFilter');
+        // Simple JS for Interactivity specific to this page
+            const unitFilter = document.getElementById('unitFilter');
         const classFilter = document.getElementById('classFilter');
         
         if(unitFilter && classFilter) {
@@ -352,4 +560,3 @@
     });
 </script>
 @endpush
-@endsection
