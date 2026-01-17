@@ -11,6 +11,11 @@ class MadingController extends Controller
 {
     public function index(Request $request)
     {
+        // Require 'mading' role or Admin/Director
+        if (!auth()->check() || (!in_array(auth()->user()->role, ['mading', 'administrator', 'direktur']))) {
+            abort(403, 'Akses ditolak. Hanya user Mading yang dapat mengakses halaman ini.');
+        }
+
         // Set locale for date display
         Carbon::setLocale('id');
         $now = Carbon::now();
