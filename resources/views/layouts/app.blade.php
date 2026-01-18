@@ -95,7 +95,7 @@
       }
 
       .app-sidebar {
-        width: 280px !important;
+        width: 250px !important;
         background-color: var(--sidebar-bg) !important;
         box-shadow: 5px 0 25px rgba(0,0,0,0.15) !important;
         border-right: none !important;
@@ -103,14 +103,14 @@
 
       @media (min-width: 992px) {
         .app-main, .app-header, .app-footer {
-          margin-left: 280px !important;
+          margin-left: 250px !important;
         }
       }
 
       .sidebar-brand {
         background-color: rgba(0,0,0,0.2) !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-        width: 280px !important;
+        width: 250px !important;
       }
       
       .brand-text {
@@ -119,8 +119,9 @@
         letter-spacing: 1px;
         text-transform: uppercase;
         font-size: 1rem;
-        white-space: normal;
-        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       /* Scrollbar */
@@ -221,11 +222,14 @@
         line-height: 1.25;
         overflow: visible !important;
         text-overflow: unset !important;
+        display: flex;
+        align-items: center;
+        width: 100%;
       }
 
       /* Arrow Icon */
       .nav-arrow {
-          margin-left: auto;
+          margin-left: auto !important;
           font-size: 0.8rem;
           transition: transform 0.2s;
           flex-shrink: 0;
