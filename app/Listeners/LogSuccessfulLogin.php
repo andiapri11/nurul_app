@@ -21,9 +21,11 @@ class LogSuccessfulLogin
      */
     public function handle(Login $event)
     {
+        $country = $this->request->header('CF-IPCountry');
+        
         $data = [
             'ip_address' => $this->request->ip(),
-            'user_agent' => $this->request->userAgent(),
+            'user_agent' => $this->request->userAgent() . ($country ? " [{$country}]" : ""),
             'login_at' => now(),
         ];
 
