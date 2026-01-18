@@ -95,14 +95,22 @@
       }
 
       .app-sidebar {
+        width: 280px !important;
         background-color: var(--sidebar-bg) !important;
         box-shadow: 5px 0 25px rgba(0,0,0,0.15) !important;
         border-right: none !important;
       }
 
+      @media (min-width: 992px) {
+        .app-main, .app-header, .app-footer {
+          margin-left: 280px !important;
+        }
+      }
+
       .sidebar-brand {
         background-color: rgba(0,0,0,0.2) !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        width: 280px !important;
       }
       
       .brand-text {
@@ -110,7 +118,9 @@
         font-weight: 700 !important;
         letter-spacing: 1px;
         text-transform: uppercase;
-        font-size: 1.1rem;
+        font-size: 1rem;
+        white-space: normal;
+        line-height: 1.2;
       }
 
       /* Scrollbar */
@@ -162,6 +172,7 @@
         filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
         width: 24px;
         text-align: center;
+        flex-shrink: 0;
       }
       
       /* Section Headers */
@@ -184,14 +195,14 @@
       }
       
       .nav-treeview .nav-link {
-        padding-left: 45px !important;
-        font-size: 0.9rem;
+        padding-left: 42px !important;
+        font-size: 0.88rem;
         opacity: 0.9;
         margin: 2px 0;
       }
       
       .nav-treeview .nav-link:hover {
-        padding-left: 48px !important;
+        padding-left: 45px !important;
         background-color: rgba(255,255,255,0.05) !important;
       }
 
@@ -203,11 +214,21 @@
         border-radius: 0 8px 8px 0 !important;
       }
 
+      /* Fix Sidebar Menu Truncation */
+      .sidebar-menu .nav-link p {
+        white-space: normal !important;
+        margin-bottom: 0;
+        line-height: 1.25;
+        overflow: visible !important;
+        text-overflow: unset !important;
+      }
+
       /* Arrow Icon */
       .nav-arrow {
           margin-left: auto;
           font-size: 0.8rem;
           transition: transform 0.2s;
+          flex-shrink: 0;
       }
       .menu-open > .nav-link > .nav-arrow {
           transform: rotate(90deg);
