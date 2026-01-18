@@ -89,28 +89,20 @@
         --sidebar-bg: #111c43; /* Dark Navy Blue Premium */
         --sidebar-hover: rgba(255, 255, 255, 0.1);
         --sidebar-active-bg: linear-gradient(90deg, #4361ee, #3a0ca3);
-        --sidebar-text: #b6c5e0;
+        --sidebar-text: #cedef7; /* Brighter for better readability */
         --sidebar-text-active: #ffffff;
-        --sidebar-header: #6c757d;
+        --sidebar-header: #9bb2e5; /* More visible header */
       }
 
       .app-sidebar {
-        width: 250px !important;
         background-color: var(--sidebar-bg) !important;
         box-shadow: 5px 0 25px rgba(0,0,0,0.15) !important;
         border-right: none !important;
       }
 
-      @media (min-width: 992px) {
-        .app-main, .app-header, .app-footer {
-          margin-left: 250px !important;
-        }
-      }
-
       .sidebar-brand {
         background-color: rgba(0,0,0,0.2) !important;
         border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-        width: 250px !important;
       }
       
       .brand-text {
@@ -118,10 +110,7 @@
         font-weight: 700 !important;
         letter-spacing: 1px;
         text-transform: uppercase;
-        font-size: 1rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        font-size: 1.1rem;
       }
 
       /* Scrollbar */
@@ -139,23 +128,23 @@
       }
       
       .sidebar-menu .nav-item {
-        margin: 2px 12px;
+        margin: 2px 8px; /* Mengurangi margin samping agar menu lebih lebar */
       }
 
       .sidebar-menu .nav-link {
         border-radius: 8px !important;
         color: var(--sidebar-text) !important;
-        padding: 10px 15px;
+        padding: 9px 8px 9px 10px; /* Sedikit lebih rapat */
         transition: all 0.2s ease-in-out;
-        font-weight: 400;
+        font-weight: 600;
         display: flex;
-        align-items: center;
+        font-size: 0.86rem; /* Ukuran font dioptimalkan agar muat satu baris */
       }
 
       .sidebar-menu .nav-link:hover {
         background-color: var(--sidebar-hover) !important;
         color: #fff !important;
-        padding-left: 18px; /* Subtle slide effect */
+        padding-left: 12px;
       }
 
       .sidebar-menu .nav-link.active {
@@ -168,71 +157,91 @@
       /* Icon Styling */
       .sidebar-menu .nav-icon {
         color: inherit !important;
-        margin-right: 12px;
+        margin-right: 8px; /* Lebih rapat sedikit */
         font-size: 1.15rem;
         filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
-        width: 24px;
+        width: 20px; /* Lebar box ikon dioptimalkan */
         text-align: center;
         flex-shrink: 0;
       }
       
       /* Section Headers */
       .sidebar-menu .nav-header {
-        color: rgba(255,255,255,0.4) !important;
-        font-size: 0.70rem;
+        color: #8fa6d1 !important; /* Lighter/Brighter header */
+        font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
-        font-weight: 700;
-        padding: 1.5rem 1.5rem 0.5rem;
-        margin-top: 5px;
+        letter-spacing: 2px;
+        font-weight: 800;
+        padding: 1.8rem 1.2rem 0.6rem;
+        margin-top: 10px;
+        border-top: 1px solid rgba(255,255,255,0.05); /* Separator line */
       }
 
-      /* Treeview (Submenu) */
+      /* Treeview (Submenu Container) */
       .nav-treeview {
         background-color: rgba(0,0,0,0.15);
         border-radius: 8px;
         margin-top: 2px;
         margin-bottom: 5px;
       }
-      
+
+      /* Submenu (Tingkat 2) */
       .nav-treeview .nav-link {
-        padding-left: 42px !important;
-        font-size: 0.88rem;
-        opacity: 0.9;
-        margin: 2px 0;
+        padding-left: 32px !important; 
+        font-size: 0.88rem; /* Larger submenu font */
+        font-weight: 400; /* Regular weight for submenus */
+        opacity: 0.95;
       }
       
       .nav-treeview .nav-link:hover {
-        padding-left: 45px !important;
-        background-color: rgba(255,255,255,0.05) !important;
+        padding-left: 30px !important;
       }
 
       .nav-treeview .nav-link.active {
-        background: rgba(255,255,255,0.15) !important;
-        box-shadow: none !important;
+        background: rgba(255,255,255,0.1) !important;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.1) !important;
         color: #fff !important;
-        border-left: 3px solid #4cc9f0;
+        border-left: 4px solid #4cc9f0;
         border-radius: 0 8px 8px 0 !important;
       }
 
-      /* Fix Sidebar Menu Truncation */
+      /* Subtle highlight for open menus */
+      .menu-open > .nav-link:not(.active) {
+        background-color: rgba(255,255,255,0.03);
+        color: #fff !important;
+      }
+
+      /* Mengizinkan teks menu turun ke bawah (wrap) jika panjang */
       .sidebar-menu .nav-link p {
         white-space: normal !important;
         margin-bottom: 0;
-        line-height: 1.25;
+        line-height: 1.3;
         overflow: visible !important;
         text-overflow: unset !important;
-        display: flex;
-        align-items: center;
+        display: block;
         width: 100%;
+        padding-right: 20px; /* Memberi ruang aman untuk panah agar tidak tertabrak teks */
+        padding-top: 2px;
+      }
+
+      /* Pastikan ikon tetap sejajar di atas jika teks panjang */
+      .sidebar-menu .nav-link {
+        align-items: flex-start !important;
+      }
+      
+      .sidebar-menu .nav-icon {
+        margin-top: 2px;
       }
 
       /* Arrow Icon */
       .nav-arrow {
           margin-left: auto !important;
-          font-size: 0.8rem;
+          margin-right: -5px; /* Geser mepet ke tepi kanan */
+          font-size: 0.75rem;
           transition: transform 0.2s;
           flex-shrink: 0;
+          position: relative;
+          right: -2px;
       }
       .menu-open > .nav-link > .nav-arrow {
           transform: rotate(90deg);
@@ -511,7 +520,7 @@
                     <li class="nav-item">
                       <a href="{{ route('schedules.settings') }}" class="nav-link {{ request()->routeIs('schedules.settings') ? 'active' : '' }}">
                         <i class="nav-icon bi bi-gear-fill"></i>
-                        <p>Setting Jadwal Pelajaran</p>
+                        <p>Setting Jadwal</p>
                       </a>
                     </li>
                     @endif
@@ -642,7 +651,7 @@
                       <a href="#" class="nav-link {{ request()->routeIs('curriculum.*') || request()->is('graduation*') || request()->routeIs('graduation.*') ? 'active' : '' }}">
                         <i class="nav-icon bi bi-journal-bookmark-fill text-primary"></i>
                         <p>
-                          Wakasek Kurikulum
+                          Wakil Kurikulum
                           <i class="nav-arrow bi bi-chevron-right"></i>
                         </p>
                       </a>
@@ -668,64 +677,14 @@
                         <li class="nav-item">
                           <a href="{{ route('graduation.index') }}" class="nav-link {{ request()->is('graduation*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-mortarboard-fill text-success"></i>
-                            <p>Pengumuman Kelulusan</p>
+                            <p>Kelulusan</p>
                           </a>
                         </li>
                       </ul>
                     </li>
                     @endif
 
-                    @if(Auth::user()->isWaliKelas())
-                    <!-- Debug: Wali Kelas Menu Rendered -->
-                    <li class="nav-item {{ request()->routeIs('wali-kelas.*') ? 'menu-open' : '' }}">
-                      <a href="#" class="nav-link {{ request()->routeIs('wali-kelas.*') ? 'active' : '' }}">
-                        <i class="nav-icon bi bi-person-workspace"></i>
-                        <p>
-                          Wali Kelas
-                          <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                      </a>
-                      <ul class="nav nav-treeview">
 
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.students.index') }}" class="nav-link {{ request()->routeIs('wali-kelas.students.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-people"></i>
-                            <p>Data Siswa</p>
-                          </a>
-                        </li>
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.announcements.index') }}" class="nav-link {{ request()->routeIs('wali-kelas.announcements.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-megaphone"></i>
-                            <p>Pengumuman Walas</p>
-                          </a>
-                        </li>
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.attendance') }}" class="nav-link {{ request()->routeIs('wali-kelas.attendance') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-calendar-check"></i>
-                            <p>Absensi Siswa</p>
-                          </a>
-                        </li>
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.report') }}" class="nav-link {{ request()->routeIs('wali-kelas.report') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-file-earmark-text"></i>
-                            <p>Laporan Absensi</p>
-                          </a>
-                        </li>
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.violations') }}" class="nav-link {{ request()->routeIs('wali-kelas.violations') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-exclamation-triangle"></i>
-                            <p>Catatan Pelanggaran</p>
-                          </a>
-                        </li>
-                        <li class="nav-item">
-                          <a href="{{ route('wali-kelas.extracurriculars') }}" class="nav-link {{ request()->routeIs('wali-kelas.extracurriculars') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-trophy"></i>
-                            <p>Capaian Ekskul</p>
-                          </a>
-                        </li>
-                      </ul>
-                    </li>
-                    @endif
                     @if(Auth::user()->isKesiswaan() || Auth::user()->isKepalaSekolah())
                     <li class="nav-item {{ request()->routeIs('student-affairs.*') ? 'menu-open' : '' }}">
                       <a href="#" class="nav-link {{ request()->routeIs('student-affairs.*') ? 'active' : '' }}">
@@ -781,7 +740,7 @@
                       <a href="#" class="nav-link {{ request()->is('sarpras*') && !request()->is('sarpras/director*') && !request()->is('sarpras/principal*') ? 'active' : '' }}">
                         <i class="nav-icon bi bi-tools text-warning"></i>
                         <p>
-                          Wakasek Sarpras
+                          Wakil Sapras
                           <i class="nav-arrow bi bi-chevron-right"></i>
                         </p>
                       </a>
@@ -849,11 +808,63 @@
                       </ul>
                     </li>
                     @endif
+
+                    @if(Auth::user()->isWaliKelas())
+                    <!-- Debug: Wali Kelas Menu Rendered -->
+                    <li class="nav-item {{ request()->routeIs('wali-kelas.*') ? 'menu-open' : '' }}">
+                      <a href="#" class="nav-link {{ request()->routeIs('wali-kelas.*') ? 'active' : '' }}">
+                        <i class="nav-icon bi bi-person-workspace"></i>
+                        <p>
+                          Wali Kelas
+                          <i class="nav-arrow bi bi-chevron-right"></i>
+                        </p>
+                      </a>
+                      <ul class="nav nav-treeview">
+
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.students.index') }}" class="nav-link {{ request()->routeIs('wali-kelas.students.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-people"></i>
+                            <p>Data Siswa</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.announcements.index') }}" class="nav-link {{ request()->routeIs('wali-kelas.announcements.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-megaphone"></i>
+                            <p>Pengumuman Walas</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.attendance') }}" class="nav-link {{ request()->routeIs('wali-kelas.attendance') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-calendar-check"></i>
+                            <p>Absensi Siswa</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.report') }}" class="nav-link {{ request()->routeIs('wali-kelas.report') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-file-earmark-text"></i>
+                            <p>Laporan Absensi</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.violations') }}" class="nav-link {{ request()->routeIs('wali-kelas.violations') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-exclamation-triangle"></i>
+                            <p>Catatan Pelanggaran</p>
+                          </a>
+                        </li>
+                        <li class="nav-item">
+                          <a href="{{ route('wali-kelas.extracurriculars') }}" class="nav-link {{ request()->routeIs('wali-kelas.extracurriculars') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-trophy"></i>
+                            <p>Capaian Ekskul</p>
+                          </a>
+                        </li>
+                      </ul>
+                    </li>
+                    @endif
                     @if(Auth::user()->role === 'administrator' || Auth::user()->hasJabatan('Humas'))
                     <li class="nav-item">
                       <a href="#" class="nav-link">
                         <i class="nav-icon bi bi-megaphone-fill"></i>
-                        <p>Wakasek Humas</p>
+                        <p>Humas</p>
                       </a>
                     </li>
                     @endif
