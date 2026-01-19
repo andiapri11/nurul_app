@@ -246,10 +246,14 @@
                                         @endif
                                         
                                         @if(!$schedule->hasCheckedIn)
-                                            @if($isNow || $isPast)
+                                            @if($isNow)
                                                 <button class="btn btn-primary btn-sm btn-checkin-action" 
                                                     onclick="initCheckin('{{ $schedule->id }}', '{{ addslashes($schedule->subject->name) }}', '{{ addslashes($schedule->schoolClass->name) }}', '{{ addslashes($schedule->calendar_activity ?? '') }}')">
                                                     <i class="bi bi-camera-fill me-2"></i> Mulai Absensi
+                                                </button>
+                                            @elseif($isPast)
+                                                <button class="btn btn-danger btn-sm btn-checkin-action disabled opacity-75" disabled>
+                                                    <i class="bi bi-x-circle me-1"></i> Waktu Habis
                                                 </button>
                                             @else
                                                 <button class="btn btn-secondary btn-sm btn-checkin-action disabled opacity-75" disabled>
