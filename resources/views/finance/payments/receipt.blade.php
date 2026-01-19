@@ -2,377 +2,333 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kwitansi #{{ $transaction->invoice_number }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --dark-color: #1e293b;
-            --light-bg: #f8fafc;
-            --border-color: #e2e8f0;
-            --text-main: #334155;
-            --text-muted: #64748b;
-        }
-
+        /* Epson LX-310 - Invoice Size (21cm x 14cm) Landscape */
         @page {
-            size: 9.5in 5.5in;
-            margin: 0;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--light-bg);
-            margin: 0;
-            padding: 20px;
-            color: var(--text-main);
-            line-height: 1.2; /* Tighter line height */
+            size: 21cm 14cm;
+            margin: 0.5cm;
         }
 
-        .invoice-wrapper {
-            background: #fff;
-            width: 9.5in;
-            height: 5.5in;
-            margin: 0 auto;
-            padding: 0.5cm 1.5cm; /* Reduced padding */
-            border-radius: 0;
-            box-shadow: none;
-            position: relative;
-            overflow: hidden;
+        /* Force pure black for dot matrix - Targeted to wrapper only */
+        .invoice-wrapper, .invoice-wrapper * {
+            color: #000 !important;
+            border-color: #000 !important;
+            -webkit-print-color-adjust: exact;
+            background-color: transparent !important;
+        }
+
+        * {
             box-sizing: border-box;
         }
 
-        /* PAID Watermark - slightly smaller and moved */
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 8.5pt; /* Slightly smaller for tighter fit */
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            line-height: 1.0; /* Super tight line height */
+        }
+
+        .invoice-wrapper {
+            width: 100%;
+            max-width: 20cm; 
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Watermark - Lighter border */
         .paid-stamp {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-15deg);
-            border: 5px solid #10b981;
-            color: #10b981;
-            font-size: 60px;
-            font-weight: 800;
-            padding: 10px 30px;
+            border: 1px solid #000;
+            font-size: 45px;
+            font-weight: 400;
+            padding: 5px 25px;
             text-transform: uppercase;
-            opacity: 0.1;
-            border-radius: 12px;
-            user-select: none;
+            opacity: 0.08;
+            border-radius: 10px;
             z-index: 0;
             white-space: nowrap;
+            pointer-events: none;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px; /* Reduced margin */
-            position: relative;
-            z-index: 1;
-        }
-
-        .school-brand h1 {
-            margin: 0;
-            font-size: 18px; /* Smaller font */
-            font-weight: 800;
-            color: var(--dark-color);
-            letter-spacing: -0.5px;
-            margin-bottom: 2px;
-        }
-
-        .school-brand p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 9px; /* Smaller font */
-            max-width: 350px;
-        }
-
-        .invoice-meta {
-            text-align: right;
-        }
-
-        .invoice-meta h2 {
-            margin: 0;
-            font-size: 18px; /* Smaller font */
-            font-weight: 700;
-            color: var(--primary-color);
-            text-transform: uppercase;
-        }
-
-        .invoice-meta p {
-            margin: 1px 0;
-            font-size: 10px; /* Smaller font */
-            font-weight: 600;
-        }
-
-        .divider {
-            height: 1px;
-            background-color: var(--border-color);
-            margin: 5px 0; /* Tight margin */
-        }
-
-        .details-grid {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 15px;
-            margin-bottom: 10px; /* Reduced margin */
-        }
-
-        .details-box h4 {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-            margin-bottom: 3px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 2px;
-        }
-
-        .details-box p {
-            margin: 1px 0;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .details-box .val-muted {
-            font-weight: 400;
-            color: var(--text-muted);
-        }
-
-        table {
+        /* Layout Tables */
+        .full-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
         }
 
-        th {
-            background-color: var(--dark-color);
-            color: white;
-            text-align: left;
-            padding: 5px 8px; /* Reduced padding */
-            font-size: 9px;
+        /* Header */
+        .school-info h1 {
+            margin: 0;
+            font-size: 13pt;
+            font-weight: normal;
+        }
+        .school-info p {
+            margin: 1px 0;
+            font-size: 8pt;
+            line-height: 1.1;
+        }
+        .kwitansi-title {
+            font-size: 18pt;
+            font-weight: normal;
+            text-align: right;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+
+        /* Info Sections */
+        .section-header {
+            font-size: 7pt;
+            font-weight: normal;
+            border-bottom: 0.1pt solid #000; /* Hairline */
+            margin-bottom: 3px;
+            padding-bottom: 1px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        td {
-            padding: 5px 8px; /* Reduced padding */
-            border-bottom: 1px solid var(--border-color);
-            font-size: 10px;
+        .info-detail p {
+            margin: 1px 0; /* Minimal vertical gap */
         }
 
-        .total-section {
-            margin-top: 5px;
-            display: flex;
-            justify-content: flex-end;
+        /* Items Table */
+        .items-header {
+            font-size: 8pt;
+            border-bottom: 0.1pt solid #000; /* Hairline */
+            text-transform: uppercase;
+            padding: 4px 0;
+            font-weight: normal;
         }
-
-        .total-table {
-            width: 220px;
+        
+        .item-row td {
+            padding: 3px 0; /* Reduced padding */
+            border-bottom: 0.1pt solid #ccc; /* Hairline */
         }
-
-        .total-table tr td {
-            padding: 2px 8px;
-            border: none;
-            font-size: 10px;
-        }
-
-        .grand-total {
-            background-color: var(--light-bg);
-            border-radius: 4px;
-        }
-
-        .grand-total td {
-            padding-top: 8px !important; /* Reduced padding */
-            padding-bottom: 8px !important;
-        }
-
-        .price-big {
-            font-size: 14px; /* Smaller font */
-            font-weight: 800;
-            color: var(--dark-color);
-        }
-
-        .note-footer {
-            margin-top: 10px; /* Reduced margin */
-            font-size: 8px;
-            color: var(--text-muted);
-            border-top: 1px dashed var(--border-color);
-            padding-top: 5px;
-        }
-
-        .signatures {
-            margin-top: 15px; /* Reduced margin */
-            display: flex;
-            justify-content: space-between;
-            padding: 0 10px;
-        }
-
-        .sig-box {
-            text-align: center;
-            width: 140px;
-            font-size: 9px;
-        }
-
-        .sig-box .space {
-            height: 35px; /* Reduced height */
-        }
-
-        .sig-box strong {
-            display: block;
-            border-top: 1px solid var(--text-main);
+        
+        /* Totals Area */
+        .total-label { text-align: right; font-size: 8.5pt; padding-right: 15px; }
+        .total-value { text-align: right; font-weight: normal; width: 4cm; }
+        .grand-total-row td { 
+            font-weight: normal; 
+            font-size: 10pt;
+            border-top: 0.1pt solid #000; /* Hairline */
             padding-top: 3px;
         }
 
-        .actions {
-            max-width: 850px;
-            margin: 0 auto 20px;
-            display: flex;
-            justify-content: space-between;
+        /* Footer */
+        .catatan {
+            font-size: 7pt;
+            margin-top: 10px;
+            line-height: 1.2;
         }
 
+        .signatures-table {
+            margin-top: 15px;
+            width: 100%;
+        }
+        .sig-container {
+            text-align: center;
+            width: 45%;
+        }
+        .sig-line {
+            margin-top: 35px; /* Reduced space for signature */
+            font-weight: normal;
+            display: inline-block;
+            min-width: 180px;
+            padding-top: 4px;
+        }
+
+        .actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 9999;
+        }
         .btn {
-            padding: 8px 15px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 10px;
             text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
             font-weight: 600;
-            font-size: 13px;
             cursor: pointer;
             border: none;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: inline-flex;
+            align-items: center;
         }
-
-        .btn-print { background: var(--dark-color); color: white; }
-        .btn-back { background: #fff; color: var(--text-muted); border: 1px solid var(--border-color); }
+        .btn-back {
+            background-color: #ffffff;
+            color: #1e293b !important;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-print {
+            background-color: #0f172a;
+            color: #ffffff !important;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
 
         @media print {
             .actions { display: none; }
-            body { padding: 0; background: white; }
-            .invoice-wrapper { width: 9.5in; height: 5.5in; padding: 0.5cm 1.5cm; border: none; }
-            .paid-stamp { opacity: 0.1; }
+            body { padding: 0; }
         }
     </style>
 </head>
 <body onload="window.print()">
 
     <div class="actions">
-        <a href="javascript:history.back()" class="btn btn-back">← Kembali</a>
-        <button onclick="window.print()" class="btn btn-print">Cetak Kwitansi</button>
+        <a href="javascript:history.back()" class="btn btn-back">← KEMBALI</a>
+        <button onclick="window.print()" class="btn btn-print">CETAK KWITANSI</button>
     </div>
 
     <div class="invoice-wrapper">
         <div class="paid-stamp">LUNAS / PAID</div>
 
-        <div class="header">
-            <div class="school-brand">
-                @php
-                    $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? \App\Models\Setting::where('key', 'app_name')->value('value') ?? 'LPT NURUL ILMI';
-                    $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? 'Jl. Raya Utama No. 123, Kel. Bekasi Jaya, Kec. Bekasi Timur, Kota Bekasi, Jawa Barat 17112';
-                @endphp
-                <h1>{{ $schoolName }}</h1>
-                <p>{{ $appAddress }}</p>
-            </div>
-            <div class="invoice-meta">
-                <h2>KWITANSI</h2>
-                <p>Kode Pembayaran: #{{ $transaction->invoice_number }}</p>
-                <p class="val-muted">Tanggal: {{ $transaction->transaction_date->format('d M Y') }}</p>
-                <p class="val-muted">Waktu: {{ $transaction->created_at->format('H:i') }} WIB</p>
-            </div>
-        </div>
+        <!-- Header -->
+        <table class="full-table">
+            <tr>
+                <td class="school-info" style="width: 65%;">
+                    @php
+                        $schoolName = \App\Models\Setting::where('key', 'school_name')->value('value') ?? 'LPT NURUL ILMI';
+                        $appAddress = \App\Models\Setting::where('key', 'app_address')->value('value') ?? 'Alamat Sekolah...';
+                    @endphp
+                    <h1>{{ $schoolName }}</h1>
+                    <p style="max-width: 12cm;">{{ $appAddress }}</p>
+                </td>
+                <td style="text-align: right; vertical-align: top;">
+                    <h2 class="kwitansi-title">KWITANSI</h2>
+                    <div style="font-size: 8.5pt; font-weight: normal; margin-top: 2px;">
+                        #{{ $transaction->invoice_number }}<br>
+                        Tgl: {{ $transaction->transaction_date->format('d/m/Y') }}
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-        <div class="divider"></div>
+        <div style="height: 5px;"></div>
 
-        <div class="details-grid">
-            <div class="details-box">
-                <h4>DITAGIHKAN KEPADA:</h4>
-                <p>{{ $transaction->student->nama_lengkap }}</p>
-                <p class="val-muted">NIS: {{ $transaction->student->nis }}</p>
-                <p class="val-muted">Unit: {{ $transaction->student->unit->name }}</p>
-                <p class="val-muted">Kelas: {{ $transaction->student->classes->first()->name ?? '-' }}</p>
-            </div>
-            <div class="details-box">
-                <h4>INFO PEMBAYARAN:</h4>
-                <p>Metode: <span class="val-muted text-uppercase">{{ $transaction->payment_method }}</span></p>
-                <p>Petugas: <span class="val-muted">{{ $transaction->user->name ?? 'Admin Finance' }}</span></p>
-                <p>Status: <span style="color: #10b981;">SUKSES (TERBAYAR)</span></p>
-            </div>
-        </div>
+        <!-- Info Grid -->
+        <table class="full-table">
+            <tr>
+                <td style="width: 48%; vertical-align: top;" class="info-detail">
+                    <div class="section-header">DATA SISWA :</div>
+                    <p>{{ $transaction->student->nama_lengkap }}</p>
+                    <p>NIS: {{ $transaction->student->nis }}</p>
+                    <p>Unit/Kelas: {{ $transaction->student->unit->name }} / {{ $transaction->student->classes->first()->name ?? '-' }}</p>
+                </td>
+                <td style="width: 4%;"></td>
+                <td style="width: 48%; vertical-align: top;" class="info-detail">
+                    <div class="section-header">METODE PEMBAYARAN:</div>
+                    <p>Tipe: <span style="text-transform: uppercase;">{{ $transaction->payment_method }}</span></p>
+                    <p>Petugas: {{ substr($transaction->user->name ?? 'Admin', 0, 20) }}</p>
+                    <p>Status: PAID / LUNAS</p>
+                </td>
+            </tr>
+        </table>
 
-        <table>
+        <!-- Items Table -->
+        <table class="full-table" style="margin-top: 10px;">
             <thead>
                 <tr>
-                    <th width="50%">Deskripsi Item Pembayaran</th>
-                    <th width="20%">Periode</th>
-                    <th width="30%" style="text-align: right;">Subtotal (Rp)</th>
+                    <th class="items-header" style="text-align: left; width: 60%;">Deskripsi Pembayaran</th>
+                    <th class="items-header" style="text-align: center; width: 15%;">Periode</th>
+                    <th class="items-header" style="text-align: right; width: 25%;">Total (Rp)</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($transaction->items as $item)
-                    <tr>
-                        @php
-                            $bill = \App\Models\StudentBill::where('student_id', $transaction->student_id)
-                                ->where('payment_type_id', $item->payment_type_id)
-                                ->where('month', $item->month_paid)
-                                ->whereHas('academicYear', function($q) use ($item) {
-                                    $q->where('start_year', $item->year_paid);
-                                })
-                                ->first();
-                            $isPartial = $bill && ($item->amount < $bill->amount);
-                        @endphp
-                        <td>
-                            <strong>{{ $item->paymentType->name }}</strong>
-                            @if($isPartial)
-                                <span style="background: #fff8e1; color: #b45309; font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid #fde68a; margin-left: 5px; font-weight: 700;">CICILAN</span>
-                            @endif
-                            <br>
-                            <small style="color: var(--text-muted);">{{ $transaction->notes ?? 'Penerimaan dana iuran sekolah.' }}</small>
-                        </td>
-                        <td>
-                            @if($item->month_paid)
-                                {{ [7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember', 1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni'][$item->month_paid] ?? 'Sekali Bayar' }} {{ $item->year_paid }}
-                            @else
-                                Sekali Bayar
-                            @endif
-                        </td>
-                        <td style="text-align: right; font-weight: 600;">
-                            {{ number_format($item->amount, 0, ',', '.') }}
-                        </td>
-                    </tr>
+                <tr class="item-row">
+                    <td>
+                        <div>{{ $item->paymentType->name }}</div>
+                        <div style="font-size: 7.5pt; color: #666;">{{ $transaction->notes ?? 'Pembayaran biaya pendidikan.' }}</div>
+                    </td>
+                    <td style="text-align: center; font-size: 8pt;">
+                        @if($item->month_paid)
+                            {{ [1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'][$item->month_paid] }} {{ substr($item->year_paid, 2) }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td style="text-align: right; font-size: 9pt;">
+                        {{ number_format($item->amount, 0, ',', '.') }}
+                    </td>
+                </tr>
                 @endforeach
             </tbody>
         </table>
 
-        <div class="total-section">
-            <table class="total-table">
-                <tr>
-                    <td class="val-muted">Subtotal</td>
-                    <td style="text-align: right; font-weight: 600;">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                </tr>
+        <!-- Totals Area -->
+        <table class="full-table" style="margin-top: 5px;">
+            <tr class="grand-total-row">
+                <td style="width: 50%;">
+                    <div class="catatan">
+                        @php
+                            function terbilang($angka) {
+                                $angka = abs($angka);
+                                $baca = array("", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh", "sebelas");
+                                $terbilang = "";
+                                if ($angka < 12) {
+                                    $terbilang = " " . $baca[$angka];
+                                } else if ($angka < 20) {
+                                    $terbilang = terbilang($angka - 10) . " belas";
+                                } else if ($angka < 100) {
+                                    $terbilang = terbilang($angka / 10) . " puluh" . terbilang($angka % 10);
+                                } else if ($angka < 200) {
+                                    $terbilang = " seratus" . terbilang($angka - 100);
+                                } else if ($angka < 1000) {
+                                    $terbilang = terbilang($angka / 100) . " ratus" . terbilang($angka % 100);
+                                } else if ($angka < 2000) {
+                                    $terbilang = " seribu" . terbilang($angka - 1000);
+                                } else if ($angka < 1000000) {
+                                    $terbilang = terbilang($angka / 1000) . " ribu" . terbilang($angka % 1000);
+                                } else if ($angka < 1000000000) {
+                                    $terbilang = terbilang($angka / 1000000) . " juta" . terbilang($angka % 1000000);
+                                }
+                                return $terbilang;
+                            }
+                        @endphp
+                        <div style="font-style: italic; margin-bottom: 5px;">
+                            <strong>Terbilang:</strong> {{ ucwords(terbilang($transaction->amount)) }} Rupiah
+                        </div>
+                        <strong>Ket:</strong> Bukti pembayaran sah LPT Nurul Ilmi.
+                    </div>
+                </td>
+                <td class="total-label" style="font-weight: bold;">JUMLAH TOTAL</td>
+                <td class="total-value" style="font-weight: bold;">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
+            </tr>
+        </table>
 
-                <tr class="grand-total">
-                    <td style="font-weight: 800; color: var(--primary-color);">TOTAL AKHIR</td>
-                    <td style="text-align: right;" class="price-big">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</td>
-                </tr>
-            </table>
-        </div>
+        <!-- Signatures -->
+        <table class="signatures-table">
+            <tr>
+                <td class="sig-container" style="text-align: left; padding-left: 20px;">
+                    <div style="font-size: 8.5pt;">Petugas Keuangan,</div>
+                    <div class="sig-line">( {{ substr($transaction->user->name ?? 'Admin', 0, 20) }} )</div>
+                </td>
+                <td style="width: 10%;"></td>
+                <td class="sig-container" style="text-align: right; padding-right: 20px;">
+                    <div style="font-size: 8.5pt;">{{ now()->translatedFormat('d F Y') }}<br>Diterima Oleh,</div>
+                    <div class="sig-line">( .................................... )</div>
+                </td>
+            </tr>
+        </table>
 
-
-
-        <div class="note-footer">
-            <p><strong>Catatan:</strong> Bukti ini sah dan dikeluarkan secara otomatis oleh sistem LPT Nurul Ilmi. Pembayaran yang sudah dilakukan tidak dapat ditarik kembali atau dibatalkan tanpa persetujuan manajemen.</p>
-        </div>
-
-        <div class="signatures">
-            <div class="sig-box">
-                <p>Bag. Keuangan,</p>
-                <div class="space"></div>
-                <strong>( {{ $transaction->user->name ?? 'Admin Finance' }} )</strong>
-            </div>
-            <div class="sig-box">
-                <p>{{ now()->translatedFormat('l, d F Y') }}<br>Diterima Oleh,</p>
-                <div class="space"></div>
-                <strong>( .................................... )</strong>
-            </div>
-        </div>
-        <div style="text-align: center; margin-top: 15px; font-size: 8px; color: #94a3b8;">
-            &copy; {{ date('Y') }} LPT NURUL ILMI. Digital Receipt Generated System.
+        <div style="text-align: center; margin-top: 10px; font-size: 7pt; color: #666;">
+            Generated by Portal Nurul Ilmi Finance System
         </div>
     </div>
 
