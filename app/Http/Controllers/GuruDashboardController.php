@@ -238,8 +238,8 @@ class GuruDashboardController extends Controller
             $isHoliday = true;
             // Use description from first holiday unit
              $firstUnitId = $schedules->first()->schoolClass->unit_id;
-             $cal = $calendars[$firstUnitId] ?? $globalCal;
-             $calendarDescription = $cal->description ?? 'Libur';
+             $cal = $calendars->get($firstUnitId, collect())->first() ?? $globalCals->first();
+             $calendarDescription = $cal ? $cal->description : 'Libur';
         } elseif ($filteredSchedules->isNotEmpty()) {
              // Mixed or all effective
              // If ANY unit has activity, maybe highlight?
@@ -265,7 +265,7 @@ class GuruDashboardController extends Controller
         // Update Current Schedule check too
         if ($currentSchedule) {
              $unitId = $currentSchedule->schoolClass->unit_id;
-             $cal = $calendars[$unitId] ?? $globalCal;
+             $cal = $calendars->get($unitId, collect())->first() ?? $globalCals->first();
              if ($cal && $cal->is_holiday) {
                  $currentSchedule = null;
              }

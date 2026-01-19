@@ -27,12 +27,14 @@ class LogSuccessfulLogin
                   ?? $this->request->header('X-Forwarded-For') 
                   ?? $this->request->ip();
 
-            $agent = $this->request->userAgent();
+            $agent = $this->request->userAgent() ?? '';
             $country = $this->request->header('CF-IPCountry');
             
             // Deteksi Sederhana Merk HP/Perangkat
-            $device = "Unknown Device";
-            if (preg_match('/(android)/i', $agent)) {
+            $device = "Unknown Perangkat";
+            if (!$agent) {
+                $device = "No User Agent";
+            } elseif (preg_match('/(android)/i', $agent)) {
                 $device = "Android";
                 if (preg_match('/Android\s+[^;]+;\s+([^;)]+)/i', $agent, $matches)) {
                     $device .= " (" . trim($matches[1]) . ")";
@@ -47,7 +49,7 @@ class LogSuccessfulLogin
 
             $data = [
                 'ip_address' => $ip,
-                'user_agent' => $device . ($country ? " [{$country}]" : "") . " | " . $agent,
+                'user_agent' => $device . ($country ? " [{$country}]" : "") . " | " . ($agent ?: 'Unknown'),
                 'login_at' => now(),
             ];
 
@@ -60,9 +62,9 @@ class LogSuccessfulLogin
             if (isset($data['user_id']) || isset($data['user_siswa_id'])) {
                 LoginHistory::create($data);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Jika ada error di logging, jangan gagalkan login utama user
-            \Log::error("Gagal mencatat histori login: " . $e->getMessage());
+            logger()->error("Gagal mencatat histori login: " . $e->getMessage());
         }
     }
 }

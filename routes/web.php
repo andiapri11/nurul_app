@@ -961,7 +961,6 @@ Route::get('/seed-checkins', function() {
 });
 */
 
-/*
 Route::get('/fix-db', function() {
     try {
         // 1. Run Migrations (for the new table)
@@ -1009,7 +1008,6 @@ Route::get('/fix-db', function() {
         return "Fix failed: " . $e->getMessage();
     }
 });
-*/
 
 Route::delete('/finance/transactions/{transaction}/force-delete', [\App\Http\Controllers\FinancePaymentController::class, 'forceDeleteTransaction'])
     ->name('finance.payments.transactions.force-delete')->middleware('auth');
