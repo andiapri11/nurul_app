@@ -4,7 +4,10 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
-Route::get('/', [\App\Http\Controllers\AuthController::class, 'home']);
+// Route::get('/', [\App\Http\Controllers\AuthController::class, 'home']);
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
 // Dynamic PWA Manifest
 Route::get('/manifest.json', function() {
