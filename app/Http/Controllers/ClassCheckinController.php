@@ -334,6 +334,7 @@ class ClassCheckinController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'photo' => 'nullable|image',
+            'photo_base64' => 'required_without:photo|string', // Wajib ada foto (Base64 dari kamera atau Upload file)
             'notes' => 'nullable|string'
         ]);
         

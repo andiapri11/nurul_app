@@ -418,6 +418,15 @@
              document.getElementById('inpPhotoBase64').value = '';
         });
 
+        // Form Validation for Photo
+        document.querySelector('form[action="{{ route('class-checkins.store') }}"]').addEventListener('submit', function(e) {
+            const photoVal = document.getElementById('inpPhotoBase64').value;
+            if (!photoVal) {
+                e.preventDefault();
+                alert('Wajib mengambil foto bukti kelas terlebih dahulu!');
+            }
+        });
+
         // Toggle Fields
         document.getElementById('selType').addEventListener('change', function() {
             document.getElementById('boxSubstitute').style.display = (this.value === 'substitute') ? 'block' : 'none';
@@ -434,6 +443,7 @@
             document.getElementById('sectionCamera').style.display = 'block';
             document.getElementById('sectionResult').style.display = 'none';
             document.getElementById('selType').value = 'main';
+            document.getElementById('inpPhotoBase64').value = '';
         });
     });
 
