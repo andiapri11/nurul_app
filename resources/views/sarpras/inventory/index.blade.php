@@ -1427,18 +1427,66 @@ document.addEventListener('DOMContentLoaded', function() {
     filterImp();
 
     // 8. Add Row Logic (Extended)
+    const addRowBtn = document.getElementById('addRow');
+    const inventoryBody = document.getElementById('inventoryBody');
+    let rowCount = document.querySelectorAll('.inventory-row').length;
+
     if (addRowBtn && inventoryBody) {
         addRowBtn.addEventListener('click', function() {
             const firstRow = document.querySelector('.inventory-row');
             if (!firstRow) return;
             const newRow = firstRow.cloneNode(true);
             newRow.querySelectorAll('[name]').forEach(i => {
-                const n = i.getAttribute('name'); i.setAttribute('name', n.replace(/\[\d+\]/, `[${rowCount}]`));
-                if(i.type==='file') i.value=''; else if(!i.classList.contains('date-input') && i.type!=='checkbox') i.value='';
+                const n = i.getAttribute('name');
+                if(n) i.setAttribute('name', n.replace(/\[\d+\]/, `[${rowCount}]`));
+                if(i.type==='file') i.value=''; 
+                else if(!i.classList.contains('date-input') && i.type!=='checkbox' && !i.getAttribute('readonly')) i.value='';
+                
+                // Reset select if needed, but keep options
+                if(i.tagName === 'SELECT') i.selectedIndex = 0;
             });
+
+            // Update Unit Filter for new row immediately
+            const modalUnitFilter = document.getElementById('modal_unit_filter');
+            if(modalUnitFilter && modalUnitFilter.value) {
+                const unitId = modalUnitFilter.value;
+                const catSelect = newRow.querySelector('.category-select');
+                const roomSelect = newRow.querySelector('.room-select');
+                 if (catSelect) {
+                    Array.from(catSelect.options).forEach(opt => {
+                        const uId = opt.getAttribute('data-unit-id');
+                        opt.style.display = (opt.value === "" || uId == unitId || !uId || uId === "null") ? 'block' : 'none';
+                    });
+                }
+                if (roomSelect) {
+                    Array.from(roomSelect.options).forEach(opt => {
+                        opt.style.display = (opt.value === "" || opt.getAttribute('data-unit-id') == unitId) ? 'block' : 'none';
+                    });
+                }
+            }
+
+            // Generate new Code placeholder if possible (Optional, simple increment logic)
+            const codeInput = newRow.querySelector('.inventory-code');
+            if(codeInput) {
+                 // Try to auto increment last number just for visual aid
+                 const lastRow = inventoryBody.lastElementChild;
+                 const lastCode = lastRow ? lastRow.querySelector('.inventory-code').value : '';
+                 if(lastCode) {
+                     const parts = lastCode.match(/(.*?)(\d+)$/);
+                     if(parts) {
+                         const nextNum = parseInt(parts[2]) + 1;
+                         codeInput.value = parts[1] + nextNum;
+                     }
+                 }
+            }
+
             const del = newRow.querySelector('.remove-row');
-            if(del){ del.disabled = false; del.addEventListener('click', ()=>newRow.remove()); }
-            inventoryBody.appendChild(newRow); rowCount++;
+            if(del){ 
+                del.disabled = false; 
+                del.addEventListener('click', () => newRow.remove()); 
+            }
+            inventoryBody.appendChild(newRow); 
+            rowCount++;
         });
     }
 });
