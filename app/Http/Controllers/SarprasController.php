@@ -516,9 +516,10 @@ class SarprasController extends Controller
         $units = $allowedUnits;
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
         // Fetch room types keyed by name for easy lookup
-        $roomTypes = \App\Models\RoomType::all()->keyBy('name');
+        $allRoomTypes = \App\Models\RoomType::all();
+        $roomTypes = $allRoomTypes->keyBy('name');
 
-        return view('sarpras.rooms.index', compact('rooms', 'units', 'academicYears', 'activeYear', 'roomTypes', 'unitId'));
+        return view('sarpras.rooms.index', compact('rooms', 'units', 'academicYears', 'activeYear', 'roomTypes', 'allRoomTypes', 'unitId'));
     }
 
     public function storeRoom(Request $request)

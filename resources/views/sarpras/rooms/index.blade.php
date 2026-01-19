@@ -237,7 +237,7 @@
                     <div class="row">
                         <div class="col-12 mb-3">
                             <label class="form-label">Unit Sekolah</label>
-                            <select name="unit_id" class="form-select" required>
+                            <select name="unit_id" id="modal_room_unit_select" class="form-select" required>
                                 <option value="">Pilih Unit...</option>
                                 @foreach($units as $unit)
                                     <option value="{{ $unit->id }}">{{ $unit->name }}</option>
@@ -252,12 +252,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tipe Ruangan</label>
-                        <select name="type" class="form-select" required>
+                        <select name="type" id="modal_room_type_select" class="form-select" required>
                             <option value="">Pilih Tipe...</option>
-                            @foreach($roomTypes as $type)
-                                <option value="{{ $type->name }}">{{ $type->label }}</option>
+                            @foreach($allRoomTypes as $type)
+                                <option value="{{ $type->name }}" data-unit-id="{{ $type->unit_id ?? 'general' }}" data-unit-name="{{ $type->unit->name ?? 'UMUM' }}">
+                                    {{ $type->label }} {{ $type->unit_id ? '('.$type->unit->name.')' : '' }}
+                                </option>
                             @endforeach
                         </select>
+                        <div class="form-text small" id="type_help_text">Pilih unit terlebih dahulu untuk melihat tipe yang tersedia.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Penanggung Jawab</label>
@@ -276,4 +279,52 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const unitSelect = document.getElementById('modal_room_unit_select');
+    const typeSelect = document.getElementById('modal_room_type_select');
+    const typeHelp = document.getElementById('type_help_text');
+
+    if (unitSelect && typeSelect) {
+        function filterTypes() {
+            const selectedUnitId = unitSelect.value;
+            let hasVisible = false;
+            let firstVisible = null;
+
+            Array.from(typeSelect.options).forEach(option => {
+                if (option.value === "") return; // Skip default placeholder
+
+                const typeUnitId = option.getAttribute('data-unit-id');
+                
+                // Show if type belongs to selected unit OR is 'general' (null in DB)
+                const isVisible = (typeUnitId === 'general') || (typeUnitId === selectedUnitId);
+                
+                option.style.display = isVisible ? 'block' : 'none';
+                
+                if (isVisible) {
+                    hasVisible = true;
+                    if (!firstVisible) firstVisible = option;
+                }
+            });
+
+            // Feedback
+            if(selectedUnitId) {
+                typeSelect.disabled = false;
+                typeHelp.style.display = 'none';
+                typeSelect.value = ""; // Reset value to force user selection or pick first reasonable default? Better force select.
+            } else {
+                typeSelect.disabled = true;
+                typeHelp.style.display = 'block';
+                typeHelp.textContent = 'Pilih unit terlebih dahulu.';
+            }
+        }
+
+        unitSelect.addEventListener('change', filterTypes);
+        // Initial call if something is pre-selected (e.g. if simple request)
+        if(unitSelect.value) filterTypes();
+        else typeSelect.disabled = true;
+    }
+});
+</script>
 @endsection
