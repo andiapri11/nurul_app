@@ -168,8 +168,10 @@
                                         </div>
                                     </div>
                                     <div>
-                                        @if($isNow)
-                                            <span class="badge bg-success">Sedang Mengajar</span>
+                                        @if($sch->todayCheckin)
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i> Sudah Absen</span>
+                                        @elseif($isNow)
+                                            <span class="badge bg-danger pulse-button">Wajib Check-in</span>
                                         @elseif($isPast)
                                             <span class="badge bg-secondary">Selesai</span>
                                         @else

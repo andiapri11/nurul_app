@@ -259,6 +259,17 @@ class GuruDashboardController extends Controller
             }
         }
         
+        // Match check-ins to all schedules for today
+        $todayStr = Carbon::now()->toDateString();
+        $todayCheckins = \App\Models\ClassCheckin::where('user_id', $user->id)
+            ->whereDate('checkin_time', $todayStr)
+            ->get()
+            ->keyBy('schedule_id');
+
+        foreach($schedules as $sch) {
+            $sch->todayCheckin = $todayCheckins->get($sch->id);
+        }
+
         // Update $schedules to filtered version
         $schedules = $filteredSchedules;
         

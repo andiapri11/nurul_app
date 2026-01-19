@@ -309,15 +309,22 @@ class ClassCheckinController extends Controller
              }
         }
         
-        $schedules = $readySchedules;
+        $schedules = $activeSchedules;
         
         $todayCheckins = \App\Models\ClassCheckin::where('user_id', $userId)
             ->whereDate('checkin_time', now()->toDateString())
             ->with(['schedule.subject', 'schedule.schoolClass'])
-            ->latest()
-            ->get();
+            ->get()
+            ->keyBy('schedule_id');
 
-        return view('class_checkins.create', compact('schedules', 'today', 'isHoliday', 'isActivity', 'calendarDescription', 'unitStatuses', 'isTooEarly', 'nextScheduleTime', 'isFinishedToday', 'todayCheckins', 'activeSchedules'));
+        // Map hasCheckedIn status to $schedules
+        foreach($schedules as $schedule) {
+            $schedule->hasCheckedIn = isset($todayCheckins[$schedule->id]);
+        }
+        
+        $recentCheckins = $todayCheckins->values()->sortByDesc('checkin_time');
+
+        return view('class_checkins.create', compact('schedules', 'today', 'isHoliday', 'isActivity', 'calendarDescription', 'unitStatuses', 'isTooEarly', 'nextScheduleTime', 'isFinishedToday', 'recentCheckins', 'activeSchedules'));
     }
 
     public function store(Request $request)
