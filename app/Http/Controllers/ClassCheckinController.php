@@ -23,16 +23,22 @@ class ClassCheckinController extends Controller
         $user = auth()->user();
         $isTeacherOnly = !in_array($user->role, ['administrator', 'staff']) && !$user->isKurikulum();
 
-        // Allow Administrator, Staff, AND Kurikulum to see all. Others see only their own.
+        // Allow Administrator, Staff, AND Kurikulum to see all (but Kurikulum limited to their scope). Others see only their own.
         if ($isTeacherOnly) {
              $query->where('user_id', $user->id);
              // Requirement: show only today's history by default for teacher
              if (!$request->filled('date') && !$request->filled('start_date')) {
                  $query->whereDate('checkin_time', now()->toDateString());
              }
+        } elseif ($user->isKurikulum() && !in_array($user->role, ['administrator', 'staff'])) {
+            // Wakil Kurikulum: See ALL teachers, but ONLY for their Units
+            $allowedUnitIds = $user->getKurikulumUnits()->pluck('id')->toArray();
+            $query->whereHas('schedule.schoolClass', function($q) use ($allowedUnitIds) {
+                $q->whereIn('unit_id', $allowedUnitIds);
+            });
         }
 
-        // Filter: Unit
+        // Filter: Unit (User Filter)
         if ($request->filled('unit_id')) {
             $query->whereHas('schedule.schoolClass', function($q) use ($request) {
                 $q->where('unit_id', $request->unit_id);
