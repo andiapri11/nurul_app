@@ -333,8 +333,7 @@ class ClassCheckinController extends Controller
             'schedule_id' => 'required|exists:schedules,id',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'photo' => 'nullable|image',
-            'photo_base64' => 'required_without:photo|string', // Wajib ada foto (Base64 dari kamera atau Upload file)
+            'photo_base64' => 'required|string', // Wajib Foto Langsung (Camera)
             'notes' => 'nullable|string'
         ]);
         
