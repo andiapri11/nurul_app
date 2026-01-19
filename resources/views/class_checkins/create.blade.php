@@ -357,7 +357,7 @@
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-link text-decoration-none text-muted" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary px-4 fw-bold">Simpan Absensi</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-bold" id="btnSubmitCheckin" disabled>Simpan Absensi</button>
                 </div>
             </div>
         </form>
@@ -372,6 +372,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         modalAbsensi = new bootstrap.Modal(document.getElementById('modalAbsensi'));
         const vidPreview = document.getElementById('vidPreview');
+        const btnSubmitCheckin = document.getElementById('btnSubmitCheckin');
 
         // Location
         if(navigator.geolocation) {
@@ -414,12 +415,18 @@
             
             document.getElementById('sectionCamera').style.display = 'none';
             document.getElementById('sectionResult').style.display = 'block';
+
+            // Enable Submit Button
+            btnSubmitCheckin.disabled = false;
         });
 
         document.getElementById('btnRetake').addEventListener('click', () => {
              document.getElementById('sectionResult').style.display = 'none';
              document.getElementById('sectionCamera').style.display = 'block';
              document.getElementById('inpPhotoBase64').value = '';
+             
+             // Disable Submit Button
+             btnSubmitCheckin.disabled = true;
         });
 
         // Form Validation for Photo
@@ -432,11 +439,8 @@
             }
             
             // Prevent Double Click
-            const btnSubmit = this.querySelector('button[type="submit"]');
-            if(btnSubmit) {
-                btnSubmit.disabled = true;
-                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
-            }
+            btnSubmitCheckin.disabled = true;
+            btnSubmitCheckin.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
         });
 
         // Toggle Fields
@@ -456,6 +460,10 @@
             document.getElementById('sectionResult').style.display = 'none';
             document.getElementById('selType').value = 'main';
             document.getElementById('inpPhotoBase64').value = '';
+            
+            // Disable Submit Button and Reset Text
+            btnSubmitCheckin.disabled = true;
+            btnSubmitCheckin.innerHTML = 'Simpan Absensi';
         });
     });
 
