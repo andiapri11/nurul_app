@@ -4,8 +4,8 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
-// Redirect Root to Login (Temporary Redirect 302)
-Route::redirect('/', '/login');
+// Direct Root to Login Page (Fix Service Worker Redirect Issue)
+Route::get('/', [AuthController::class, 'login'])->name('root');
 
 // Dynamic PWA Manifest
 Route::get('/manifest.json', function() {
