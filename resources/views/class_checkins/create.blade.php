@@ -428,6 +428,14 @@
             if (!photoVal) {
                 e.preventDefault();
                 alert('Wajib mengambil foto bukti kelas terlebih dahulu!');
+                return;
+            }
+            
+            // Prevent Double Click
+            const btnSubmit = this.querySelector('button[type="submit"]');
+            if(btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
             }
         });
 

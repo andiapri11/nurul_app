@@ -339,6 +339,15 @@ class ClassCheckinController extends Controller
         
         $schedule = \App\Models\Schedule::findOrFail($request->schedule_id);
 
+        // Anti-Double Submission Check
+        $existingCheckin = \App\Models\ClassCheckin::where('schedule_id', $schedule->id)
+            ->whereDate('checkin_time', now()->toDateString())
+            ->first();
+
+        if ($existingCheckin) {
+            return redirect()->route('class-checkins.index')->with('warning', 'Anda sudah melakukan absensi untuk jadwal ini sebelumnya.');
+        }
+
         // Check against Academic Calendar
         $unitId = $schedule->schoolClass->unit_id;
         $classId = $schedule->class_id;
