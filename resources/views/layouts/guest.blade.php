@@ -114,6 +114,18 @@
     </script>
     <!--end::OverlayScrollbars Configure-->
     @stack('scripts')
+    <script>
+        // Force unregister all service workers to fix the "Site can't be reached" (ERR_FAILED) 302 redirect overflow issue
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister().then(function(boolean) {
+                        console.log('Service Worker unregistered: ', boolean);
+                    });
+                }
+            });
+        }
+    </script>
     <!--end::Script-->
   </body>
   <!--end::Body-->
