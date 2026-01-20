@@ -115,6 +115,12 @@
                                         <i class="bi bi-eye me-1"></i> {{ $req->director_status === 'Pending' ? 'Periksa' : 'Detail' }}
                                     </button>
                                     @if($req->director_status !== 'Pending')
+                                    <form action="{{ route('sarpras.procurements.reset-director', $req->id) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan keputusan ini? Seluruh item dalam pengajuan ini akan dikembalikan ke status MENUNGGU.')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Batalkan Keputusan">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Batalkan
+                                        </button>
+                                    </form>
                                     <a href="{{ route('sarpras.procurements.print', $req->request_code) }}" target="_blank" class="btn btn-sm btn-success shadow-sm ms-1">
                                         <i class="bi bi-printer"></i> Cetak
                                     </a>

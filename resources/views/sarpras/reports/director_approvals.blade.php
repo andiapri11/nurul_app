@@ -115,6 +115,14 @@
                                     <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modal-director-{{ $report->id }}" title="Approval">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
+                                    @if($report->director_status !== 'Pending')
+                                    <form action="{{ route('sarpras.reports.reset-director', $report) }}" method="POST" class="d-inline ms-1" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan keputusan ini? Status laporan dan kondisi barang akan dikembalikan ke kondisi sebelum approval.')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Batalkan Keputusan">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
+                                    </form>
+                                    @endif
                                     @if($report->director_status === 'Approved' && ($report->follow_up_action === 'Disposal' || $report->follow_up_action === 'Write-off'))
                                     <a href="{{ route('sarpras.inventory.disposal-proof', $report->inventory_id) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Cetak Bukti Penghapusan">
                                         <i class="bi bi-file-earmark-pdf"></i>
