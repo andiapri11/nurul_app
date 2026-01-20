@@ -402,21 +402,16 @@
                                         @forelse($validatedProcurements as $proc)
                                         <tr>
                                             <td class="ps-4">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-initial me-3 shadow-sm bg-info text-white">
-                                                        {{ substr($proc->unit->name ?? 'U', 0, 1) }}
-                                                    </div>
-                                                    <div>
-                                                        <span class="d-block fw-bold text-dark">{{ $proc->unit->name ?? '-' }}</span>
-                                                        <small class="text-muted d-flex align-items-center">
-                                                            Oleh: {{ $proc->user->name ?? '-' }}
-                                                        </small>
-                                                    </div>
+                                                <div>
+                                                    <span class="d-block fw-bold text-dark">{{ $proc->unit->name ?? '-' }}</span>
+                                                    <small class="text-muted d-flex align-items-center">
+                                                        Oleh: {{ $proc->user->name ?? '-' }}
+                                                    </small>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-column">
-                                                    <span class="fw-bold text-dark small text-truncate" style="max-width: 200px;">
+                                                    <span class="fw-bold text-dark small">
                                                         {{ $proc->activity_name }}
                                                     </span>
                                                     <div class="d-flex align-items-center gap-2">
