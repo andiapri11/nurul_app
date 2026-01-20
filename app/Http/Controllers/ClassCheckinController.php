@@ -421,9 +421,10 @@ class ClassCheckinController extends Controller
             'longitude' => $request->longitude,
         ]);
 
-        // Create Mading Announcement if Late
+        // Create Mading Announcement if Late - DISABLED as per user request (Only Admin creates Mading content)
+        /*
         if ($status === 'late') {
-            \App\Models\Announcement::create([
+             \App\Models\Announcement::create([
                 'title' => 'Keterlambatan Guru',
                 'content' => 'Guru ' . auth()->user()->name . ' terlambat masuk kelas ' . $schedule->schoolClass->name . ' (' . $schedule->subject->name . ') selama ' . round($diffInMinutes) . ' menit.',
                 'image' => null, // Or maybe checkin photo?
@@ -432,6 +433,7 @@ class ClassCheckinController extends Controller
                 'user_id' => auth()->id()
             ]);
         }
+        */
         
         // Handle Photo Processing (Optimized for Space: Square & WebP)
         if ($request->filled('photo_base64')) {
