@@ -14,6 +14,9 @@
             <a href="{{ route('student-affairs.violations.export-pdf', request()->query()) }}" target="_blank" class="btn btn-white shadow-sm border-0 px-3 py-2">
                 <i class="bi bi-file-earmark-pdf text-danger me-2"></i><strong>Cetak Laporan</strong>
             </a>
+            <a href="{{ route('student-affairs.violations.export-excel', request()->query()) }}" target="_blank" class="btn btn-white shadow-sm border-0 px-3 py-2">
+                <i class="bi bi-file-earmark-excel text-success me-2"></i><strong>Export Excel</strong>
+            </a>
             @if($isViewingActiveYear)
             <a href="{{ route('student-affairs.violations.create') }}" class="btn btn-primary shadow-sm px-3 py-2">
                 <i class="bi bi-plus-circle me-1"></i> <strong>Catat Pelanggaran</strong>

@@ -178,6 +178,60 @@ class StudentAffairsController extends Controller
         return view('student_affairs.violations.pdf', compact('violations', 'filterSummary'));
     }
 
+    public function exportExcelViolation(Request $request) 
+    {
+        $allowedUnits = Auth::user()->getKesiswaanUnits();
+        $allowedUnitIds = $allowedUnits->pluck('id')->toArray();
+
+        $query = StudentViolation::with(['student.schoolClass', 'recorder']);
+        
+        // Enforce Unit Restriction
+        $query->whereHas('student.schoolClass', function($q) use ($allowedUnitIds) {
+            $q->whereIn('classes.unit_id', $allowedUnitIds);
+        });
+
+        // Apply Filters
+        if ($request->filled('unit_id') && in_array($request->unit_id, $allowedUnitIds)) {
+            $query->whereHas('student.schoolClass', function($q) use ($request) {
+                $q->where('classes.unit_id', $request->unit_id);
+            });
+        }
+        if ($request->filled('academic_year_id')) {
+            $query->where('academic_year_id', $request->academic_year_id);
+        }
+        if ($request->filled('class_id')) {
+            $query->whereHas('student.classes', function($q) use ($request) {
+                $q->where('classes.id', $request->class_id);
+            });
+        }
+        if ($request->filled('status')) {
+            $query->where('follow_up_status', $request->status);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('violation_type', $request->type);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('student', function($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%");
+            });
+        }
+
+        $violations = $query->latest('date')->get();
+
+        $filterSummary = [
+            'unit' => $request->unit_id ? optional(\App\Models\Unit::find($request->unit_id))->name ?? 'Semua' : 'Semua',
+            'academic_year' => $request->academic_year_id ? optional(\App\Models\AcademicYear::find($request->academic_year_id))->name ?? 'Semua' : 'Semua',
+            'class' => $request->class_id ? optional(SchoolClass::find($request->class_id))->name ?? 'Semua' : 'Semua',
+            'status' => $request->status ? ucfirst($request->status) : 'Semua',
+        ];
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ViolationsExport($violations, $filterSummary), 'laporan_pelanggaran_' . now()->format('Y-m-d_H-i') . '.xlsx');
+    }
+
     public function createViolation(Request $request)
     {
         $allowedUnits = Auth::user()->getKesiswaanUnits();

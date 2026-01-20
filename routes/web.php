@@ -367,6 +367,7 @@ Route::middleware(['auth'])->group(function () {
         // Violations
         Route::get('violations', [\App\Http\Controllers\StudentAffairsController::class, 'indexViolations'])->name('violations.index');
         Route::get('violations/export-pdf', [\App\Http\Controllers\StudentAffairsController::class, 'exportPdfViolation'])->name('violations.export-pdf');
+        Route::get('violations/export-excel', [\App\Http\Controllers\StudentAffairsController::class, 'exportExcelViolation'])->name('violations.export-excel');
         Route::get('violations/create', [\App\Http\Controllers\StudentAffairsController::class, 'createViolation'])->name('violations.create');
         Route::post('violations', [\App\Http\Controllers\StudentAffairsController::class, 'storeViolation'])->name('violations.store');
         Route::get('violations/{violation}/edit', [\App\Http\Controllers\StudentAffairsController::class, 'editViolation'])->name('violations.edit');
