@@ -1639,7 +1639,43 @@ public function getMultipleInventories(Request $request)
 
     public function directorReports(Request $request)
     {
-        return $this->directorApprovals($request);
+        $unitIds = Auth::user()->getManajemenUnits()->pluck('id')->toArray();
+
+        // Damage Reports (for Director, only show those approved by Principal)
+        $query = DamageReport::with(['inventory.room.unit', 'user'])
+            ->whereIn('inventory_id', function($q) use ($unitIds) {
+                $q->select('id')->from('inventories')->whereIn('room_id', function($sq) use ($unitIds) {
+                    $sq->select('id')->from('rooms')->whereIn('unit_id', $unitIds);
+                });
+            })
+            ->where('principal_approval_status', 'Approved')
+            ->whereNotNull('follow_up_action');
+
+        if ($request->filled('unit_id')) {
+            $query->whereHas('inventory.room', function($q) use ($request) {
+                $q->where('unit_id', $request->unit_id);
+            });
+        }
+
+        if ($request->filled('academic_year_id')) {
+            $query->whereHas('inventory.room', function($q) use ($request) {
+                $q->where('academic_year_id', $request->academic_year_id);
+            });
+        }
+        
+        if ($request->filled('director_status')) {
+            if ($request->director_status == 'Pending') {
+                $query->where('director_approval_status', 'Pending');
+            } else {
+                $query->where('director_approval_status', $request->director_status);
+            }
+        }
+
+        $reports = $query->latest()->paginate(10);
+        $units = \App\Models\Unit::all();
+        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
+
+        return view('sarpras.reports.director_approvals', compact('reports', 'units', 'academicYears'));
     }
 
     public function approveDirector(Request $request, DamageReport $report)

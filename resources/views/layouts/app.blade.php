@@ -563,8 +563,8 @@
                   <ul class="nav nav-treeview">
                     <!-- Direktur Sub-Menu -->
                     @if(Auth::user()->role === 'administrator' || Auth::user()->role === 'direktur')
-                    <li class="nav-item {{ request()->routeIs('director.*') || request()->routeIs('sarpras.director.*') ? 'menu-open' : '' }}">
-                        <a href="#" class="nav-link {{ request()->routeIs('director.*') || request()->routeIs('sarpras.director.*') ? 'active' : '' }}">
+                    <li class="nav-item {{ request()->routeIs('director.*') || request()->routeIs('sarpras.director.*') || request()->routeIs('sarpras.reports.director-index') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('director.*') || request()->routeIs('sarpras.director.*') || request()->routeIs('sarpras.reports.director-index') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-briefcase-fill"></i>
                             <p>
                                 Pimpinan

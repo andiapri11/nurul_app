@@ -28,7 +28,7 @@
         <div class="col-md-8">
             <div class="card shadow h-100">
                 <div class="card-body py-3">
-                    <form method="GET" action="{{ route('sarpras.procurements.index-director') }}" class="row g-2 align-items-end">
+                    <form method="GET" action="{{ route('sarpras.director.approvals') }}" class="row g-2 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label small fw-bold">Unit Pendidikan</label>
                             <select name="unit_id" class="form-select" onchange="this.form.submit()">
@@ -48,7 +48,7 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <a href="{{ route('sarpras.procurements.index-director') }}" class="btn btn-outline-secondary w-100" title="Reset">
+                            <a href="{{ route('sarpras.director.approvals') }}" class="btn btn-outline-secondary w-100" title="Reset">
                                 <i class="bi bi-arrow-clockwise"></i>
                             </a>
                         </div>

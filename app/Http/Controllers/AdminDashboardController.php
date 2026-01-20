@@ -55,17 +55,32 @@ class AdminDashboardController extends Controller
                 $q->where('unit_id', $scopeUnitId);
             })->count();
         
-        // 2. PENGAJUAN YANG TELAH DIVALIDASI KEPALA SEKOLAH (5 Terakhir)
-        $validatedSubmissions = \App\Models\TeacherDocumentSubmission::with(['user', 'request', 'approver'])
-            ->where('status', 'approved')
+        // 2. PENGAJUAN BARANG YANG TELAH DIVALIDASI KEPALA SEKOLAH (5 Terakhir)
+        // Menunggu Approval Pimpinan
+        $validatedProcurements = \App\Models\ProcurementRequest::with(['unit', 'user', 'category'])
+            ->where('principal_status', 'Validated')
+            ->where('director_status', 'Pending')
             ->when($scopeUnitId, function($q) use ($scopeUnitId) {
-                $q->whereHas('user', function($sq) use ($scopeUnitId) {
-                    $sq->where('unit_id', $scopeUnitId);
-                });
+                $q->where('unit_id', $scopeUnitId);
             })
-            ->latest('approved_at')
+            // Group by request_code to show batches
+            ->whereIn('id', function($q) {
+                $q->selectRaw('MAX(id)')->from('procurement_requests')
+                  ->where('principal_status', 'Validated')
+                  ->groupBy('request_code');
+            })
+            ->latest()
             ->take(5)
             ->get();
+
+        foreach ($validatedProcurements as $proc) {
+            $batchItems = \App\Models\ProcurementRequest::where('request_code', $proc->request_code)
+                ->where('principal_status', 'Validated')
+                ->get();
+            $proc->total_nominal = $batchItems->sum(function($item) {
+                return $item->quantity * $item->estimated_price;
+            });
+        }
  
         // 3. STATISTIK PER UNIT (Distribution)
         // Requirement: Active students who have a class in the active year
@@ -98,7 +113,7 @@ class AdminDashboardController extends Controller
             'totalTeachers', 
             'totalClasses', 
             'activeYear', 
-            'validatedSubmissions', 
+            'validatedProcurements', 
             'studentsPerUnit',
             'activeTeachers',
             'monitoringData',

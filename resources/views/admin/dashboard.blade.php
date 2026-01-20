@@ -381,10 +381,10 @@
                     <div class="glass-card h-100">
                         <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="fw-bold mb-0 text-dark">Pengajuan Divalidasi</h5>
-                                <small class="text-muted">5 dokumen terakhir yang disetujui Kepala Sekolah.</small>
+                                <h5 class="fw-bold mb-0 text-dark">Notifikasi Pengajuan Barang</h5>
+                                <small class="text-muted">Awaiting Director's Approval (Sudah Divalidasi KS)</small>
                             </div>
-                            <a href="{{ route('teacher-docs.index') }}" class="btn btn-sm btn-light text-primary fw-bold px-3 rounded-pill shadow-sm hover-lift">
+                            <a href="{{ route('sarpras.director.approvals') }}" class="btn btn-sm btn-light text-primary fw-bold px-3 rounded-pill shadow-sm hover-lift">
                                 Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
@@ -393,41 +393,46 @@
                                 <table class="table table-premium mb-0 w-100">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th class="ps-4 text-uppercase small fw-bold text-muted border-0">Guru Pengaju</th>
-                                            <th class="text-uppercase small fw-bold text-muted border-0">Dokumen</th>
+                                            <th class="ps-4 text-uppercase small fw-bold text-muted border-0">Unit & Pemohon</th>
+                                            <th class="text-uppercase small fw-bold text-muted border-0">Kegiatan / Barang</th>
                                             <th class="pe-4 text-uppercase small fw-bold text-muted border-0 text-end">Tgl Validasi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($validatedSubmissions as $submission)
+                                        @forelse($validatedProcurements as $proc)
                                         <tr>
                                             <td class="ps-4">
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-initial me-3 shadow-sm bg-primary text-white">
-                                                        {{ substr($submission->user->name ?? 'G', 0, 1) }}
+                                                    <div class="avatar-initial me-3 shadow-sm bg-info text-white">
+                                                        {{ substr($proc->unit->name ?? 'U', 0, 1) }}
                                                     </div>
                                                     <div>
-                                                        <span class="d-block fw-bold text-dark">{{ $submission->user->name ?? '-' }}</span>
+                                                        <span class="d-block fw-bold text-dark">{{ $proc->unit->name ?? '-' }}</span>
                                                         <small class="text-muted d-flex align-items-center">
-                                                            NIP: {{ $submission->user->nip ?? '-' }}
+                                                            Oleh: {{ $proc->user->name ?? '-' }}
                                                         </small>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-column">
-                                                    <span class="badge bg-success bg-opacity-10 text-success mb-1 align-self-start border border-success border-opacity-10">
-                                                        {{ $submission->request->title ?? 'Dokumen' }}
+                                                    <span class="fw-bold text-dark small text-truncate" style="max-width: 200px;">
+                                                        {{ $proc->activity_name }}
                                                     </span>
-                                                    <small class="text-dark fw-bold">
-                                                        {{ $submission->request->academicYear->name ?? '' }} {{ $submission->request->semester ?? '' }}
-                                                    </small>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <small class="text-primary font-monospace" style="font-size: 0.7rem;">
+                                                            {{ $proc->request_code }}
+                                                        </small>
+                                                        <span class="badge bg-secondary bg-opacity-10 text-dark border-0 small py-0 px-2" style="font-size: 0.7rem;">
+                                                            Rp {{ number_format($proc->total_nominal, 0, ',', '.') }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td class="pe-4 text-end">
                                                 <div class="d-flex flex-column align-items-end">
-                                                    <span class="fw-bold text-dark small">{{ $submission->approved_at ? $submission->approved_at->format('d M Y') : '-' }}</span>
-                                                    <small class="text-muted">{{ $submission->approved_at ? $submission->approved_at->diffForHumans() : '' }}</small>
+                                                    <span class="fw-bold text-dark small">{{ $proc->validated_at ? \Carbon\Carbon::parse($proc->validated_at)->format('d/m/Y') : $proc->created_at->format('d/m/Y') }}</span>
+                                                    <small class="text-muted">{{ $proc->validated_at ? \Carbon\Carbon::parse($proc->validated_at)->diffForHumans() : $proc->created_at->diffForHumans() }}</small>
                                                 </div>
                                             </td>
                                         </tr>
@@ -435,24 +440,14 @@
                                         <tr>
                                             <td colspan="3" class="text-center py-5">
                                                 <div class="d-flex flex-column align-items-center opacity-50">
-                                                    <i class="bi bi-check-circle fs-1 mb-2"></i>
-                                                    <span>Belum ada pengajuan validasi baru.</span>
+                                                    <i class="bi bi-bell-slash fs-1 mb-2"></i>
+                                                    <span>Tidak ada notifikasi pengajuan baru.</span>
                                                 </div>
                                             </td>
                                         </tr>
                                         @endforelse
                                     </tbody>
                                 </table>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-white border-0 p-4 rounded-bottom-4">
-                            <div class="d-flex gap-2 justify-content-end">
-                                <a href="{{ route('audit.report') }}" class="btn btn-outline-danger rounded-pill px-4 btn-sm">
-                                    <i class="fas fa-shield-alt me-2"></i> Audit & Keamanan
-                                </a>
-                                <button class="btn btn-outline-secondary rounded-pill px-4 btn-sm" onclick="window.location='{{ route('settings.index') }}'">
-                                    <i class="bi bi-sliders me-2"></i> Pengaturan Aplikasi
-                                </button>
                             </div>
                         </div>
                     </div>
