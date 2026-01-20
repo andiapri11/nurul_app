@@ -2325,6 +2325,21 @@ public function getMultipleInventories(Request $request)
 
         $mainReq = $items->first();
         
+        // Determine Overall Director Status
+        $hasApproved = $items->contains('director_status', 'Approved');
+        $allRejected = $items->every('director_status', 'Rejected');
+        $anyPending = $items->contains('director_status', 'Pending');
+
+        $overallDirectorStatus = 'Pending';
+        if ($hasApproved) {
+            $overallDirectorStatus = 'Approved';
+        } elseif ($allRejected) {
+            $overallDirectorStatus = 'Rejected';
+        } elseif (!$anyPending) {
+            // All items have been processed but none are approved (this shouldn't happen with allRejected check but for safety)
+            $overallDirectorStatus = 'Rejected';
+        }
+        
         $totalEstimated = $items->sum(function($item) {
             return $item->quantity * $item->estimated_price;
         });
@@ -2364,7 +2379,7 @@ public function getMultipleInventories(Request $request)
         }
     }
 
-    return view('sarpras.procurements.print', compact('items', 'mainReq', 'totalEstimated', 'totalApproved', 'officials'));
+    return view('sarpras.procurements.print', compact('items', 'mainReq', 'totalEstimated', 'totalApproved', 'officials', 'overallDirectorStatus'));
     }
     public function resetDirectorProcurement(\App\Models\ProcurementRequest $procurement)
     {

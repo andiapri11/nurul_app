@@ -70,9 +70,9 @@
                         @endif
                     </td></tr>
                     <tr><td>Status Akhir Direktur</td><td>: 
-                        @if($mainReq->director_status === 'Approved')
+                        @if($overallDirectorStatus === 'Approved')
                             <span class="text-success fw-bold">DISETUJUI</span>
-                        @elseif($mainReq->director_status === 'Rejected')
+                        @elseif($overallDirectorStatus === 'Rejected')
                             <span class="text-danger fw-bold">DITOLAK</span>
                         @else
                             <span class="text-warning fw-bold">PROSES</span>
