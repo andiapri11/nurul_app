@@ -124,81 +124,6 @@
                             </td>
                         </tr>
 
-                        <!-- Modal Approval Director (Matches index.blade.php style) -->
-                        <div class="modal fade" id="modal-director-{{ $report->id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-xl modal-dialog-centered">
-                                <div class="modal-content border-0 shadow-lg rounded-4">
-                                    <div class="modal-header bg-success text-white p-4">
-                                        <h5 class="modal-title fw-bold">
-                                            <i class="bi bi-clipboard-check-fill me-2"></i> Review & Keputusan Final Pimpinan
-                                        </h5>
-                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <form action="{{ route('sarpras.reports.approve-director', $report) }}" method="POST">
-                                        @csrf
-                                        <div class="modal-body p-4">
-                                            <div class="row g-4">
-                                                <div class="col-md-4">
-                                                    <div class="bg-light p-3 rounded-4 h-100 border">
-                                                        <h6 class="fw-bold border-bottom pb-2 mb-3">Informasi Laporan</h6>
-                                                        @if($report->photo)
-                                                            <img src="{{ asset('storage/' . $report->photo) }}" class="img-fluid rounded-4 shadow-sm mb-3" style="width: 100%; height: 180px; object-fit: cover;">
-                                                        @endif
-                                                        <div class="small mb-2"><span class="text-muted">Item:</span> <span class="fw-bold">{{ $report->inventory->name }}</span></div>
-                                                        <div class="small mb-2"><span class="text-muted">Kode:</span> <code class="fw-bold">{{ $report->inventory->code }}</code></div>
-                                                        <div class="small mb-2"><span class="text-muted">Pelapor:</span> <span>{{ $report->user->name }}</span></div>
-                                                        <hr>
-                                                        <div class="small"><span class="text-muted d-block">Masalah:</span> <span class="italic">"{{ $report->description }}"</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="bg-primary bg-opacity-5 p-3 rounded-4 h-100 border border-primary border-opacity-25">
-                                                        <h6 class="fw-bold text-primary border-bottom border-primary border-opacity-25 pb-2 mb-3">Rekomendasi Internal</h6>
-                                                        
-                                                        <div class="mb-4">
-                                                            <div class="small text-muted fw-bold text-uppercase mb-1">Usul Sarpras:</div>
-                                                            <div class="fw-bold text-dark h5">
-                                                                @if($report->follow_up_action == 'Repair') Perbaikan 
-                                                                @elseif($report->follow_up_action == 'Replacement') Ganti Baru 
-                                                                @elseif($report->follow_up_action == 'Disposal') Penghapusan 
-                                                                @else {{ $report->follow_up_action }} @endif
-                                                            </div>
-                                                            <p class="small text-muted mb-0">"{{ $report->follow_up_description }}"</p>
-                                                        </div>
-
-                                                        <div class="mb-2">
-                                                            <div class="small text-muted fw-bold text-uppercase mb-1">Validasi Kepala Sekolah:</div>
-                                                            <div class="badge bg-info mb-2"><i class="bi bi-check-circle-fill me-1"></i> VALID</div>
-                                                            <p class="small text-muted italic mb-0">"{{ $report->principal_note ?? 'Telah divalidasi oleh Kepala Sekolah.' }}"</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="p-3">
-                                                        <h6 class="fw-bold text-success border-bottom pb-2 mb-3">Keputusan Anda</h6>
-                                                        <div class="mb-3">
-                                                            <label class="form-label small fw-bold">Status Persetujuan</label>
-                                                            <select name="director_status" class="form-select border-2 border-success border-opacity-25" required>
-                                                                <option value="Approved" {{ $report->director_status === 'Approved' ? 'selected' : '' }}>✅ SETUJUI USULAN</option>
-                                                                <option value="Rejected" {{ $report->director_status === 'Rejected' ? 'selected' : '' }}>❌ TOLAK USULAN</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="mb-4">
-                                                            <label class="form-label small fw-bold">Catatan Pimpinan (Opsional)</label>
-                                                            <textarea name="director_note" class="form-control" rows="5" placeholder="Contoh: Silakan diproses sesuai anggaran yang tersedia...">{{ $report->director_note }}</textarea>
-                                                        </div>
-                                                        
-                                                        <button type="submit" class="btn btn-success w-100 fw-bold py-3 shadow">
-                                                            <i class="bi bi-check-all me-1"></i> Simpan Keputusan Final
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
                         @empty
                         <tr>
                             <td colspan="8" class="text-center py-5">
@@ -210,6 +135,84 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Approval Modals (Placed outside table to fix layout) -->
+            @foreach($reports as $report)
+            <div class="modal fade" id="modal-director-{{ $report->id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg rounded-4">
+                        <div class="modal-header bg-success text-white p-4">
+                            <h5 class="modal-title fw-bold">
+                                <i class="bi bi-clipboard-check-fill me-2"></i> Review & Keputusan Final Pimpinan
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form action="{{ route('sarpras.reports.approve-director', $report) }}" method="POST">
+                            @csrf
+                            <div class="modal-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <div class="bg-light p-3 rounded-4 h-100 border">
+                                            <h6 class="fw-bold border-bottom pb-2 mb-3">Informasi Laporan</h6>
+                                            @if($report->photo)
+                                                <img src="{{ asset('storage/' . $report->photo) }}" class="img-fluid rounded-4 shadow-sm mb-3" style="width: 100%; height: 180px; object-fit: cover;">
+                                            @endif
+                                            <div class="small mb-2"><span class="text-muted">Item:</span> <span class="fw-bold">{{ $report->inventory->name }}</span></div>
+                                            <div class="small mb-2"><span class="text-muted">Kode:</span> <code class="fw-bold">{{ $report->inventory->code }}</code></div>
+                                            <div class="small mb-2"><span class="text-muted">Pelapor:</span> <span>{{ $report->user->name }}</span></div>
+                                            <hr>
+                                            <div class="small"><span class="text-muted d-block">Masalah:</span> <span class="italic">"{{ $report->description }}"</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="bg-primary bg-opacity-5 p-3 rounded-4 h-100 border border-primary border-opacity-25">
+                                            <h6 class="fw-bold text-primary border-bottom border-primary border-opacity-25 pb-2 mb-3">Rekomendasi Internal</h6>
+                                            
+                                            <div class="mb-4">
+                                                <div class="small text-muted fw-bold text-uppercase mb-1">Usul Sarpras:</div>
+                                                <div class="fw-bold text-dark h5">
+                                                    @if($report->follow_up_action == 'Repair') Perbaikan 
+                                                    @elseif($report->follow_up_action == 'Replacement') Ganti Baru 
+                                                    @elseif($report->follow_up_action == 'Disposal') Penghapusan 
+                                                    @else {{ $report->follow_up_action }} @endif
+                                                </div>
+                                                <p class="small text-muted mb-0">"{{ $report->follow_up_description }}"</p>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <div class="small text-muted fw-bold text-uppercase mb-1">Validasi Kepala Sekolah:</div>
+                                                <div class="badge bg-info mb-2"><i class="bi bi-check-circle-fill me-1"></i> VALID</div>
+                                                <p class="small text-muted italic mb-0">"{{ $report->principal_note ?? 'Telah divalidasi oleh Kepala Sekolah.' }}"</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-3">
+                                            <h6 class="fw-bold text-success border-bottom pb-2 mb-3">Keputusan Anda</h6>
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold">Status Persetujuan</label>
+                                                <select name="director_status" class="form-select border-2 border-success border-opacity-25" required>
+                                                    <option value="Approved" {{ $report->director_status === 'Approved' ? 'selected' : '' }}>✅ SETUJUI USULAN</option>
+                                                    <option value="Rejected" {{ $report->director_status === 'Rejected' ? 'selected' : '' }}>❌ TOLAK USULAN</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="form-label small fw-bold">Catatan Pimpinan (Opsional)</label>
+                                                <textarea name="director_note" class="form-control" rows="5" placeholder="Contoh: Silakan diproses sesuai anggaran yang tersedia...">{{ $report->director_note }}</textarea>
+                                            </div>
+                                            
+                                            <button type="submit" class="btn btn-success w-100 fw-bold py-3 shadow">
+                                                <i class="bi bi-check-all me-1"></i> Simpan Keputusan Final
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endforeach
             
             @if($reports->hasPages())
             <div class="mt-4">
