@@ -601,14 +601,6 @@
                                                         <div class="teacher-row">
                                                              <i class="bi bi-person-badge"></i> 
                                                              <span class="teacher-name-tiny text-truncate">{{ $schedule->teacher->name ?? '-' }}</span>
-                                                             
-                                                             @if($schedule->todayCheckin)
-                                                                <span class="status-label ms-auto {{ $schedule->todayCheckin->status == 'substitute' ? 'status-purple' : 'status-green' }}">
-                                                                    {{ $schedule->todayCheckin->status == 'substitute' ? 'BADAL' : ($schedule->todayCheckin->status == 'absent' ? 'ABSEN' : 'HADIR') }}
-                                                                </span>
-                                                             @elseif($isActive)
-                                                                <span class="status-label ms-auto status-gray">BELUM MASUK</span>
-                                                             @endif
                                                         </div>
                                                     </div>
                                                     <div class="row-time">
