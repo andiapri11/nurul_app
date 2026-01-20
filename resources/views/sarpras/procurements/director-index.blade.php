@@ -123,191 +123,6 @@
                             </td>
                         </tr>
 
-                        <!-- Approval Modal -->
-                        <div class="modal fade" id="approveModal{{ $req->id }}" tabindex="-1">
-                            <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                                <form action="{{ route('sarpras.procurements.approve-director', $req->id) }}" method="POST">
-                                    @csrf
-                                    <div class="modal-content text-start text-dark">
-                                        <div class="modal-header bg-primary text-white">
-                                            <h5 class="modal-title">Persetujuan Akhir: {{ $req->request_code }}</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body bg-light">
-                                            <!-- Batch Info Card -->
-                                            <div class="card shadow-sm mb-3">
-                                                <div class="card-body py-2">
-                                                     <div class="row">
-                                                        <div class="col-md-3 border-end">
-                                                            <small class="text-muted d-block">Unit & Pemohon</small>
-                                                            <div class="fw-bold text-primary">{{ $req->unit->name }}</div>
-                                                            <small>{{ $req->user->name }}</small>
-                                                        </div>
-                                                        <div class="col-md-4 border-end">
-                                                            <small class="text-muted d-block">Nama Kegiatan</small>
-                                                            <div class="fw-bold">{{ $req->activity_name }}</div>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <small class="text-muted d-block">Catatan Kepala Sekolah</small>
-                                                            <div class="p-2 border rounded bg-white small italic text-success">
-                                                                "{{ $req->principal_note ?: 'Tidak ada catatan khusus.' }}"
-                                                            </div>
-                                                        </div>
-                                                     </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Items to Approve -->
-                                            <div class="card shadow-sm border-0 mb-3">
-                                                <div class="card-header bg-white py-2">
-                                                     <h6 class="mb-0 fw-bold border-left-primary ps-2">Daftar Barang Tervalidasi</h6>
-                                                </div>
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered align-middle mb-0">
-                                                        <thead class="bg-light text-center small fw-bold">
-                                                            <tr>
-                                                                <th width="40">No</th>
-                                                                <th>Nama Barang & Spesifikasi</th>
-                                                                <th width="110">Est. Harga</th>
-                                                                <th width="80">Est. Qty</th>
-                                                                <th width="120">Est. Subtotal</th>
-                                                                <th width="140">Real. Harga</th>
-                                                                <th width="110">Realisasi Qty</th>
-                                                                <th width="120">Real. Subtotal</th>
-                                                                <th width="90">Keputusan</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody class="small">
-                                                            @foreach($req->batch_items as $index => $bi)
-                                                            @php 
-                                                                $isRejected = $bi->director_status === 'Rejected';
-                                                                $isProcessed = $req->director_status !== 'Pending';
-                                                            @endphp
-                                                            <tr id="idx_row_{{ $bi->id }}" class="{{ $isRejected ? 'table-light opacity-75' : '' }}">
-                                                                <td class="text-center bg-light">{{ $index + 1 }}</td>
-                                                                <td>
-                                                                    <div class="fw-bold">{{ $bi->item_name }}</div>
-                                                                    <div class="small text-muted">{{ $bi->category->name }} | {{ $bi->type }}</div>
-                                                                </td>
-                                                                <td class="text-end text-muted small">
-                                                                    Rp {{ number_format($bi->estimated_price, 0, ',', '.') }}
-                                                                </td>
-                                                                <td class="text-center text-muted small">
-                                                                    {{ $bi->quantity }} <small>{{ $bi->unit_name }}</small>
-                                                                </td>
-                                                                <td class="text-end text-muted small">
-                                                                    Rp {{ number_format($bi->quantity * $bi->estimated_price, 0, ',', '.') }}
-                                                                </td>
-                                                                <td>
-                                                                    <div class="input-group input-group-sm">
-                                                                        <span class="input-group-text bg-light">Rp</span>
-                                                                        <input type="text" name="items[{{ $bi->id }}][approved_price]" 
-                                                                               id="idx_price_{{ $bi->id }}"
-                                                                               class="form-control text-end fw-bold price-input" 
-                                                                               value="{{ number_format($bi->approved_price ?: $bi->estimated_price, 0, ',', '.') }}" 
-                                                                               onkeyup="formatRupiah(this)"
-                                                                               {{ ($isProcessed || $isRejected) ? 'disabled' : '' }}>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div class="input-group input-group-sm">
-                                                                        <input type="number" name="items[{{ $bi->id }}][approved_quantity]" 
-                                                                               id="idx_qty_{{ $bi->id }}"
-                                                                               class="form-control text-center fw-bold" 
-                                                                               value="{{ $bi->approved_quantity ?: $bi->quantity }}" 
-                                                                               {{ ($isProcessed || $isRejected) ? 'disabled' : '' }}
-                                                                               min="1">
-                                                                        <span class="input-group-text bg-light text-xs px-1" style="font-size: 0.6rem">{{ $bi->unit_name }}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="text-end fw-bold text-primary">
-                                                                    <span id="idx_subtotal_{{ $bi->id }}">
-                                                                        Rp {{ number_format(($bi->approved_quantity ?: $bi->quantity) * ($bi->approved_price ?: $bi->estimated_price), 0, ',', '.') }}
-                                                                    </span>
-                                                                </td>
-                                                                <td class="text-center bg-white">
-                                                                    <div class="form-check form-switch d-flex justify-content-center">
-                                                                        <input type="hidden" name="items[{{ $bi->id }}][status]" value="Rejected">
-                                                                        <input class="form-check-input" type="checkbox" name="items[{{ $bi->id }}][status]" 
-                                                                               value="Approved" id="idx_app_{{ $bi->id }}" 
-                                                                               data-id="{{ $bi->id }}"
-                                                                               {{ $bi->director_status === 'Approved' || $bi->director_status === 'Pending' ? 'checked' : '' }}
-                                                                               {{ $isProcessed ? 'disabled' : '' }}
-                                                                               style="width: 2.2em; height: 1.1em; cursor: pointer;">
-                                                                    </div>
-                                                                    <div class="small mt-1 {{ $isRejected ? 'text-danger' : 'text-success' }} fw-bold" id="idx_lbl_{{ $bi->id }}">
-                                                                        {{ $isRejected ? 'Tolak' : 'Setuju' }}
-                                                                    </div>
-                                                                    <script>
-                                                                        document.getElementById('idx_app_{{ $bi->id }}').addEventListener('change', function() {
-                                                                            let id = this.getAttribute('data-id');
-                                                                            let lbl = document.getElementById('idx_lbl_' + id);
-                                                                            let priceInp = document.getElementById('idx_price_' + id);
-                                                                            let qtyInp = document.getElementById('idx_qty_' + id);
-                                                                            let row = document.getElementById('idx_row_' + id);
-                                                                            
-                                                                            if(this.checked) {
-                                                                                lbl.textContent = 'Setuju';
-                                                                                lbl.className = 'small mt-1 fw-bold text-success';
-                                                                                priceInp.disabled = false;
-                                                                                qtyInp.disabled = false;
-                                                                                row.classList.remove('table-light', 'opacity-75');
-                                                                            } else {
-                                                                                lbl.textContent = 'Tolak';
-                                                                                lbl.className = 'small mt-1 fw-bold text-danger';
-                                                                                priceInp.disabled = true;
-                                                                                qtyInp.disabled = true;
-                                                                                row.classList.add('table-light', 'opacity-75');
-                                                                            }
-                                                                        });
-                                                                    </script>
-                                                                </td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                        <tfoot class="bg-light fw-bold text-dark">
-                                                            <tr>
-                                                                <td colspan="4" class="text-end py-2">TOTAL ESTIMASI ORIGINAL:</td>
-                                                                <td class="text-end py-2">Rp {{ number_format($req->total_original_price, 0, ',', '.') }}</td>
-                                                                <td colspan="2" class="text-end py-2 border-start">TOTAL REALISASI:</td>
-                                                                <td class="text-end text-success fs-6 py-2" id="idx_batch_total_{{ $req->id }}">
-                                                                    Rp {{ number_format($req->total_approved_price, 0, ',', '.') }}
-                                                                </td>
-                                                                <td></td>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
-                                            </div>
-
-                                            @if($req->director_status === 'Pending')
-                                            <div class="card shadow-sm border-left-primary bg-white">
-                                                <div class="card-body py-3">
-                                                    <div class="mb-0">
-                                                        <label class="form-label fw-bold">Catatan Pimpinan (Opsional)</label>
-                                                        <textarea name="note" class="form-control" rows="2" placeholder="Berikan instruksi atau alasan umum...">{{ $req->director_note }}</textarea>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            @else
-                                            <hr>
-                                            <div class="p-3 bg-{{ $req->director_status === 'Approved' ? 'success' : 'danger' }}-subtle border border-{{ $req->director_status === 'Approved' ? 'success' : 'danger' }} rounded">
-                                                <div class="fw-bold fs-5">KEPUTUSAN: {{ $req->director_status === 'Approved' ? 'DISETUJUI' : 'DITOLAK' }}</div>
-                                                <div class="mt-1">Catatan Pimpinan: {{ $req->director_note ?: '-' }}</div>
-                                                <div class="small mt-1 text-muted">Diputuskan pada: {{ $req->approved_at ? $req->approved_at->format('d/m/Y H:i') : '-' }}</div>
-                                            </div>
-                                            @endif
-                                        </div>
-                                        <div class="modal-footer justify-content-end">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                                            @if($req->director_status === 'Pending')
-                                            <button type="submit" class="btn btn-primary px-4 shadow">Simpan Keputusan Final</button>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
                         @empty
                         <tr>
                             <td colspan="6" class="text-center py-5 text-muted">
@@ -319,6 +134,196 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Approval Modals (Placed outside table to fix layout) -->
+            @foreach($procurements as $req)
+            <div class="modal fade" id="approveModal{{ $req->id }}" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <form action="{{ route('sarpras.procurements.approve-director', $req->id) }}" method="POST">
+                        @csrf
+                        <div class="modal-content text-start text-dark">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">Persetujuan Akhir: {{ $req->request_code }}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body bg-light">
+                                <!-- Batch Info Card -->
+                                <div class="card shadow-sm mb-3">
+                                    <div class="card-body py-2">
+                                            <div class="row">
+                                            <div class="col-md-3 border-end">
+                                                <small class="text-muted d-block">Unit & Pemohon</small>
+                                                <div class="fw-bold text-primary">{{ $req->unit->name }}</div>
+                                                <small>{{ $req->user->name }}</small>
+                                            </div>
+                                            <div class="col-md-4 border-end">
+                                                <small class="text-muted d-block">Nama Kegiatan</small>
+                                                <div class="fw-bold">{{ $req->activity_name }}</div>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <small class="text-muted d-block">Catatan Kepala Sekolah</small>
+                                                <div class="p-2 border rounded bg-white small italic text-success">
+                                                    "{{ $req->principal_note ?: 'Tidak ada catatan khusus.' }}"
+                                                </div>
+                                            </div>
+                                            </div>
+                                    </div>
+                                </div>
+
+                                <!-- Items to Approve -->
+                                <div class="card shadow-sm border-0 mb-3">
+                                    <div class="card-header bg-white py-2">
+                                            <h6 class="mb-0 fw-bold border-left-primary ps-2">Daftar Barang Tervalidasi</h6>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered align-middle mb-0">
+                                            <thead class="bg-light text-center small fw-bold">
+                                                <tr>
+                                                    <th width="40">No</th>
+                                                    <th>Nama Barang & Spesifikasi</th>
+                                                    <th width="110">Est. Harga</th>
+                                                    <th width="80">Est. Qty</th>
+                                                    <th width="120">Est. Subtotal</th>
+                                                    <th width="140">Real. Harga</th>
+                                                    <th width="110">Realisasi Qty</th>
+                                                    <th width="120">Real. Subtotal</th>
+                                                    <th width="90">Keputusan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="small">
+                                                @foreach($req->batch_items as $index => $bi)
+                                                @php 
+                                                    $isRejected = $bi->director_status === 'Rejected';
+                                                    $isProcessed = $req->director_status !== 'Pending';
+                                                @endphp
+                                                <tr id="idx_row_{{ $bi->id }}_{{ $req->id }}" class="{{ $isRejected ? 'table-light opacity-75' : '' }}">
+                                                    <td class="text-center bg-light">{{ $index + 1 }}</td>
+                                                    <td>
+                                                        <div class="fw-bold">{{ $bi->item_name }}</div>
+                                                        <div class="small text-muted">{{ $bi->category->name }} | {{ $bi->type }}</div>
+                                                    </td>
+                                                    <td class="text-end text-muted small">
+                                                        Rp {{ number_format($bi->estimated_price, 0, ',', '.') }}
+                                                    </td>
+                                                    <td class="text-center text-muted small">
+                                                        {{ $bi->quantity }} <small>{{ $bi->unit_name }}</small>
+                                                    </td>
+                                                    <td class="text-end text-muted small">
+                                                        Rp {{ number_format($bi->quantity * $bi->estimated_price, 0, ',', '.') }}
+                                                    </td>
+                                                    <td>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text bg-light">Rp</span>
+                                                            <input type="text" name="items[{{ $bi->id }}][approved_price]" 
+                                                                    id="idx_price_{{ $bi->id }}_{{ $req->id }}"
+                                                                    class="form-control text-end fw-bold price-input" 
+                                                                    value="{{ number_format($bi->approved_price ?: $bi->estimated_price, 0, ',', '.') }}" 
+                                                                    onkeyup="formatRupiah(this)"
+                                                                    {{ ($isProcessed || $isRejected) ? 'disabled' : '' }}>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="number" name="items[{{ $bi->id }}][approved_quantity]" 
+                                                                    id="idx_qty_{{ $bi->id }}_{{ $req->id }}"
+                                                                    class="form-control text-center fw-bold" 
+                                                                    value="{{ $bi->approved_quantity ?: $bi->quantity }}" 
+                                                                    {{ ($isProcessed || $isRejected) ? 'disabled' : '' }}
+                                                                    min="1">
+                                                            <span class="input-group-text bg-light text-xs px-1" style="font-size: 0.6rem">{{ $bi->unit_name }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end fw-bold text-primary">
+                                                        <span id="idx_subtotal_{{ $bi->id }}_{{ $req->id }}">
+                                                            Rp {{ number_format(($bi->approved_quantity ?: $bi->quantity) * ($bi->approved_price ?: $bi->estimated_price), 0, ',', '.') }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center bg-white">
+                                                        <div class="form-check form-switch d-flex justify-content-center">
+                                                            <input type="hidden" name="items[{{ $bi->id }}][status]" value="Rejected">
+                                                            <input class="form-check-input" type="checkbox" name="items[{{ $bi->id }}][status]" 
+                                                                    value="Approved" id="idx_app_{{ $bi->id }}_{{ $req->id }}" 
+                                                                    data-id="{{ $bi->id }}"
+                                                                    data-req="{{ $req->id }}"
+                                                                    {{ $bi->director_status === 'Approved' || $bi->director_status === 'Pending' ? 'checked' : '' }}
+                                                                    {{ $isProcessed ? 'disabled' : '' }}
+                                                                    style="width: 2.2em; height: 1.1em; cursor: pointer;">
+                                                        </div>
+                                                        <div class="small mt-1 {{ $isRejected ? 'text-danger' : 'text-success' }} fw-bold" id="idx_lbl_{{ $bi->id }}_{{ $req->id }}">
+                                                            {{ $isRejected ? 'Tolak' : 'Setuju' }}
+                                                        </div>
+                                                        <script>
+                                                            document.getElementById('idx_app_{{ $bi->id }}_{{ $req->id }}').addEventListener('change', function() {
+                                                                let id = this.getAttribute('data-id');
+                                                                let reqId = this.getAttribute('data-req');
+                                                                let lbl = document.getElementById('idx_lbl_' + id + '_' + reqId);
+                                                                let priceInp = document.getElementById('idx_price_' + id + '_' + reqId);
+                                                                let qtyInp = document.getElementById('idx_qty_' + id + '_' + reqId);
+                                                                let row = document.getElementById('idx_row_' + id + '_' + reqId);
+                                                                
+                                                                if(this.checked) {
+                                                                    lbl.textContent = 'Setuju';
+                                                                    lbl.className = 'small mt-1 fw-bold text-success';
+                                                                    priceInp.disabled = false;
+                                                                    qtyInp.disabled = false;
+                                                                    row.classList.remove('table-light', 'opacity-75');
+                                                                } else {
+                                                                    lbl.textContent = 'Tolak';
+                                                                    lbl.className = 'small mt-1 fw-bold text-danger';
+                                                                    priceInp.disabled = true;
+                                                                    qtyInp.disabled = true;
+                                                                    row.classList.add('table-light', 'opacity-75');
+                                                                }
+                                                            });
+                                                        </script>
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                            <tfoot class="bg-light fw-bold text-dark">
+                                                <tr>
+                                                    <td colspan="4" class="text-end py-2">TOTAL ESTIMASI ORIGINAL:</td>
+                                                    <td class="text-end py-2">Rp {{ number_format($req->total_original_price, 0, ',', '.') }}</td>
+                                                    <td colspan="2" class="text-end py-2 border-start">TOTAL REALISASI:</td>
+                                                    <td class="text-end text-success fs-6 py-2" id="idx_batch_total_{{ $req->id }}">
+                                                        Rp {{ number_format($req->total_approved_price, 0, ',', '.') }}
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                @if($req->director_status === 'Pending')
+                                <div class="card shadow-sm border-left-primary bg-white">
+                                    <div class="card-body py-3">
+                                        <div class="mb-0">
+                                            <label class="form-label fw-bold">Catatan Pimpinan (Opsional)</label>
+                                            <textarea name="note" class="form-control" rows="2" placeholder="Berikan instruksi atau alasan umum...">{{ $req->director_note }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                @else
+                                <hr>
+                                <div class="p-3 bg-{{ $req->director_status === 'Approved' ? 'success' : 'danger' }}-subtle border border-{{ $req->director_status === 'Approved' ? 'success' : 'danger' }} rounded">
+                                    <div class="fw-bold fs-5">KEPUTUSAN: {{ $req->director_status === 'Approved' ? 'DISETUJUI' : 'DITOLAK' }}</div>
+                                    <div class="mt-1">Catatan Pimpinan: {{ $req->director_note ?: '-' }}</div>
+                                    <div class="small mt-1 text-muted">Diputuskan pada: {{ $req->approved_at ? $req->approved_at->format('d/m/Y H:i') : '-' }}</div>
+                                </div>
+                                @endif
+                            </div>
+                            <div class="modal-footer justify-content-end">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                                @if($req->director_status === 'Pending')
+                                <button type="submit" class="btn btn-primary px-4 shadow">Simpan Keputusan Final</button>
+                                @endif
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endforeach
             <div class="card-footer bg-white border-top-0 px-3 py-3">
                 <div class="d-flex justify-content-center">
                     {{ $procurements->appends(request()->query())->links() }}
