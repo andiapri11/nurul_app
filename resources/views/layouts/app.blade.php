@@ -587,7 +587,13 @@
                             <li class="nav-item">
                                 <a href="{{ route('sarpras.director.approvals') }}" class="nav-link {{ request()->routeIs('sarpras.director.approvals') ? 'active' : '' }}">
                                     <i class="nav-icon bi bi-shield-fill-check text-success"></i>
-                                    <p>Approval Sarpras</p>
+                                    <p>Approval Pengajuan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('sarpras.reports.director-index') }}" class="nav-link {{ request()->routeIs('sarpras.reports.director-index') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-trash3-fill text-danger"></i>
+                                    <p>Approval Penghapusan</p>
                                 </a>
                             </li>
                         </ul>
