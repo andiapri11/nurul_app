@@ -49,11 +49,11 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Tanggal & Waktu</th>
-                                    <th>Guru</th>
+                                    <th>{{ request()->routeIs('teacher-docs.*') ? 'Tugas' : 'Guru' }}</th>
                                     <th>Unit</th>
                                     <th>Status</th>
                                     <th>Dokumen</th>
-                                    <th>Supervisor</th>
+                                    <th>{{ request()->routeIs('teacher-docs.*') ? 'Pemberi Tugas' : 'Supervisor' }}</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -67,15 +67,26 @@
                                         <small>{{ $supervision->time ? $supervision->time->format('H:i') : '-' }}</small>
                                     </td>
                                     <td>
-                                        <strong>{{ $supervision->teacher?->name ?? 'Deleted User' }}</strong>
-                                        <div class="small text-muted mt-1">
+                                        @if(request()->routeIs('teacher-docs.*'))
+                                            {{-- Teacher View: Show Task (Subject & Class) --}}
                                             @if($supervision->subject)
-                                                <i class="bi bi-book"></i> {{ $supervision->subject->name }} <br>
+                                                <div class="fw-bold"><i class="bi bi-book"></i> {{ $supervision->subject->name }}</div>
                                             @endif
                                             @if($supervision->schoolClass)
-                                                <i class="bi bi-people"></i> {{ $supervision->schoolClass->name }}
+                                                <div class="text-muted"><i class="bi bi-people"></i> {{ $supervision->schoolClass->name }}</div>
                                             @endif
-                                        </div>
+                                        @else
+                                            {{-- Principal View: Show Teacher Name + Task --}}
+                                            <strong>{{ $supervision->teacher?->name ?? 'Deleted User' }}</strong>
+                                            <div class="small text-muted mt-1">
+                                                @if($supervision->subject)
+                                                    <i class="bi bi-book"></i> {{ $supervision->subject->name }} <br>
+                                                @endif
+                                                @if($supervision->schoolClass)
+                                                    <i class="bi bi-people"></i> {{ $supervision->schoolClass->name }}
+                                                @endif
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>{{ $supervision->unit?->name ?? 'Deleted Unit' }}</td>
                                     <td>
