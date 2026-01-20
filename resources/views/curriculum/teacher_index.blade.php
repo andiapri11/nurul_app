@@ -85,6 +85,25 @@
                         </div>
 
                         <h5 class="card-title fw-bold text-dark mb-2">{{ $req->title }}</h5>
+                        
+                        {{-- Task Giver & Unit Info --}}
+                        <div class="mb-3" style="font-size: 0.8rem;">
+                            <div class="d-flex align-items-center text-secondary mb-1">
+                                <i class="bi bi-person-circle me-2 text-primary opacity-50"></i>
+                                <span class="fw-medium text-dark">{{ $req->creator->name ?? 'Administrator' }}</span>
+                            </div>
+                            <div class="d-flex align-items-start text-secondary">
+                                <i class="bi bi-buildings-fill me-2 text-primary opacity-50 mt-1"></i>
+                                <span class="text-truncate-2">
+                                    @if(empty($req->target_units))
+                                        Semua Unit
+                                    @else
+                                        {{ \App\Models\Unit::whereIn('id', $req->target_units)->pluck('name')->implode(', ') }}
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+
                         <p class="text-muted small flex-grow-1" style="line-height: 1.6; white-space: pre-line;">{{ $req->description ?: 'Tidak ada deskripsi tambahan.' }}</p>
 
                         <div class="border-top pt-3 mt-2">
