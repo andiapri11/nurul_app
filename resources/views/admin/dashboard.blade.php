@@ -381,10 +381,10 @@
                     <div class="glass-card h-100">
                         <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="fw-bold mb-0 text-dark">Siswa Terbaru</h5>
-                                <small class="text-muted">5 pendaftar terakhir di sistem.</small>
+                                <h5 class="fw-bold mb-0 text-dark">Pengajuan Divalidasi</h5>
+                                <small class="text-muted">5 dokumen terakhir yang disetujui Kepala Sekolah.</small>
                             </div>
-                            <a href="{{ route('admin-students.index') }}" class="btn btn-sm btn-light text-primary fw-bold px-3 rounded-pill shadow-sm hover-lift">
+                            <a href="{{ route('teacher-docs.index') }}" class="btn btn-sm btn-light text-primary fw-bold px-3 rounded-pill shadow-sm hover-lift">
                                 Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
                             </a>
                         </div>
@@ -393,42 +393,41 @@
                                 <table class="table table-premium mb-0 w-100">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th class="ps-4 text-uppercase small fw-bold text-muted border-0">Profil Siswa</th>
-                                            <th class="text-uppercase small fw-bold text-muted border-0">Penempatan</th>
-                                            <th class="pe-4 text-uppercase small fw-bold text-muted border-0 text-end">Terdaftar</th>
+                                            <th class="ps-4 text-uppercase small fw-bold text-muted border-0">Guru Pengaju</th>
+                                            <th class="text-uppercase small fw-bold text-muted border-0">Dokumen</th>
+                                            <th class="pe-4 text-uppercase small fw-bold text-muted border-0 text-end">Tgl Validasi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($recentStudents as $student)
+                                        @forelse($validatedSubmissions as $submission)
                                         <tr>
                                             <td class="ps-4">
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-initial me-3 shadow-sm">
-                                                        {{ substr($student->name, 0, 1) }}
+                                                    <div class="avatar-initial me-3 shadow-sm bg-primary text-white">
+                                                        {{ substr($submission->user->name ?? 'G', 0, 1) }}
                                                     </div>
                                                     <div>
-                                                        <span class="d-block fw-bold text-dark">{{ $student->name }}</span>
+                                                        <span class="d-block fw-bold text-dark">{{ $submission->user->name ?? '-' }}</span>
                                                         <small class="text-muted d-flex align-items-center">
-                                                            <i class="bi bi-upc-scan me-1" style="font-size: 0.7rem;"></i> 
-                                                            {{ $student->nis ?? 'Belum ada NIS' }}
+                                                            NIP: {{ $submission->user->nip ?? '-' }}
                                                         </small>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-column">
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary mb-1 align-self-start border border-primary border-opacity-10">
-                                                        {{ $student->unit->name ?? 'Umum' }}
+                                                    <span class="badge bg-success bg-opacity-10 text-success mb-1 align-self-start border border-success border-opacity-10">
+                                                        {{ $submission->request->title ?? 'Dokumen' }}
                                                     </span>
                                                     <small class="text-dark fw-bold">
-                                                        Kelas {{ $student->schoolClass->first()->name ?? '-' }}
+                                                        {{ $submission->request->academicYear->name ?? '' }} {{ $submission->request->semester ?? '' }}
                                                     </small>
                                                 </div>
                                             </td>
                                             <td class="pe-4 text-end">
                                                 <div class="d-flex flex-column align-items-end">
-                                                    <span class="fw-bold text-dark small">{{ $student->created_at->format('d M Y') }}</span>
-                                                    <small class="text-muted">{{ $student->created_at->diffForHumans() }}</small>
+                                                    <span class="fw-bold text-dark small">{{ $submission->approved_at ? $submission->approved_at->format('d M Y') : '-' }}</span>
+                                                    <small class="text-muted">{{ $submission->approved_at ? $submission->approved_at->diffForHumans() : '' }}</small>
                                                 </div>
                                             </td>
                                         </tr>
@@ -436,8 +435,8 @@
                                         <tr>
                                             <td colspan="3" class="text-center py-5">
                                                 <div class="d-flex flex-column align-items-center opacity-50">
-                                                    <i class="bi bi-inbox fs-1 mb-2"></i>
-                                                    <span>Belum ada data siswa.</span>
+                                                    <i class="bi bi-check-circle fs-1 mb-2"></i>
+                                                    <span>Belum ada pengajuan validasi baru.</span>
                                                 </div>
                                             </td>
                                         </tr>

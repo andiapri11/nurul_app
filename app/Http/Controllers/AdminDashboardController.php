@@ -55,12 +55,15 @@ class AdminDashboardController extends Controller
                 $q->where('unit_id', $scopeUnitId);
             })->count();
         
-        // 2. SISWA BARU TERDAFTAR (5 Terakhir, untuk Quick Check)
-        $recentStudents = Student::with(['schoolClass', 'unit'])
+        // 2. PENGAJUAN YANG TELAH DIVALIDASI KEPALA SEKOLAH (5 Terakhir)
+        $validatedSubmissions = \App\Models\TeacherDocumentSubmission::with(['user', 'request', 'approver'])
+            ->where('status', 'approved')
             ->when($scopeUnitId, function($q) use ($scopeUnitId) {
-                $q->where('unit_id', $scopeUnitId);
+                $q->whereHas('user', function($sq) use ($scopeUnitId) {
+                    $sq->where('unit_id', $scopeUnitId);
+                });
             })
-            ->latest()
+            ->latest('approved_at')
             ->take(5)
             ->get();
  
@@ -95,7 +98,7 @@ class AdminDashboardController extends Controller
             'totalTeachers', 
             'totalClasses', 
             'activeYear', 
-            'recentStudents', 
+            'validatedSubmissions', 
             'studentsPerUnit',
             'activeTeachers',
             'monitoringData',
