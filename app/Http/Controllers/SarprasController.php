@@ -1630,72 +1630,11 @@ public function getMultipleInventories(Request $request)
         return back()->with('success', 'Validasi Kepala Sekolah berhasil disimpan.');
     }
 
-    // Unified Approval Page for Director
+    // Unified Approval Page for Director (Mapped to /director/approvals)
+    // User requested this to show "Pengajuan" (Procurements)
     public function directorApprovals(Request $request)
     {
-        // Damage Reports
-        $reportQuery = DamageReport::with(['inventory.room.unit', 'principal', 'director'])
-            ->where('principal_approval_status', 'Approved');
-
-        if ($request->filled('unit_id')) {
-            $reportQuery->whereHas('inventory.room', function($q) use ($request) {
-                $q->where('unit_id', $request->unit_id);
-            });
-        }
-
-        // Procurement Requests (Grouped by Validated Batches)
-        $procurementQuery = \App\Models\ProcurementRequest::with(['unit', 'user', 'category'])
-            ->where('principal_status', 'Validated');
-
-        if ($request->filled('unit_id')) {
-            $procurementQuery->where('unit_id', $request->unit_id);
-        }
-
-        // Group by request_code to show one entry per batch (validated items only)
-        $procurementQuery->whereIn('id', function($q) {
-            $q->selectRaw('MAX(id)')->from('procurement_requests')
-              ->where('principal_status', 'Validated')
-              ->groupBy('request_code');
-        });
-
-        $reports = $reportQuery->latest()->get();
-        $procurements = $procurementQuery->latest()->get();
-
-        // Prepare batch data (only including Validated items)
-        foreach ($procurements as $p) {
-            $batchItems = \App\Models\ProcurementRequest::where('request_code', $p->request_code)
-                            ->where('principal_status', 'Validated')
-                            ->get();
-            $p->total_items = $batchItems->count();
-            $p->total_original_price = $batchItems->sum(function($item) {
-                return $item->quantity * $item->estimated_price;
-            });
-            $p->total_approved_price = $batchItems->sum(function($item) {
-                // Sum items that are either Approved or still Pending (initial state)
-                if ($item->director_status !== 'Rejected') {
-                    $price = $item->approved_price ?: $item->estimated_price;
-                    $qty = $item->approved_quantity ?: $item->quantity;
-                    return (float)$qty * (float)$price;
-                }
-                return 0;
-            });
-            // Determine batch-level status for display
-            if ($batchItems->every(fn($i) => $i->director_status === 'Pending')) {
-                $p->director_status = 'Pending';
-            } elseif ($batchItems->contains(fn($i) => $i->director_status === 'Approved')) {
-                $p->director_status = 'Approved';
-            } else {
-                $p->director_status = 'Rejected';
-            }
-
-            // Main display price: use approved total if batch is processed, else original estimate
-            $p->total_batch_price = ($p->director_status !== 'Pending') ? $p->total_approved_price : $p->total_original_price;
-            $p->batch_items = $batchItems;
-        }
-
-        $units = Unit::all();
-
-        return view('sarpras.approvals.director', compact('reports', 'procurements', 'units'));
+        return $this->directorProcurements($request);
     }
 
     public function directorReports(Request $request)
